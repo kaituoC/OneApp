@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>OneApp Icon</title>
+  <style>
+    body { background: #1a1a2e; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+    .icon-container { display: flex; gap: 40px; align-items: center; }
+    .icon { border-radius: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.3); }
+    .label { color: #fff; text-align: center; margin-top: 10px; font-family: sans-serif; }
+  </style>
+</head>
+<body>
+  <div class="icon-container">
+    <div>
+      <img class="icon" src="icon.svg" width="256" height="256">
+      <p class="label">256x256 (macOS)</p>
+    </div>
+    <div>
+      <img class="icon" src="icon.svg" width="128" height="128">
+      <p class="label">128x128</p>
+    </div>
+    <div>
+      <img class="icon" src="icon.svg" width="64" height="64">
+      <p class="label">64x64 (Windows)</p>
+    </div>
+  </div>
+  <p style="color:#666;position:fixed;bottom:20px;text-align:center;width:100%;">
+    右键点击图标 → 复制图像，然后粘贴到图像编辑器中保存为 PNG
+  </p>
+</body>
+</html>

@@ -1,0 +1,28 @@
+node_modules/
+out/
+dist/
+.DS_Store
+*.log
+npm-debug.log*
+.env
+.env.local
+.env.*.local
+.idea/
+.vscode/
+*.swp
+*.swo
+coverage/
+.nyc_output/
+.claude/debug/
+.claude/tasks/
+.claude/scheduled_tasks.json
+.claude/settings.local.json
+
+# 开发配置（国内镜像，国际用户自行配置）
+.npmrc
+
+# 设计文档（superpowers skill 中间产物）
+docs/superpowers/
+
+# Claude Code 项目指导文件
+CLAUDE.md

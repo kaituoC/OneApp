@@ -1,0 +1,58 @@
+{
+  "type": "module",
+  "name": "oneapp",
+  "version": "1.0.0",
+  "description": "OneApp - 多功能开发工具",
+  "author": "kaituoC",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/kaituoC/OneApp.git"
+  },
+  "bugs": {
+    "url": "https://github.com/kaituoC/OneApp/issues"
+  },
+  "main": "out/main/main.js",
+  "scripts": {
+    "dev": "electron-vite dev",
+    "build": "electron-vite build",
+    "preview": "electron-vite preview",
+    "pack": "electron-builder --dir",
+    "dist": "electron-builder",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "@vue/compiler-sfc": "^3.4.21",
+    "codemirror": "^6.0.1",
+    "diff-match-patch": "^1.0.5",
+    "electron-store": "^8.1.0",
+    "marked": "^12.0.0",
+    "postcss": "^8.5.10",
+    "vue": "^3.4.21"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^5.2.4",
+    "electron": "^28.3.3",
+    "electron-builder": "^24.13.3",
+    "electron-vite": "^2.0.0",
+    "sharp": "^0.34.5",
+    "vite": "^5.0.0",
+    "vitest": "^4.1.4"
+  },
+  "build": {
+    "appId": "com.oneapp.dev",
+    "productName": "OneApp",
+    "mac": {
+      "icon": "electron/assets/icon.icns",
+      "category": "public.app-category.developer-tools",
+      "target": [
+        "dmg",
+        "zip"
+      ]
+    },
+    "files": [
+      "out/**/*",
+      "electron/assets/**/*"
+    ]
+  }
+}

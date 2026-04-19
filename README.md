@@ -33,11 +33,36 @@
 
 ## 安装与运行
 
+### 快速安装（推荐）
+
+国内用户建议使用自动化安装脚本，已配置淘宝镜像和 Electron 国内镜像：
+
+```bash
+# 赋予执行权限
+chmod +x install.sh
+
+# 一键安装依赖
+./install.sh
+```
+
+脚本功能：
+- 🧹 自动清理旧的 `node_modules` 和 `package-lock.json`
+- ⚙️ 自动配置 npm 淘宝镜像
+- 📦 自动配置 Electron 国内镜像
+- 🔄 安装失败自动重试（最多 3 次）
+- ✅ 安装完成后验证关键依赖
+
+### 手动安装
+
 ```bash
 # 安装依赖
 npm install
 
-# 开发模式
+# 或手动指定镜像源
+npm install --registry=https://registry.npmmirror.com
+```
+
+### 开发模式
 npm run dev
 
 # 构建生产版本

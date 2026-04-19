@@ -151,8 +151,6 @@ npm run dev
 
 国内用户建议使用自动化安装脚本，已配置淘宝镜像和 Electron 国内镜像：
 
-国内用户建议使用自动化安装脚本，已配置淘宝镜像和 Electron 国内镜像：
-
 ```bash
 # 赋予执行权限
 chmod +x install.sh
@@ -179,6 +177,9 @@ npm install --registry=https://registry.npmmirror.com
 ```
 
 ### 开发模式
+
+```bash
+# 本地开发模式
 npm run dev
 
 # 构建生产版本

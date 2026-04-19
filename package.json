@@ -50,6 +50,44 @@
         "zip"
       ]
     },
+    "win": {
+      "icon": "electron/assets/icon.ico",
+      "target": [
+        {
+          "target": "nsis",
+          "arch": ["x64"]
+        },
+        {
+          "target": "zip",
+          "arch": ["x64"]
+        }
+      ],
+      "nsis": {
+        "oneClick": false,
+        "allowToChangeInstallationDirectory": true,
+        "createDesktopShortcut": true,
+        "createStartMenuShortcut": true,
+        "shortcutName": "OneApp",
+        "runAfterFinish": true,
+        "deleteAppDataOnUninstall": true,
+        "installerIcon": "electron/assets/icon.ico",
+        "uninstallerIcon": "electron/assets/icon.ico",
+        "license": "LICENSE"
+      }
+    },
+    "linux": {
+      "icon": "electron/assets/icon.png",
+      "target": [
+        {
+          "target": "AppImage",
+          "arch": ["x64"]
+        },
+        {
+          "target": "deb",
+          "arch": ["x64"]
+        }
+      ]
+    },
     "files": [
       "out/**/*",
       "electron/assets/**/*"

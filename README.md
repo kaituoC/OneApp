@@ -31,9 +31,125 @@
 - 日期转时间戳（同时输出秒和毫秒）
 - 一键复制结果
 
+## 系统要求
+
+| 操作系统 | 状态 | 版本要求 |
+|----------|------|----------|
+| **macOS** | ✅ 已支持 | 10.15+ (Intel/Apple Silicon) |
+| **Windows** | 🟡 计划中 | 10+ (64 位) |
+| **Linux** | 🟡 计划中 | Ubuntu 20.04+ / Debian 10+ |
+
+> 💡 **当前版本 (v1.0.0) 仅提供 macOS 安装包**。Windows 和 Linux 版本正在开发中，预计 v1.1.0 发布。
+
+---
+
 ## 安装与运行
 
+### 🍎 macOS 用户（推荐）
+
+**下载安装包：**
+1. 访问 [GitHub Releases](https://github.com/kaituoC/OneApp/releases)
+2. 下载 `OneApp-1.0.0.dmg` (约 100MB)
+3. 打开 DMG，拖拽 OneApp 到 Applications 文件夹
+4. 启动应用
+
+**或使用 Homebrew（计划中）：**
+```bash
+brew install --cask oneapp
+```
+
+---
+
+### 🪟 Windows 用户（源码构建）
+
+**系统要求：**
+- Windows 10/11 (64 位)
+- Node.js 18+ (推荐 20 LTS)
+- Git
+
+**构建步骤：**
+```bash
+# 1. 克隆仓库
+git clone https://github.com/kaituoC/OneApp.git
+cd OneApp
+
+# 2. 安装依赖
+npm install
+
+# 3. 构建并打包
+npm run build
+npm run dist -- --win
+```
+
+**输出文件：**
+- `dist/OneApp-1.0.0.exe` - NSIS 安装包（推荐）
+- `dist/OneApp-1.0.0-win.zip` - 便携版（解压即用）
+
+---
+
+### 🐧 Linux 用户（源码构建）
+
+**系统要求：**
+- Ubuntu 20.04+ / Debian 10+ / Fedora 32+
+- Node.js 18+ (推荐 20 LTS)
+- Git
+- build-essential (Ubuntu/Debian)
+
+**安装依赖（Ubuntu/Debian）：**
+```bash
+sudo apt update
+sudo apt install -y build-essential git curl
+```
+
+**构建步骤：**
+```bash
+# 1. 克隆仓库
+git clone https://github.com/kaituoC/OneApp.git
+cd OneApp
+
+# 2. 安装依赖
+npm install
+
+# 3. 构建并打包
+npm run build
+npm run dist -- --linux
+```
+
+**输出文件：**
+- `dist/OneApp-1.0.0.AppImage` - AppImage（推荐，通用格式）
+- `dist/OneApp-1.0.0.deb` - Debian 包（Ubuntu/Debian）
+
+**运行 AppImage：**
+```bash
+chmod +x OneApp-1.0.0.AppImage
+./OneApp-1.0.0.AppImage
+```
+
+---
+
+### 🔧 开发模式（所有平台）
+
+```bash
+# 1. 克隆仓库
+git clone https://github.com/kaituoC/OneApp.git
+cd OneApp
+
+# 2. 安装依赖（国内用户用 install.sh）
+chmod +x install.sh
+./install.sh
+
+# 或直接 npm install
+npm install
+
+# 3. 启动开发模式（热重载）
+npm run dev
+```
+
+---
+
 ### 快速安装（推荐）
+
+国内用户建议使用自动化安装脚本，已配置淘宝镜像和 Electron 国内镜像：
 
 国内用户建议使用自动化安装脚本，已配置淘宝镜像和 Electron 国内镜像：
 

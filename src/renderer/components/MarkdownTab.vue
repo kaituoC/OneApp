@@ -4,6 +4,7 @@
       <button @click="showFileList = !showFileList">{{ showFileList ? '隐藏列表' : '显示列表' }}</button>
       <button @click="showEditor = !showEditor">{{ showEditor ? '隐藏编辑' : '显示编辑' }}</button>
       <button @click="showPreview = !showPreview">{{ showPreview ? '隐藏预览' : '显示预览' }}</button>
+      <button @click="openFileDialog">打开文件</button>
       <button @click="newFile">新建</button>
       <button @click="saveFile">保存</button>
       <button @click="exportHTML">导出HTML</button>
@@ -13,27 +14,54 @@
 
     <div class="content">
       <aside v-if="showFileList" class="file-list">
-        <div class="file-list-header">
-          <span>文件列表</span>
-          <button class="refresh-btn" @click="loadFiles" title="刷新">↻</button>
+        <!-- 上半部分：工作目录文件列表 -->
+        <div class="file-list-section">
+          <div class="section-header">
+            <span>文件列表</span>
+            <button class="refresh-btn" @click="loadFiles" title="刷新">↻</button>
+          </div>
+          <div v-if="!workDir" class="empty-hint">
+            请先在设置中选择工作目录
+          </div>
+          <div v-else-if="loading" class="empty-hint">加载中...</div>
+          <div v-else-if="files.length === 0" class="empty-hint">
+            目录中暂无 .md 文件
+          </div>
+          <div v-else class="scrollable-list">
+            <div
+              v-for="file in files"
+              :key="file"
+              :class="['file-item', { active: currentFilePath === getFullPath(file) }]"
+              @click="openFileItem(file)"
+              @mouseenter="showTooltip($event, file)"
+              @mouseleave="hideTooltip"
+            >
+              {{ truncateFileName(file) }}
+            </div>
+          </div>
         </div>
-        <div v-if="!workDir" class="empty-hint">
-          请先在设置中选择工作目录
-        </div>
-        <div v-else-if="loading" class="empty-hint">加载中...</div>
-        <div v-else-if="files.length === 0" class="empty-hint">
-          目录中暂无 .md 文件
-        </div>
-        <div v-else>
-          <div
-            v-for="file in files"
-            :key="file"
-            :class="['file-item', { active: currentFilePath === getFullPath(file) }]"
-            @click="openFileItem(file)"
-            @mouseenter="showTooltip($event, file)"
-            @mouseleave="hideTooltip"
-          >
-            {{ truncateFileName(file) }}
+
+        <!-- 下半部分：最近打开文件列表 -->
+        <div class="recent-files-section">
+          <div class="section-header">
+            <span>最近打开</span>
+            <button class="refresh-btn" @click="loadRecentFiles" title="刷新">↻</button>
+          </div>
+          <div v-if="recentLoading" class="empty-hint">加载中...</div>
+          <div v-else-if="recentFiles.length === 0" class="empty-hint">
+            暂无最近打开的文件
+          </div>
+          <div v-else class="scrollable-list">
+            <div
+              v-for="recent in recentFiles"
+              :key="recent.path"
+              class="file-item"
+              @click="recent.path && openRecentFile(recent.path)"
+              @mouseenter="recent.path && showRecentTooltip($event, recent.path)"
+              @mouseleave="hideRecentTooltip"
+            >
+              <div class="recent-file-name">{{ truncateRecentFilePath(recent.path) }}</div>
+            </div>
           </div>
         </div>
       </aside>
@@ -70,12 +98,21 @@
     >
       {{ tooltipText }}
     </div>
+
+    <!-- 最近文件 Tooltip -->
+    <div
+      v-if="recentTooltipVisible"
+      class="file-tooltip"
+      :style="recentTooltipStyle"
+    >
+      {{ recentTooltipText }}
+    </div>
   </div>
 </template>
 
 <script setup>
 import { ref, watch, onMounted, nextTick } from 'vue'
-import { listFiles, readFile, saveFile as dialogSaveFile } from '../utils/fileHelper.js'
+import { listFiles, readFile, saveFile as dialogSaveFile, openFile, getRecentFiles, removeRecentFile, saveRecentFiles } from '../utils/fileHelper.js'
 import EditorWithLineNumbers from './EditorWithLineNumbers.vue'
 import MarkdownPreview from './MarkdownPreview.vue'
 import SyntaxHelpModal from './SyntaxHelpModal.vue'
@@ -95,6 +132,8 @@ const editorContent = ref('')
 const currentFilePath = ref('')
 const files = ref([])
 const loading = ref(false)
+const recentFiles = ref([])
+const recentLoading = ref(false)
 
 // 滚动同步
 const editorRef = ref(null)
@@ -154,6 +193,7 @@ onMounted(() => {
       }
     })
   }
+  loadRecentFiles()
 })
 
 // Tooltip 状态
@@ -196,6 +236,70 @@ function truncateFileName(fileName) {
   return `${prefix}...${suffix}${ext}`
 }
 
+// 最近文件路径截断显示
+function truncateRecentFilePath(filePath) {
+  if (!filePath) return ''
+  const maxLen = 40
+  if (filePath.length <= maxLen) return filePath
+  const fileName = filePath.split('/').pop()
+  const dir = filePath.split('/').slice(0, -1).join('/')
+  if (dir.length <= 15) return filePath
+  return `.../${dir.slice(-15)}/${fileName}`
+}
+
+// 最近文件 tooltip
+const recentTooltipVisible = ref(false)
+const recentTooltipText = ref('')
+const recentTooltipStyle = ref({})
+
+function showRecentTooltip(event, filePath) {
+  const displayText = truncateRecentFilePath(filePath)
+  if (displayText === filePath) return
+
+  const rect = event.target.getBoundingClientRect()
+  recentTooltipText.value = filePath
+  recentTooltipStyle.value = {
+    top: `${rect.top}px`,
+    left: `${rect.right + 8}px`
+  }
+  recentTooltipVisible.value = true
+}
+
+function hideRecentTooltip() {
+  recentTooltipVisible.value = false
+}
+
+// 点击最近文件
+async function openRecentFile(filePath) {
+  try {
+    const content = await readFile(filePath)
+    editorContent.value = content
+    currentFilePath.value = filePath
+    emit('file-open', filePath)
+    loadRecentFiles() // 刷新时间戳排序
+  } catch (e) {
+    alert('文件不存在，已从列表中移除')
+    await removeRecentFile(filePath)
+    loadRecentFiles()
+  }
+}
+
+// 打开文件对话框
+async function openFileDialog() {
+  const path = await openFile(props.workDir)
+  if (!path) return // 用户取消
+
+  try {
+    const content = await readFile(path)
+    editorContent.value = content
+    currentFilePath.value = path
+    emit('file-open', path)
+    loadRecentFiles()
+  } catch (e) {
+    console.error('打开文件失败:', e)
+  }
+}
+
 async function loadFiles() {
   if (!props.workDir) {
     files.value = []
@@ -209,6 +313,23 @@ async function loadFiles() {
     files.value = []
   }
   loading.value = false
+}
+
+async function loadRecentFiles() {
+  recentLoading.value = true
+  try {
+    const allFiles = await getRecentFiles()
+    const validFiles = allFiles.filter(f => f && f.path)
+    // 如果有无效条目，持久化清理后的结果
+    if (validFiles.length !== allFiles.length) {
+      await saveRecentFiles(validFiles)
+    }
+    recentFiles.value = validFiles
+  } catch (e) {
+    console.error('加载最近文件失败:', e)
+    recentFiles.value = []
+  }
+  recentLoading.value = false
 }
 
 // 监听 workDir 变化，立即加载文件列表
@@ -328,13 +449,30 @@ document.addEventListener('keydown', (e) => {
   width: 280px;
   background: var(--bg-secondary);
   border-right: 1px solid var(--border-color);
-  overflow-y: auto;
-  flex-shrink: 0;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 
-.file-list-header {
+.file-list-section,
+.recent-files-section {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.file-list-section {
+  flex: 1;
+  border-bottom: 2px solid var(--border-color);
+  overflow: hidden;
+}
+
+.recent-files-section {
+  flex: 1;
+  overflow: hidden;
+}
+
+.section-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -342,6 +480,13 @@ document.addEventListener('keydown', (e) => {
   font-size: 12px;
   color: var(--text-secondary);
   border-bottom: 1px solid var(--border-color);
+  flex-shrink: 0;
+}
+
+.scrollable-list {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
 }
 
 .refresh-btn {
@@ -374,6 +519,15 @@ document.addEventListener('keydown', (e) => {
 .file-item.active {
   background: var(--accent);
   color: white;
+}
+
+.recent-file-name {
+  font-size: 11px;
+  font-family: var(--font-mono);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.4;
 }
 
 .file-tooltip {

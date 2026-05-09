@@ -7,6 +7,9 @@
 ### Markdown 编辑
 - 实时预览，支持 GFM 语法
 - 文件管理：新建、打开、保存、导出
+- **工作区文件列表 + 最近打开文件列表**，双区域独立滚动
+- **系统文件对话框**：打开工作目录外的任意 `.md` 文件
+- **最近打开记录**：自动追踪最近打开的 50 个文件，支持快速重开
 - 支持导出 HTML 和 PDF
 - 编辑器行号显示
 - 滚动同步（编辑区与预览区）
@@ -36,10 +39,10 @@
 | 操作系统 | 状态 | 版本要求 |
 |----------|------|----------|
 | **macOS** | ✅ 已支持 | 10.15+ (Intel/Apple Silicon) |
-| **Windows** | 🟡 计划中 | 10+ (64 位) |
-| **Linux** | 🟡 计划中 | Ubuntu 20.04+ / Debian 10+ |
+| **Windows** | ✅ 已支持 | 10+ (64 位) |
+| **Linux** | ✅ 已支持 | Ubuntu 20.04+ / Debian 10+ |
 
-> 💡 **当前版本 (v1.0.0) 仅提供 macOS 安装包**。Windows 和 Linux 版本正在开发中，预计 v1.1.0 发布。
+> 💡 **当前版本 (v1.1.0)** 支持 macOS、Windows 和 Linux。
 
 ---
 
@@ -49,7 +52,7 @@
 
 **下载安装包：**
 1. 访问 [GitHub Releases](https://github.com/kaituoC/OneApp/releases)
-2. 下载 `OneApp-1.0.0.dmg` (约 100MB)
+2. 下载 `OneApp-1.1.0.dmg` (约 100MB)
 3. 打开 DMG，拖拽 OneApp 到 Applications 文件夹
 4. 启动应用
 
@@ -82,8 +85,8 @@ npm run dist -- --win
 ```
 
 **输出文件：**
-- `dist/OneApp-1.0.0.exe` - NSIS 安装包（推荐）
-- `dist/OneApp-1.0.0-win.zip` - 便携版（解压即用）
+- `dist/OneApp-1.1.0.exe` - NSIS 安装包（推荐）
+- `dist/OneApp-1.1.0-win.zip` - 便携版（解压即用）
 
 ---
 
@@ -116,13 +119,13 @@ npm run dist -- --linux
 ```
 
 **输出文件：**
-- `dist/OneApp-1.0.0.AppImage` - AppImage（推荐，通用格式）
-- `dist/OneApp-1.0.0.deb` - Debian 包（Ubuntu/Debian）
+- `dist/OneApp-1.1.0.AppImage` - AppImage（推荐，通用格式）
+- `dist/OneApp-1.1.0.deb` - Debian 包（Ubuntu/Debian）
 
 **运行 AppImage：**
 ```bash
-chmod +x OneApp-1.0.0.AppImage
-./OneApp-1.0.0.AppImage
+chmod +x OneApp-1.1.0.AppImage
+./OneApp-1.1.0.AppImage
 ```
 
 ---

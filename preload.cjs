@@ -12,5 +12,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
   setStore: (data) => ipcRenderer.invoke('set-store', data),
   getHomeDir: () => process.env.HOME || process.env.USERPROFILE,
   exportPDF: (htmlContent, defaultPath) => ipcRenderer.invoke('export-pdf', htmlContent, defaultPath),
-  openExternal: (url) => shell.openExternal(url)
+  openExternal: (url) => shell.openExternal(url),
+  toggleDevTools: () => ipcRenderer.invoke('toggle-devtools')
 })

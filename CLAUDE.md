@@ -1,92 +1,105 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+本文件为 Claude Code (claude.ai/code) 在此代码库中工作时提供指引。
 
-## Project Overview
+## 项目概述
 
-OneApp is an Electron + Vue 3 desktop application providing developer tools: Markdown editor, JSON formatter, text diff comparison, and time conversion utilities.
+OneApp 是一个基于 Electron + Vue 3 的桌面应用程序，提供开发者工具：Markdown 编辑器、JSON 格式化、文本差异对比和时间转换工具。
 
-## Commands
+## 命令
 
 ```bash
-npm run dev        # Start development mode with hot reload
-npm run build      # Build for production (outputs to out/)
-npm run preview    # Preview production build
-npm run dist       # Package distributable (DMG/ZIP for Mac)
-npm test           # Run unit tests
-npm run test:watch # Run tests in watch mode
-npm test -- tests/jsonHelper.test.js  # Run single test file
+npm run dev        # 启动开发模式（热重载）
+npm run build      # 生产构建（输出到 out/）
+npm run preview    # 预览生产构建
+npm run dist       # 打包可分发文件（DMG/ZIP for Mac）
+npm test           # 运行单元测试
+npm run test:watch # 运行测试（监听模式）
+npm test -- tests/jsonHelper.test.js  # 运行单个测试文件
 ```
 
-## Architecture
+## 工作流程规范
 
-### Process Separation
+### 分支管理
 
-- **Main process** (`electron/main.js`): Node.js environment, handles file I/O, dialogs, PDF export, global shortcuts (F12 for DevTools), and app configuration via electron-store
-- **Preload script** (`preload.cjs`): CommonJS module that bridges main/renderer via contextBridge, exposing `window.electronAPI`
-- **Renderer process** (`src/renderer/`): Vue 3 SPA with Composition API, web environment only
+- **每个需求必须创建新分支**，在新分支上进行开发，不要直接在 main 分支上修改代码
+- **创建本地分支前，先拉取远程 main 分支**，确保本地 main 与远程同步，防止基于落后的代码创建分支：
+  ```bash
+  git checkout main && git pull origin main
+  git checkout -b <branch-name>
+  ```
+- 分支命名约定：`feature/功能名`、`fix/问题描述`
+- 功能开发完成后通过 PR 合并到 main
 
-### IPC Communication Pattern
+## 架构
 
-Renderer calls main process through `preload.cjs` exposed API:
+### 进程分离
+
+- **主进程**（`electron/main.js`）：Node.js 环境，处理文件 I/O、对话框、PDF 导出、应用内快捷键（F12 切换 DevTools）以及通过 electron-store 的应用配置
+- **预加载脚本**（`preload.cjs`）：CommonJS 模块，通过 contextBridge 桥接主进程和渲染进程，暴露 `window.electronAPI`
+- **渲染进程**（`src/renderer/`）：Vue 3 单页应用，使用 Composition API，纯 web 环境
+
+### IPC 通信模式
+
+渲染进程通过 `preload.cjs` 暴露的 API 调用主进程：
 ```js
-// Renderer (fileHelper.js)
+// 渲染进程 (fileHelper.js)
 const result = await window.electronAPI.readFile(filePath)
 
-// Preload (preload.cjs)
+// 预加载 (preload.cjs)
 readFile: (filePath) => ipcRenderer.invoke('read-file', filePath)
 
-// Main (main.js)
+// 主进程 (main.js)
 ipcMain.handle('read-file', async (event, filePath) => { ... })
 ```
 
-All IPC handlers return `{ success, content/error }` pattern for consistent error handling.
+所有 IPC handler 返回 `{ success, content/error }` 模式以保证错误处理一致。
 
-**fileHelper.js** wraps IPC calls with additional logic (path validation, recent files tracking).
+**fileHelper.js** 封装了 IPC 调用并添加了额外逻辑（路径校验、最近文件追踪）。
 
-### Utility Modules
+### 工具模块
 
-Core utility functions in `src/renderer/utils/` are pure JavaScript and unit-testable:
-- **jsonHelper.js**: formatJSON, minifyJSON, validateJSON, unescapeJSON - all return `{ success, result/error }` with line/column error positions
-- **diffHelper.js**: diffTextUnified (git-style), diffTextSplit (side-by-side), diffStats - uses diff-match-patch library
-- **timeHelper.js**: formatDate, parseDate, timestampToDate, dateToTimestamp - pure date/timestamp conversion
-- **fileHelper.js**: IPC wrapper with recent files tracking and path validation
+`src/renderer/utils/` 中的核心工具函数为纯 JavaScript，可单元测试：
+- **jsonHelper.js**：formatJSON、minifyJSON、validateJSON、unescapeJSON — 均返回 `{ success, result/error }`，包含行/列错误位置
+- **diffHelper.js**：diffTextUnified（git 风格）、diffTextSplit（并排对比）、diffStats — 使用 diff-match-patch 库
+- **timeHelper.js**：formatDate、parseDate、timestampToDate、dateToTimestamp — 纯日期/时间戳转换
+- **fileHelper.js**：IPC 封装，包含最近文件追踪和路径校验
 
-### Build System
+### 构建系统
 
-electron-vite builds three separate bundles:
-- `out/main/main.js` - Main process (ESM)
-- `out/preload/preload.mjs` - Preload script
-- Renderer served via Vite dev server or built to `out/renderer/`
+electron-vite 构建三个独立的 bundle：
+- `out/main/main.js` — 主进程（ESM）
+- `out/preload/preload.mjs` — 预加载脚本
+- 渲染进程通过 Vite 开发服务器提供或构建到 `out/renderer/`
 
-Assets (`electron/assets/icon.*`) are copied to `out/main/assets/` during build via custom plugin in `electron.vite.config.js`.
+资源文件（`electron/assets/icon.*`）通过 `electron.vite.config.js` 中的自定义插件在构建时复制到 `out/main/assets/`。
 
-### Key Components
+### 核心组件
 
-- **App.vue**: Root component managing tab state, theme, font size, recent files, and keyboard shortcuts (Ctrl+1-5, Ctrl+Tab)
-- **EditorWithLineNumbers.vue**: Reusable textarea with synced line-number column
-- **MarkdownTab.vue**: File management, editor/preview toggle, scroll sync, PDF/HTML export
-- **DiffTab.vue**: Split/unified diff views with scroll sync, uses diff-match-patch library
-- **SettingsTab.vue**: Platform-aware shortcuts (Cmd vs Ctrl), electron-store persistence
+- **App.vue**：根组件，管理标签页状态、主题、字号、最近文件和键盘快捷键（Ctrl+1-5、Ctrl+Tab）
+- **EditorWithLineNumbers.vue**：可复用的 textarea，带同步行号列
+- **MarkdownTab.vue**：文件管理、编辑器/预览切换、滚动同步、PDF/HTML 导出
+- **DiffTab.vue**：并排/统一差异视图，带滚动同步，使用 diff-match-patch 库
+- **SettingsTab.vue**：平台感知快捷键（Cmd vs Ctrl），electron-store 持久化
 
-### App Configuration
+### 应用配置
 
-electron-store defaults (main.js):
+electron-store 默认值（main.js）：
 ```js
-workDir: '',      // Default working directory
-theme: 'dark',    // Theme preference
-fontSize: 14,     // Editor font size
-recentFiles: []   // Recent file history
+workDir: '',      // 默认工作目录
+theme: 'dark',    // 主题偏好
+fontSize: 14,     // 编辑器字号
+recentFiles: []   // 最近文件历史
 ```
 
-### PDF Export Mechanism
+### PDF 导出机制
 
-PDF export creates a hidden BrowserWindow to render HTML content, then uses `printToPDF()` API. This ensures proper styling and layout before generating the PDF file.
+PDF 导出创建一个隐藏的 BrowserWindow 渲染 HTML 内容，然后使用 `printToPDF()` API。这确保了生成 PDF 前样式和布局正确。
 
-### Styling
+### 样式
 
-CSS variables in `main.css` support dark/light themes via `[data-theme="light"]`. Theme applied by setting `data-theme` attribute on `<html>` element via JS in App.vue.
+`main.css` 中的 CSS 变量通过 `[data-theme="light"]` 支持深色/浅色主题。主题通过在 App.vue 中通过 JS 设置 `<html>` 元素的 `data-theme` 属性来应用。
 
-### Window Configuration
+### 窗口配置
 
-Mac-specific: `titleBarStyle: 'hiddenInset'` with 78px left padding on header for traffic light buttons. Dock icon set via `app.dock.setIcon()` and app name via `app.setName('OneApp')`.
+Mac 特定：`titleBarStyle: 'hiddenInset'`，header 左侧 78px 内边距用于红绿灯按钮。Dock 图标通过 `app.dock.setIcon()` 设置，应用名通过 `app.setName('OneApp')` 设置。

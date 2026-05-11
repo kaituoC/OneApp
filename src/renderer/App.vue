@@ -108,6 +108,10 @@ document.addEventListener('keydown', (e) => {
       ? tabs[(idx - 1 + 5) % 5]
       : tabs[(idx + 1) % 5]
   }
+  if (e.key === 'F12') {
+    e.preventDefault()
+    window.electronAPI.toggleDevTools()
+  }
 })
 </script>
 

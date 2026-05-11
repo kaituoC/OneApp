@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, dialog, globalShortcut, nativeImage } from 'electron'
+import { app, BrowserWindow, ipcMain, dialog, nativeImage } from 'electron'
 import path from 'path'
 import { fileURLToPath } from 'url'
 import fs from 'fs'
@@ -165,24 +165,15 @@ ipcMain.handle('export-pdf', async (event, htmlContent, defaultPath) => {
   }
 })
 
-app.whenReady().then(createWindow)
-
-// 注册 F12 快捷键打开/关闭 DevTools
-app.whenReady().then(() => {
-  globalShortcut.register('F12', () => {
-    const win = BrowserWindow.getFocusedWindow()
-    if (win) {
-      if (win.webContents.isDevToolsOpened()) {
-        win.webContents.closeDevTools()
-      } else {
-        win.webContents.openDevTools()
-      }
-    }
-  })
+// Toggle DevTools IPC
+ipcMain.handle('toggle-devtools', () => {
+  const win = BrowserWindow.getFocusedWindow()
+  if (win) win.webContents.toggleDevTools()
 })
 
+app.whenReady().then(createWindow)
+
 app.on('window-all-closed', () => {
-  globalShortcut.unregisterAll()
   if (process.platform !== 'darwin') app.quit()
 })
 

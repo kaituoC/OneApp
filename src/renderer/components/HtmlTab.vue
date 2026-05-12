@@ -1,5 +1,5 @@
 <template>
-  <div class="markdown-tab">
+  <div class="html-tab">
     <div class="toolbar">
       <button @click="showFileList = !showFileList">{{ showFileList ? '隐藏列表' : '显示列表' }}</button>
       <button @click="showEditor = !showEditor">{{ showEditor ? '隐藏编辑' : '显示编辑' }}</button>
@@ -7,14 +7,10 @@
       <button @click="openFileDialog">打开文件</button>
       <button @click="newFile">新建</button>
       <button @click="saveFile">保存</button>
-      <button @click="exportHTML">导出HTML</button>
-      <button @click="exportPDF">导出PDF</button>
-      <button @click="showSyntaxHelp = true">语法介绍</button>
     </div>
 
     <div class="content">
       <aside v-if="showFileList" class="file-list">
-        <!-- 上半部分：工作目录文件列表 -->
         <div class="file-list-section">
           <div class="section-header">
             <span>文件列表</span>
@@ -25,7 +21,7 @@
           </div>
           <div v-else-if="loading" class="empty-hint">加载中...</div>
           <div v-else-if="files.length === 0" class="empty-hint">
-            目录中暂无 .md 文件
+            目录中暂无 .html 文件
           </div>
           <div v-else class="scrollable-list">
             <div
@@ -41,7 +37,6 @@
           </div>
         </div>
 
-        <!-- 下半部分：最近打开文件列表 -->
         <div class="recent-files-section">
           <div class="section-header">
             <span>最近打开</span>
@@ -71,12 +66,13 @@
           ref="editorRef"
           v-model="editorContent"
           :font-size="fontSize"
+          class="html-editor"
           @input="onContentChange"
           @scroll="onEditorScroll"
         />
       </div>
 
-      <MarkdownPreview
+      <HtmlPreview
         v-if="showPreview"
         ref="previewRef"
         :content="editorContent"
@@ -87,8 +83,6 @@
         <span>点击工具栏按钮显示内容</span>
       </div>
     </div>
-
-    <SyntaxHelpModal v-if="showSyntaxHelp" @close="showSyntaxHelp = false" />
 
     <!-- 文件名 Tooltip -->
     <div
@@ -112,10 +106,9 @@
 
 <script setup>
 import { ref, watch, onMounted, nextTick } from 'vue'
-import { listFiles, readFile, saveFile as dialogSaveFile, openFile, getMdRecentFiles, removeMdRecentFile, addMdRecentFile } from '../utils/fileHelper.js'
+import { listHtmlFiles, readFile, saveFile as dialogSaveFile, openFile, getHtmlRecentFiles, removeHtmlRecentFile, addHtmlRecentFile } from '../utils/fileHelper.js'
 import EditorWithLineNumbers from './EditorWithLineNumbers.vue'
-import MarkdownPreview from './MarkdownPreview.vue'
-import SyntaxHelpModal from './SyntaxHelpModal.vue'
+import HtmlPreview from './HtmlPreview.vue'
 
 const props = defineProps({
   workDir: { type: String, default: '' },
@@ -127,77 +120,31 @@ const emit = defineEmits(['file-open', 'save-status'])
 const showFileList = ref(true)
 const showEditor = ref(true)
 const showPreview = ref(true)
-const showSyntaxHelp = ref(false)
-const editorContent = ref('')
+const editorContent = ref('<!DOCTYPE html>\n<html lang="zh-CN">\n<head>\n  <meta charset="UTF-8">\n  <title>新文档</title>\n</head>\n<body>\n  <h1>新文档</h1>\n  <p>开始编写...</p>\n</body>\n</html>')
 const currentFilePath = ref('')
 const files = ref([])
 const loading = ref(false)
 const recentFiles = ref([])
 const recentLoading = ref(false)
 
-// 滚动同步
 const editorRef = ref(null)
 const previewRef = ref(null)
 let scrollSyncing = false
 
-// 编辑器滚动 -> 预览同步
 function onEditorScroll() {
   if (scrollSyncing || !showPreview.value) return
   scrollSyncing = true
 
   const textarea = editorRef.value?.textareaRef
-  const previewEl = previewRef.value?.previewEl
+  const iframeDoc = previewRef.value?.iframeRef?.contentDocument || previewRef.value?.iframeRef?.contentWindow?.document
 
-  if (textarea && previewEl) {
+  if (textarea && iframeDoc) {
     const ratio = textarea.scrollTop / (textarea.scrollHeight - textarea.clientHeight || 1)
-    previewEl.scrollTop = ratio * (previewEl.scrollHeight - previewEl.clientHeight || 1)
+    iframeDoc.body.scrollTop = ratio * (iframeDoc.body.scrollHeight - iframeDoc.body.clientHeight || 1)
   }
 
   setTimeout(() => scrollSyncing = false, 50)
 }
-
-// 预览滚动 -> 编辑器同步
-function onPreviewScroll(e) {
-  if (scrollSyncing || !showEditor.value) return
-  scrollSyncing = true
-
-  const textarea = editorRef.value?.textareaRef
-  const previewEl = previewRef.value?.previewEl
-
-  if (textarea && previewEl) {
-    const ratio = previewEl.scrollTop / (previewEl.scrollHeight - previewEl.clientHeight || 1)
-    textarea.scrollTop = ratio * (textarea.scrollHeight - textarea.clientHeight || 1)
-  }
-
-  setTimeout(() => scrollSyncing = false, 50)
-}
-
-// 监听预览区滚动
-watch(showPreview, (val) => {
-  if (val) {
-    nextTick(() => {
-      const previewEl = previewRef.value?.previewEl
-      if (previewEl) {
-        previewEl.addEventListener('scroll', onPreviewScroll)
-      }
-    })
-  }
-})
-
-onMounted(() => {
-  if (showPreview.value) {
-    nextTick(() => {
-      const previewEl = previewRef.value?.previewEl
-      if (previewEl) {
-        previewEl.addEventListener('scroll', onPreviewScroll)
-      }
-    })
-  }
-  if (props.workDir) {
-    loadFiles()
-  }
-  setTimeout(() => loadRecentFiles(), 100)
-})
 
 // Tooltip 状态
 const tooltipVisible = ref(false)
@@ -205,7 +152,7 @@ const tooltipText = ref('')
 const tooltipStyle = ref({})
 
 function showTooltip(event, fileName) {
-  if (fileName.length <= 28) return // 短文件名不需要 tooltip
+  if (fileName.length <= 28) return
 
   const rect = event.target.getBoundingClientRect()
   tooltipText.value = fileName
@@ -225,21 +172,17 @@ function getFullPath(fileName) {
 }
 
 function truncateFileName(fileName) {
-  // 280px 宽度大约可显示 28 个字符（13px 字体）
   const maxLen = 28
   if (fileName.length <= maxLen) return fileName
 
-  // 保留扩展名
-  const ext = fileName.endsWith('.md') ? '.md' : ''
+  const ext = fileName.endsWith('.html') ? '.html' : fileName.endsWith('.htm') ? '.htm' : ''
   const baseName = fileName.slice(0, fileName.length - ext.length)
 
-  // 前12 + ... + 后10
   const prefix = baseName.slice(0, 12)
   const suffix = baseName.slice(-10)
   return `${prefix}...${suffix}${ext}`
 }
 
-// 最近文件路径截断显示
 function truncateRecentFilePath(filePath) {
   if (!filePath) return ''
   const maxLen = 40
@@ -250,7 +193,6 @@ function truncateRecentFilePath(filePath) {
   return `.../${dir.slice(-15)}/${fileName}`
 }
 
-// 最近文件 tooltip
 const recentTooltipVisible = ref(false)
 const recentTooltipText = ref('')
 const recentTooltipStyle = ref({})
@@ -272,33 +214,35 @@ function hideRecentTooltip() {
   recentTooltipVisible.value = false
 }
 
-// 点击最近文件
 async function openRecentFile(filePath) {
   try {
     const content = await readFile(filePath)
     editorContent.value = content
     currentFilePath.value = filePath
     emit('file-open', filePath)
-    await addMdRecentFile(filePath)
+    await addHtmlRecentFile(filePath)
     loadRecentFiles()
   } catch (e) {
     alert('文件不存在，已从列表中移除')
-    await removeMdRecentFile(filePath)
+    await removeHtmlRecentFile(filePath)
     loadRecentFiles()
   }
 }
 
-// 打开文件对话框
 async function openFileDialog() {
-  const path = await openFile(props.workDir)
-  if (!path) return
+  const result = await window.electronAPI.showOpenDialog({
+    defaultPath: props.workDir || undefined,
+    properties: ['openFile'],
+    filters: [{ name: 'HTML', extensions: ['html', 'htm'] }]
+  })
+  if (result.canceled || result.filePaths.length === 0) return
 
   try {
-    const content = await readFile(path)
+    const content = await readFile(result.filePaths[0])
     editorContent.value = content
-    currentFilePath.value = path
-    emit('file-open', path)
-    await addMdRecentFile(path)
+    currentFilePath.value = result.filePaths[0]
+    emit('file-open', result.filePaths[0])
+    await addHtmlRecentFile(result.filePaths[0])
     loadRecentFiles()
   } catch (e) {
     console.error('打开文件失败:', e)
@@ -312,7 +256,7 @@ async function loadFiles() {
   }
   loading.value = true
   try {
-    files.value = await listFiles(props.workDir)
+    files.value = await listHtmlFiles(props.workDir)
   } catch (e) {
     console.error('加载文件列表失败:', e)
     files.value = []
@@ -323,10 +267,10 @@ async function loadFiles() {
 async function loadRecentFiles() {
   recentLoading.value = true
   try {
-    const allFiles = await getMdRecentFiles()
+    const allFiles = await getHtmlRecentFiles()
     const validFiles = allFiles.filter(f => f && f.path)
     if (validFiles.length !== allFiles.length) {
-      await window.electronAPI.setStore({ recentMdFiles: validFiles })
+      await window.electronAPI.setStore({ recentHtmlFiles: validFiles })
     }
     recentFiles.value = validFiles
   } catch (e) {
@@ -336,7 +280,6 @@ async function loadRecentFiles() {
   recentLoading.value = false
 }
 
-// 监听 workDir 变化
 watch(() => props.workDir, (newDir) => {
   if (newDir) {
     loadFiles()
@@ -345,20 +288,27 @@ watch(() => props.workDir, (newDir) => {
   }
 })
 
+onMounted(() => {
+  if (props.workDir) {
+    loadFiles()
+  }
+  setTimeout(() => loadRecentFiles(), 100)
+})
+
 async function openFileItem(fileName) {
   const fullPath = getFullPath(fileName)
   try {
     editorContent.value = await readFile(fullPath)
     currentFilePath.value = fullPath
     emit('file-open', fullPath)
-    await addMdRecentFile(fullPath)
+    await addHtmlRecentFile(fullPath)
   } catch (e) {
     console.error('打开文件失败:', e)
   }
 }
 
 async function newFile() {
-  editorContent.value = '# 新文档\n\n开始编写...'
+  editorContent.value = '<!DOCTYPE html>\n<html lang="zh-CN">\n<head>\n  <meta charset="UTF-8">\n  <title>新文档</title>\n</head>\n<body>\n  <h1>新文档</h1>\n  <p>开始编写...</p>\n</body>\n</html>'
   currentFilePath.value = ''
   emit('save-status', '新文件')
 }
@@ -369,14 +319,14 @@ async function saveFile() {
       const { writeFile } = await import('../utils/fileHelper.js')
       await writeFile(currentFilePath.value, editorContent.value)
       emit('save-status', '已保存')
-      loadFiles() // 刷新列表
+      loadFiles()
     } else {
-      const path = await dialogSaveFile(editorContent.value, 'untitled.md', undefined, props.workDir)
+      const path = await dialogSaveFile(editorContent.value, 'untitled.html', { name: 'HTML', extensions: ['html'] }, props.workDir)
       if (path) {
         currentFilePath.value = path
         emit('file-open', path)
         emit('save-status', '已保存')
-        loadFiles() // 刷新列表
+        loadFiles()
       }
     }
   } catch {
@@ -386,34 +336,6 @@ async function saveFile() {
 
 function onContentChange() {
   emit('save-status', currentFilePath.value ? '未保存' : '新文件')
-}
-
-// 获取导出文件名基础
-function getExportBaseName() {
-  if (currentFilePath.value) {
-    const fileName = currentFilePath.value.split('/').pop()
-    return fileName.replace(/\.md$/i, '')
-  }
-  return 'untitled'
-}
-
-async function exportHTML() {
-  const { marked } = await import('marked')
-  const html = marked.parse(editorContent.value)
-  const fullHTML = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Export</title></head><body>${html}</body></html>`
-  const exportName = `${getExportBaseName()}.html`
-  await dialogSaveFile(fullHTML, exportName, { name: 'HTML', extensions: ['html'] }, props.workDir)
-}
-
-async function exportPDF() {
-  const { marked } = await import('marked')
-  const html = marked.parse(editorContent.value)
-  const fullHTML = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Export</title><style>body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;line-height:1.6;padding:40px;max-width:800px;margin:0 auto;}h1,h2,h3{margin-top:1em;}pre{background:#f5f5f5;padding:12px;border-radius:4px;overflow-x:auto;}code{background:#f5f5f5;padding:2px 6px;border-radius:3px;}blockquote{border-left:4px solid #007acc;padding-left:16px;color:#666;}table{border-collapse:collapse;width:100%;}th,td{border:1px solid #ddd;padding:8px;}</style></head><body>${html}</body></html>`
-  const exportName = `${getExportBaseName()}.pdf`
-  const result = await window.electronAPI.exportPDF(fullHTML, exportName)
-  if (result.success) {
-    emit('save-status', 'PDF 已导出')
-  }
 }
 
 document.addEventListener('keydown', (e) => {
@@ -429,7 +351,7 @@ document.addEventListener('keydown', (e) => {
 </script>
 
 <style scoped>
-.markdown-tab {
+.html-tab {
   display: flex;
   flex-direction: column;
   height: 100%;

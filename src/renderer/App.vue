@@ -9,6 +9,13 @@
         @save-status="currentFile = $event"
         :font-size="editorFontSize"
       />
+      <HtmlTab
+        v-show="activeTab === 'html'"
+        :work-dir="workDir"
+        @file-open="onFileOpen"
+        @save-status="currentFile = $event"
+        :font-size="editorFontSize"
+      />
       <JsonTab
         v-show="activeTab === 'json'"
         :font-size="editorFontSize"
@@ -39,6 +46,7 @@
 import { ref, watch, onMounted } from 'vue'
 import Header from './components/Header.vue'
 import MarkdownTab from './components/MarkdownTab.vue'
+import HtmlTab from './components/HtmlTab.vue'
 import JsonTab from './components/JsonTab.vue'
 import DiffTab from './components/DiffTab.vue'
 import TimeTab from './components/TimeTab.vue'
@@ -96,17 +104,18 @@ function onFileOpen(filePath) {
 
 document.addEventListener('keydown', (e) => {
   if (e.ctrlKey && e.key === '1') { e.preventDefault(); activeTab.value = 'markdown' }
-  if (e.ctrlKey && e.key === '2') { e.preventDefault(); activeTab.value = 'json' }
-  if (e.ctrlKey && e.key === '3') { e.preventDefault(); activeTab.value = 'diff' }
-  if (e.ctrlKey && e.key === '4') { e.preventDefault(); activeTab.value = 'time' }
-  if (e.ctrlKey && e.key === '5') { e.preventDefault(); activeTab.value = 'settings' }
+  if (e.ctrlKey && e.key === '2') { e.preventDefault(); activeTab.value = 'html' }
+  if (e.ctrlKey && e.key === '3') { e.preventDefault(); activeTab.value = 'json' }
+  if (e.ctrlKey && e.key === '4') { e.preventDefault(); activeTab.value = 'diff' }
+  if (e.ctrlKey && e.key === '5') { e.preventDefault(); activeTab.value = 'time' }
+  if (e.ctrlKey && e.key === '6') { e.preventDefault(); activeTab.value = 'settings' }
   if (e.ctrlKey && e.key === 'Tab') {
     e.preventDefault()
-    const tabs = ['markdown', 'json', 'diff', 'time', 'settings']
+    const tabs = ['markdown', 'html', 'json', 'diff', 'time', 'settings']
     const idx = tabs.indexOf(activeTab.value)
     activeTab.value = e.shiftKey
-      ? tabs[(idx - 1 + 5) % 5]
-      : tabs[(idx + 1) % 5]
+      ? tabs[(idx - 1 + 6) % 6]
+      : tabs[(idx + 1) % 6]
   }
   if (e.key === 'F12') {
     e.preventDefault()

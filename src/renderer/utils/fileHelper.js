@@ -1,7 +1,6 @@
 export async function readFile(filePath) {
   const result = await window.electronAPI.readFile(filePath)
   if (!result.success) throw new Error(result.error)
-  await addRecentFile(filePath)
   return result.content
 }
 
@@ -12,6 +11,12 @@ export async function writeFile(filePath, content) {
 
 export async function listFiles(directory) {
   const result = await window.electronAPI.listFiles(directory)
+  if (!result.success) throw new Error(result.error)
+  return result.files
+}
+
+export async function listHtmlFiles(directory) {
+  const result = await window.electronAPI.listHtmlFiles(directory)
   if (!result.success) throw new Error(result.error)
   return result.files
 }
@@ -48,25 +53,9 @@ export async function chooseDirectory() {
   return result.filePaths[0]
 }
 
-// 最近打开文件管理
-const MAX_RECENT_FILES = 50
-
-export async function getRecentFiles() {
-  try {
-    const store = await window.electronAPI.getStore()
-    if (!store || !store.recentFiles) return []
-    return store.recentFiles
-  } catch {
-    return []
-  }
-}
-
-export async function saveRecentFiles(recentFiles) {
-  await window.electronAPI.setStore({ recentFiles })
-}
-
-export async function addRecentFile(filePath) {
-  let recentFiles = await getRecentFiles()
+// 内部通用函数：按类型添加最近文件
+async function addRecentFileByType(storeKey, filePath) {
+  let recentFiles = await window.electronAPI.getStore().then(s => s[storeKey] || [])
   // 清理无效条目
   recentFiles = recentFiles.filter(f => f && f.path)
   // 移除已存在的同路径记录
@@ -74,14 +63,44 @@ export async function addRecentFile(filePath) {
   // 新记录插到最前
   const updated = [{ path: filePath, timestamp: Date.now() }, ...filtered]
   // 最多保留 50 条
-  if (updated.length > MAX_RECENT_FILES) {
-    updated.length = MAX_RECENT_FILES
-  }
-  await saveRecentFiles(updated)
+  if (updated.length > 50) updated.length = 50
+  await window.electronAPI.setStore({ [storeKey]: updated })
 }
 
-export async function removeRecentFile(filePath) {
-  const recentFiles = await getRecentFiles()
+async function getRecentFilesByType(storeKey) {
+  try {
+    const store = await window.electronAPI.getStore()
+    if (!store || !store[storeKey]) return []
+    return store[storeKey]
+  } catch {
+    return []
+  }
+}
+
+export async function addMdRecentFile(filePath) {
+  await addRecentFileByType('recentMdFiles', filePath)
+}
+
+export async function getMdRecentFiles() {
+  return getRecentFilesByType('recentMdFiles')
+}
+
+export async function addHtmlRecentFile(filePath) {
+  await addRecentFileByType('recentHtmlFiles', filePath)
+}
+
+export async function getHtmlRecentFiles() {
+  return getRecentFilesByType('recentHtmlFiles')
+}
+
+export async function removeMdRecentFile(filePath) {
+  const recentFiles = await getMdRecentFiles()
   const updated = recentFiles.filter(f => f && f.path && f.path !== filePath)
-  await saveRecentFiles(updated)
+  await window.electronAPI.setStore({ recentMdFiles: updated })
+}
+
+export async function removeHtmlRecentFile(filePath) {
+  const recentFiles = await getHtmlRecentFiles()
+  const updated = recentFiles.filter(f => f && f.path && f.path !== filePath)
+  await window.electronAPI.setStore({ recentHtmlFiles: updated })
 }

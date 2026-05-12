@@ -15,7 +15,9 @@ const store = new Store({
     workDir: '',
     theme: 'dark',
     fontSize: 14,
-    recentFiles: []
+    recentFiles: [],
+    recentMdFiles: [],
+    recentHtmlFiles: []
   }
 })
 
@@ -84,6 +86,15 @@ ipcMain.handle('write-file', async (event, filePath, content) => {
 ipcMain.handle('list-files', async (event, directory) => {
   try {
     const files = fs.readdirSync(directory).filter(f => f.endsWith('.md'))
+    return { success: true, files }
+  } catch (error) {
+    return { success: false, error: error.message }
+  }
+})
+
+ipcMain.handle('list-html-files', async (event, directory) => {
+  try {
+    const files = fs.readdirSync(directory).filter(f => f.endsWith('.html') || f.endsWith('.htm'))
     return { success: true, files }
   } catch (error) {
     return { success: false, error: error.message }

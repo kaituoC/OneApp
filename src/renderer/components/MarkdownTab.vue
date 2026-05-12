@@ -351,7 +351,6 @@ async function openFileItem(fileName) {
     editorContent.value = await readFile(fullPath)
     currentFilePath.value = fullPath
     emit('file-open', fullPath)
-    await addMdRecentFile(fullPath)
   } catch (e) {
     console.error('打开文件失败:', e)
   }

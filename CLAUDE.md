@@ -28,7 +28,7 @@ npm test -- tests/jsonHelper.test.js  # 运行单个测试文件
   git checkout main && git pull origin main
   git checkout -b <branch-name>
   ```
-- 分支命名约定：`feature/功能名`、`fix/问题描述`
+- 分支命名约定：`feature/功能名`、`fix/问题描述`、`docs/文档`、`chore/杂项`
 - 功能开发完成后通过 PR 合并到 main
 
 ### 版本管理
@@ -39,7 +39,7 @@ npm test -- tests/jsonHelper.test.js  # 运行单个测试文件
 
 ### 需求开发全流程
 
-每个需求一条分支。按改动大小**分级**执行：新功能/较大需求走完整流程，小修复/文档类走简化流程。标 **⚠️** 的步骤是**确认卡点，必须停下来征得用户同意后才能继续**。
+每个需求一条分支。完整流程是**规格驱动开发（SDD），由 OpenSpec 工具全程串起：explore → propose → apply → archive**。按改动大小**分级**执行：新功能/较大需求走完整流程，小修复/文档类走简化流程。标 **⚠️** 的步骤是**确认卡点，必须停下来征得用户同意后才能继续**；外发动作（push / 创建 PR / 合并 PR / 打 tag / 发布）一律不自作主张。
 
 **完整流程（新功能 / 较大需求）：**
 
@@ -47,20 +47,25 @@ npm test -- tests/jsonHelper.test.js  # 运行单个测试文件
 2. **提案** `/opsx:propose` — 生成 proposal / design / specs / tasks
 3. **建分支** — 先 `git checkout main && git pull origin main`，再开 `feature/*`
 4. **实现** `/opsx:apply` — 按 tasks 落地并逐项勾选
-5. **自测** — `npm run build` + `npm test`，必要时 `npm run dev` 手动验证
+5. **自测（门禁，必做）** — `npm test` 全部通过（环境相关用例如时区断言，注意区分 flaky 与真回归）+ `npm run build` 编译通过（构建需关沙箱），必要时 `npm run dev` 手动验证
 6. **Code Review** `/code-review`（high）— 修复高优先级问题后复跑构建与测试
 7. **文档** — 同步 README / CHANGELOG / CLAUDE.md
 8. **版本号 ⚠️** — push/PR 前确认是否升版本（见上「版本管理」）
 9. **归档** `/opsx:archive` — delta 合并进主 specs，change 移入 `archive/`
-10. **提交** — 仅在用户明确要求时提交；commit message 末尾按规范署名
+10. **提交** — 仅在用户明确要求时提交；按主题分组 commit（feat / fix / test / docs / chore），message 末尾按规范署名
 11. **Push + PR ⚠️** — 用户确认后 `git push` 并 `gh pr create`；**不擅自合并 PR**
 12. **Release ⚠️（仅发版时）** — PR 合并后 `npm run dist` 构建安装包，`gh release create` 打 tag 并上传产物，release notes 取自 CHANGELOG
 
 **简化流程（小修复 / 文档类）：** 跳过探索、提案、归档（第 1-2、9 步）；保留：建分支 → 实现 → 自测 → 文档（按需）→ 版本号 ⚠️ → 提交 → Push + PR ⚠️。
 
-**确认卡点（⚠️）汇总：** 升版本号、`git push` / 创建 PR、发布 release 之前必须先征得用户同意；任何情况下都不擅自合并 PR。
+**确认卡点（⚠️）汇总：** 升版本号、`git push` / 创建 PR、打 tag、发布 release 之前必须先征得用户同意；任何情况下都不擅自合并 PR。
 
-**环境注意：** 构建、打包、`git push`、`gh` 等网络/构建命令在沙箱内可能因证书或依赖解析失败；确认是沙箱限制后在沙箱外重试（可用 `/sandbox` 管理白名单）。
+### 贯穿全程的硬性约定
+
+- **沙箱**：`npm run build` / `npm run dist` / `git push` / `gh` 等构建与网络命令在沙箱内常因证书或依赖解析（如 `vue/compiler-sfc`）失败；确认是沙箱限制后在沙箱外重试（`/sandbox` 管理白名单）。`npm test` 可在沙箱内运行。
+- **发布文案**：GitHub Release 的标题与 notes 用中文，notes 取自 CHANGELOG 对应版本；未签名的 macOS 包需在 notes 提示用户「右键 → 打开」绕过 Gatekeeper。
+- **测试稳定性**：环境相关用例（如 `timeHelper` 时区断言）在不同时区机器上可能失败，判断 flaky 时先排除环境因素，不要误判为本次回归。
+- **OpenSpec 数据卫生**：`/opsx:archive` 会把 delta 合并进主 specs；若主 spec 残留 delta 头（`## ADDED`/`## REMOVED Requirements`）会阻塞归档，需先规范化为 `# 标题 / ## Purpose / ## Requirements` 结构。
 
 ## 架构
 

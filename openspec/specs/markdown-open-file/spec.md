@@ -1,5 +1,9 @@
-## ADDED Requirements
+# markdown-open-file Specification
 
+## Purpose
+TBD - created by archiving change markdown-open-file-dialog. Update Purpose after archive.
+
+## Requirements
 ### Requirement: Open file from toolbar
 The Markdown editor toolbar SHALL include an "Open File" button that launches a system file picker dialog allowing the user to select and open any `.md` file from any location on the system.
 

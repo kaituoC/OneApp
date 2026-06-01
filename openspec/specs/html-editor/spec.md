@@ -1,5 +1,9 @@
-## ADDED Requirements
+# html-editor Specification
 
+## Purpose
+TBD - created by archiving change add-html-editor. Update Purpose after archive.
+
+## Requirements
 ### Requirement: HTML file editing
 
 系统 SHALL 提供 HTML 文件编辑功能，允许用户打开、新建、编辑和保存 `.html` 和 `.htm` 文件。

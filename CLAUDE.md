@@ -37,6 +37,31 @@ npm test -- tests/jsonHelper.test.js  # 运行单个测试文件
 - 新功能增加次版本号（如 1.1.0 → 1.2.0），Bug 修复增加修订号（如 1.1.0 → 1.1.1）
 - 版本修改在 `package.json` 中完成
 
+### 需求开发全流程
+
+每个需求一条分支。按改动大小**分级**执行：新功能/较大需求走完整流程，小修复/文档类走简化流程。标 **⚠️** 的步骤是**确认卡点，必须停下来征得用户同意后才能继续**。
+
+**完整流程（新功能 / 较大需求）：**
+
+1. **探索** `/opsx:explore` — 厘清方案与关键决策
+2. **提案** `/opsx:propose` — 生成 proposal / design / specs / tasks
+3. **建分支** — 先 `git checkout main && git pull origin main`，再开 `feature/*`
+4. **实现** `/opsx:apply` — 按 tasks 落地并逐项勾选
+5. **自测** — `npm run build` + `npm test`，必要时 `npm run dev` 手动验证
+6. **Code Review** `/code-review`（high）— 修复高优先级问题后复跑构建与测试
+7. **文档** — 同步 README / CHANGELOG / CLAUDE.md
+8. **版本号 ⚠️** — push/PR 前确认是否升版本（见上「版本管理」）
+9. **归档** `/opsx:archive` — delta 合并进主 specs，change 移入 `archive/`
+10. **提交** — 仅在用户明确要求时提交；commit message 末尾按规范署名
+11. **Push + PR ⚠️** — 用户确认后 `git push` 并 `gh pr create`；**不擅自合并 PR**
+12. **Release ⚠️（仅发版时）** — PR 合并后 `npm run dist` 构建安装包，`gh release create` 打 tag 并上传产物，release notes 取自 CHANGELOG
+
+**简化流程（小修复 / 文档类）：** 跳过探索、提案、归档（第 1-2、9 步）；保留：建分支 → 实现 → 自测 → 文档（按需）→ 版本号 ⚠️ → 提交 → Push + PR ⚠️。
+
+**确认卡点（⚠️）汇总：** 升版本号、`git push` / 创建 PR、发布 release 之前必须先征得用户同意；任何情况下都不擅自合并 PR。
+
+**环境注意：** 构建、打包、`git push`、`gh` 等网络/构建命令在沙箱内可能因证书或依赖解析失败；确认是沙箱限制后在沙箱外重试（可用 `/sandbox` 管理白名单）。
+
 ## 架构
 
 ### 进程分离

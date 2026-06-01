@@ -9,16 +9,35 @@ export async function writeFile(filePath, content) {
   if (!result.success) throw new Error(result.error)
 }
 
-export async function listFiles(directory) {
-  const result = await window.electronAPI.listFiles(directory)
+// 读取目录直接子项（懒加载目录树用）：返回 [{ name, path, isDirectory }]
+export async function readDir(dirPath) {
+  const result = await window.electronAPI.readDir(dirPath)
   if (!result.success) throw new Error(result.error)
-  return result.files
+  return result.items
 }
 
-export async function listHtmlFiles(directory) {
-  const result = await window.electronAPI.listHtmlFiles(directory)
-  if (!result.success) throw new Error(result.error)
-  return result.files
+// 默认隐藏的重目录黑名单（与 dotfiles 一起受「显示隐藏项」开关控制）
+export const HIDDEN_DIR_BLACKLIST = ['node_modules']
+
+// 判断某条目在「未开启显示隐藏项」时是否应隐藏（纯函数，便于测试）
+export function isHiddenEntry(item) {
+  if (!item || !item.name) return false
+  if (item.name.startsWith('.')) return true
+  if (item.isDirectory && HIDDEN_DIR_BLACKLIST.includes(item.name)) return true
+  return false
+}
+
+// 过滤目录树条目：文件夹始终保留，文件按可编辑扩展名过滤；隐藏项按开关控制（纯函数）
+export function filterTreeItems(items, { editableExtensions = [], showHidden = false } = {}) {
+  if (!Array.isArray(items)) return []
+  const exts = editableExtensions.map(e => e.toLowerCase())
+  return items.filter(item => {
+    if (!showHidden && isHiddenEntry(item)) return false
+    if (item.isDirectory) return true
+    const dot = item.name.lastIndexOf('.')
+    const ext = dot >= 0 ? item.name.slice(dot + 1).toLowerCase() : ''
+    return exts.includes(ext)
+  })
 }
 
 export async function deleteFile(filePath) {
@@ -103,4 +122,13 @@ export async function removeHtmlRecentFile(filePath) {
   const recentFiles = await getHtmlRecentFiles()
   const updated = recentFiles.filter(f => f && f.path && f.path !== filePath)
   await window.electronAPI.setStore({ recentHtmlFiles: updated })
+}
+
+// 最近打开的文件夹（Markdown / HTML 共享，存于 recentFolders）
+export async function addRecentFolder(folderPath) {
+  await addRecentFileByType('recentFolders', folderPath)
+}
+
+export async function getRecentFolders() {
+  return getRecentFilesByType('recentFolders')
 }

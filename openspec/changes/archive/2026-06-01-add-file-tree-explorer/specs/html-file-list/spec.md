@@ -1,8 +1,5 @@
-# html-file-list Specification
+## MODIFIED Requirements
 
-## Purpose
-TBD - created by archiving change add-html-editor. Update Purpose after archive.
-## Requirements
 ### Requirement: HTML file listing
 
 HTML 编辑器 SHALL 通过侧边栏的懒加载目录树（见 `file-tree-explorer`）浏览并打开 `.html` / `.htm` 文件，取代原先「扫描单一工作目录并平铺列出」的方式。目录树中仅显示文件夹与 `.html` / `.htm` 文件。
@@ -14,4 +11,3 @@ HTML 编辑器 SHALL 通过侧边栏的懒加载目录树（见 `file-tree-explo
 #### Scenario: No workDir configured
 - **WHEN** 未设置工作目录
 - **THEN** 树区域显示提示，引导用户通过「打开文件夹」选择目录
-

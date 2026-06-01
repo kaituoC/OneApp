@@ -4,7 +4,7 @@
 
 ## 项目概述
 
-OneApp 是一个基于 Electron + Vue 3 的桌面应用程序，提供开发者工具：Markdown 编辑器、JSON 格式化、文本差异对比和时间转换工具。
+OneApp 是一个基于 Electron + Vue 3 的桌面应用程序，提供开发者工具：Markdown 编辑器、HTML 编辑器、JSON 格式化、文本差异对比和时间转换工具。Markdown / HTML 编辑器侧边栏提供懒加载目录树，可像文件管理器一样浏览目录并打开文件。
 
 ## 命令
 
@@ -82,9 +82,11 @@ electron-vite 构建三个独立的 bundle：
 
 ### 核心组件
 
-- **App.vue**：根组件，管理标签页状态、主题、字号、最近文件和键盘快捷键（Ctrl+1-5、Ctrl+Tab）
+- **App.vue**：根组件，管理标签页状态、主题、字号、最近文件和键盘快捷键（Ctrl+1-6、Ctrl+Tab）
 - **EditorWithLineNumbers.vue**：可复用的 textarea，带同步行号列
 - **MarkdownTab.vue**：文件管理、编辑器/预览切换、滚动同步、PDF/HTML 导出
+- **HtmlTab.vue**：HTML 编辑、iframe 沙箱实时预览（`HtmlPreview.vue`）、滚动同步
+- **FileTree.vue / TreeNode.vue**：可复用的懒加载目录树，被 MarkdownTab 与 HtmlTab 共用，通过 `editableExtensions` prop 区分显示的文件类型
 - **DiffTab.vue**：并排/统一差异视图，带滚动同步，使用 diff-match-patch 库
 - **SettingsTab.vue**：平台感知快捷键（Cmd vs Ctrl），electron-store 持久化
 

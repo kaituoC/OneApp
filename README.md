@@ -1,18 +1,26 @@
 # OneApp
 
-多功能开发工具桌面应用，集成 Markdown 编辑、JSON 工具、文本对比和时间转换功能。
+多功能开发工具桌面应用，集成 Markdown 编辑、HTML 编辑、JSON 工具、文本对比和时间转换功能。
 
 ## 功能特性
 
 ### Markdown 编辑
 - 实时预览，支持 GFM 语法
 - 文件管理：新建、打开、保存、导出
-- **工作区文件列表 + 最近打开文件列表**，双区域独立滚动
+- **目录树浏览**：侧边栏内像文件管理器一样浏览子目录、切换目录根、直接点开文件
+- **最近文件夹**：记忆最近打开的文件夹，下拉快速切换
 - **系统文件对话框**：打开工作目录外的任意 `.md` 文件
 - **最近打开记录**：自动追踪最近打开的 50 个文件，支持快速重开
 - 支持导出 HTML 和 PDF
 - 编辑器行号显示
 - 滚动同步（编辑区与预览区）
+- 可隐藏编辑器或预览区
+
+### HTML 编辑
+- 编辑 + iframe 沙箱实时预览（脚本/样式隔离，不影响应用本体）
+- 文件管理：新建、打开、保存
+- **目录树浏览**：与 Markdown 编辑器共享的目录树，仅显示文件夹与 `.html`/`.htm` 文件
+- 编辑器与预览滚动同步
 - 可隐藏编辑器或预览区
 
 ### JSON 工具
@@ -42,7 +50,7 @@
 | **Windows** | ✅ 已支持 | 10+ (64 位) |
 | **Linux** | ✅ 已支持 | Ubuntu 20.04+ / Debian 10+ |
 
-> 💡 **当前版本 (v1.1.0)** 支持 macOS、Windows 和 Linux。
+> 💡 **当前版本 (v1.3.0)** 支持 macOS、Windows 和 Linux。
 
 ---
 
@@ -52,7 +60,7 @@
 
 **下载安装包：**
 1. 访问 [GitHub Releases](https://github.com/kaituoC/OneApp/releases)
-2. 下载 `OneApp-1.1.0.dmg` (约 100MB)
+2. 下载 `OneApp-1.3.0.dmg` (约 100MB)
 3. 打开 DMG，拖拽 OneApp 到 Applications 文件夹
 4. 启动应用
 
@@ -85,8 +93,8 @@ npm run dist -- --win
 ```
 
 **输出文件：**
-- `dist/OneApp-1.1.0.exe` - NSIS 安装包（推荐）
-- `dist/OneApp-1.1.0-win.zip` - 便携版（解压即用）
+- `dist/OneApp-1.3.0.exe` - NSIS 安装包（推荐）
+- `dist/OneApp-1.3.0-win.zip` - 便携版（解压即用）
 
 ---
 
@@ -119,13 +127,13 @@ npm run dist -- --linux
 ```
 
 **输出文件：**
-- `dist/OneApp-1.1.0.AppImage` - AppImage（推荐，通用格式）
-- `dist/OneApp-1.1.0.deb` - Debian 包（Ubuntu/Debian）
+- `dist/OneApp-1.3.0.AppImage` - AppImage（推荐，通用格式）
+- `dist/OneApp-1.3.0.deb` - Debian 包（Ubuntu/Debian）
 
 **运行 AppImage：**
 ```bash
-chmod +x OneApp-1.1.0.AppImage
-./OneApp-1.1.0.AppImage
+chmod +x OneApp-1.3.0.AppImage
+./OneApp-1.3.0.AppImage
 ```
 
 ---
@@ -206,7 +214,7 @@ npm run dist
 | Ctrl/Cmd + R / F5 | 刷新页面 |
 | Ctrl/Cmd + Tab | 切换下一个标签 |
 | Ctrl/Cmd + Shift + Tab | 切换上一个标签 |
-| Ctrl/Cmd + 1~5 | 切换到指定标签 |
+| Ctrl/Cmd + 1~6 | 切换到指定标签 |
 | F12 | 打开/关闭调试工具 |
 
 ## 技术栈

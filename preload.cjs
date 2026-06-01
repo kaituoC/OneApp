@@ -3,8 +3,7 @@ const { contextBridge, ipcRenderer, shell } = require('electron')
 contextBridge.exposeInMainWorld('electronAPI', {
   readFile: (filePath) => ipcRenderer.invoke('read-file', filePath),
   writeFile: (filePath, content) => ipcRenderer.invoke('write-file', filePath, content),
-  listFiles: (directory) => ipcRenderer.invoke('list-files', directory),
-  listHtmlFiles: (directory) => ipcRenderer.invoke('list-html-files', directory),
+  readDir: (dirPath) => ipcRenderer.invoke('read-dir', dirPath),
   deleteFile: (filePath) => ipcRenderer.invoke('delete-file', filePath),
   showOpenDialog: (options) => ipcRenderer.invoke('show-open-dialog', options),
   showSaveDialog: (options) => ipcRenderer.invoke('show-save-dialog', options),

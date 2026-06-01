@@ -17,7 +17,8 @@ const store = new Store({
     fontSize: 14,
     recentFiles: [],
     recentMdFiles: [],
-    recentHtmlFiles: []
+    recentHtmlFiles: [],
+    recentFolders: []
   }
 })
 
@@ -83,19 +84,21 @@ ipcMain.handle('write-file', async (event, filePath, content) => {
   }
 })
 
-ipcMain.handle('list-files', async (event, directory) => {
+// 读取目录直接子项（懒加载目录树用）：返回 [{ name, path, isDirectory }]
+// 排序：文件夹优先，组内按名称升序。过滤交给渲染层，主进程保持通用。
+ipcMain.handle('read-dir', async (event, dirPath) => {
   try {
-    const files = fs.readdirSync(directory).filter(f => f.endsWith('.md'))
-    return { success: true, files }
-  } catch (error) {
-    return { success: false, error: error.message }
-  }
-})
-
-ipcMain.handle('list-html-files', async (event, directory) => {
-  try {
-    const files = fs.readdirSync(directory).filter(f => f.endsWith('.html') || f.endsWith('.htm'))
-    return { success: true, files }
+    const entries = await fs.promises.readdir(dirPath, { withFileTypes: true })
+    const items = entries.map(entry => ({
+      name: entry.name,
+      path: path.join(dirPath, entry.name),
+      isDirectory: entry.isDirectory()
+    }))
+    items.sort((a, b) => {
+      if (a.isDirectory !== b.isDirectory) return a.isDirectory ? -1 : 1
+      return a.name.localeCompare(b.name)
+    })
+    return { success: true, items }
   } catch (error) {
     return { success: false, error: error.message }
   }

@@ -50,111 +50,45 @@
 | **Windows** | ✅ 已支持 | 10+ (64 位) |
 | **Linux** | ✅ 已支持 | Ubuntu 20.04+ / Debian 10+ |
 
-> 💡 **当前版本 (v1.3.0)** 支持 macOS、Windows 和 Linux。
+> 💡 自 **v1.4.0** 起，每次发布由 CI 自动构建三平台安装包并上传到 [GitHub Releases](https://github.com/kaituoC/OneApp/releases)。（v1.3.0 及更早仅提供 macOS 包。）
 
 ---
 
 ## 安装与运行
 
-### 🍎 macOS 用户（推荐）
+前往 [GitHub Releases](https://github.com/kaituoC/OneApp/releases) 下载最新版本对应平台的安装包。产物命名格式为 `OneApp-<版本>-<平台>-<架构>.<扩展名>`。
 
-**下载安装包：**
-1. 访问 [GitHub Releases](https://github.com/kaituoC/OneApp/releases)
-2. 下载 `OneApp-1.3.0.dmg` (约 100MB)
-3. 打开 DMG，拖拽 OneApp 到 Applications 文件夹
-4. 启动应用
+### 🍎 macOS
 
-**或使用 Homebrew（计划中）：**
-```bash
-brew install --cask oneapp
-```
+- Apple Silicon：`OneApp-<版本>-mac-arm64.dmg`（或 `-mac-arm64.zip`）
+- Intel：`OneApp-<版本>-mac-x64.dmg`（或 `-mac-x64.zip`）
 
----
+打开 DMG，拖拽 OneApp 到 Applications。应用未签名，首次打开请**右键 →「打开」**，或在「系统设置 → 隐私与安全性」中点「仍要打开」。
 
-### 🪟 Windows 用户（源码构建）
+### 🪟 Windows
 
-**系统要求：**
-- Windows 10/11 (64 位)
-- Node.js 18+ (推荐 20 LTS)
-- Git
+- `OneApp-<版本>-win-x64.exe` — NSIS 安装包（推荐，可选安装路径、创建快捷方式）
+- `OneApp-<版本>-win-x64.zip` — 便携版（解压即用）
 
-**构建步骤：**
-```bash
-# 1. 克隆仓库
-git clone https://github.com/kaituoC/OneApp.git
-cd OneApp
+### 🐧 Linux
 
-# 2. 安装依赖
-npm install
-
-# 3. 构建并打包
-npm run build
-npm run dist -- --win
-```
-
-**输出文件：**
-- `dist/OneApp-1.3.0.exe` - NSIS 安装包（推荐）
-- `dist/OneApp-1.3.0-win.zip` - 便携版（解压即用）
+- `OneApp-<版本>-linux-x64.AppImage` — 通用格式，`chmod +x` 后直接运行
+- `OneApp-<版本>-linux-x64.deb` — Debian / Ubuntu 系统安装
 
 ---
 
-### 🐧 Linux 用户（源码构建）
+### 🔧 从源码构建（所有平台）
 
-**系统要求：**
-- Ubuntu 20.04+ / Debian 10+ / Fedora 32+
-- Node.js 18+ (推荐 20 LTS)
-- Git
-- build-essential (Ubuntu/Debian)
+需 Node.js 18+（推荐 20 LTS）与 Git：
 
-**安装依赖（Ubuntu/Debian）：**
 ```bash
-sudo apt update
-sudo apt install -y build-essential git curl
-```
-
-**构建步骤：**
-```bash
-# 1. 克隆仓库
 git clone https://github.com/kaituoC/OneApp.git
 cd OneApp
-
-# 2. 安装依赖
-npm install
-
-# 3. 构建并打包
-npm run build
-npm run dist -- --linux
+npm install            # 国内用户可用 ./install.sh（已配镜像）
+npm run dist:mac       # 或 dist:win / dist:linux，产物输出到 dist/
 ```
 
-**输出文件：**
-- `dist/OneApp-1.3.0.AppImage` - AppImage（推荐，通用格式）
-- `dist/OneApp-1.3.0.deb` - Debian 包（Ubuntu/Debian）
-
-**运行 AppImage：**
-```bash
-chmod +x OneApp-1.3.0.AppImage
-./OneApp-1.3.0.AppImage
-```
-
----
-
-### 🔧 开发模式（所有平台）
-
-```bash
-# 1. 克隆仓库
-git clone https://github.com/kaituoC/OneApp.git
-cd OneApp
-
-# 2. 安装依赖（国内用户用 install.sh）
-chmod +x install.sh
-./install.sh
-
-# 或直接 npm install
-npm install
-
-# 3. 启动开发模式（热重载）
-npm run dev
-```
+> Linux AppImage 下载后需 `chmod +x OneApp-<版本>-linux-x64.AppImage` 再运行。
 
 ---
 
@@ -199,7 +133,7 @@ npm run build
 # 预览生产版本
 npm run preview
 
-# 打包分发（Mac DMG/ZIP）
+# 打包分发（三平台 target；单平台用 dist:mac / dist:win / dist:linux）
 npm run dist
 ```
 

@@ -1,0 +1,112 @@
+name: Release
+
+# 推送 v* 标签时触发：在各原生 runner 上分别打包，再汇总创建 GitHub Release。
+# workflow_dispatch 用于手动验证构建（不创建 Release）。
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+# 最小权限：仅 release job 需要写（创建 Release），见其 job 级 permissions；build job 默认只读
+
+jobs:
+  build:
+    name: Build (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false # 单平台失败不影响其它平台
+      matrix:
+        include:
+          - os: macos-13     # Intel x64（macos-latest 已是 Apple Silicon，单独保留 Intel）
+            script: dist:mac
+          - os: macos-latest # Apple Silicon arm64
+            script: dist:mac
+          - os: windows-latest
+            script: dist:win
+          - os: ubuntu-latest
+            script: dist:linux
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      # tag 推送时校验 tag 版本与 package.json 一致，防止误发；手动触发跳过
+      - name: Verify tag matches package.json version
+        if: github.event_name == 'push'
+        shell: bash
+        run: |
+          set -euo pipefail
+          TAG_VERSION="${GITHUB_REF_NAME#v}"
+          PKG_VERSION=$(node -p "require('./package.json').version")
+          echo "tag=$TAG_VERSION pkg=$PKG_VERSION"
+          if [ "$TAG_VERSION" != "$PKG_VERSION" ]; then
+            echo "::error::Tag $GITHUB_REF_NAME ($TAG_VERSION) 与 package.json version ($PKG_VERSION) 不一致"
+            exit 1
+          fi
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build distributables
+        # --publish never：禁用 electron-builder 检测到 git tag 时的隐式 publish（缺 token 会失败）
+        run: npm run ${{ matrix.script }} -- --publish never
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: false # 无签名证书：关闭自动签名探测，避免 CI 失败
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-${{ matrix.os }}
+          path: |
+            dist/*.dmg
+            dist/*.zip
+            dist/*.exe
+            dist/*.AppImage
+            dist/*.deb
+          if-no-files-found: error
+
+  release:
+    name: Create GitHub Release
+    needs: build
+    runs-on: ubuntu-latest
+    # 仅 tag 推送时创建 Release；手动触发只验证构建
+    if: startsWith(github.ref, 'refs/tags/v')
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4 # 需要 CHANGELOG.md 提取 notes
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true # 各平台产物合并到同一目录
+
+      - name: Extract release notes from CHANGELOG
+        shell: bash
+        run: |
+          set -euo pipefail
+          VERSION="${GITHUB_REF_NAME#v}"
+          # 字面匹配 "## [VERSION]" 段（index 避免正则注入），遇到下一个任意二级标题(## )即止（避免尾段如「## 版本说明」泄漏）
+          awk -v ver="$VERSION" '
+            index($0, "## [" ver "]") == 1 { flag=1; next }
+            flag && (/^## / || $0 == "---") { exit }
+            flag { print }
+          ' CHANGELOG.md > release-notes.md
+          if [ ! -s release-notes.md ]; then
+            echo "::warning::CHANGELOG.md 未找到版本 $VERSION 的段落，Release notes 将为空"
+            printf '' > release-notes.md
+          fi
+          echo "--- release notes ---"; cat release-notes.md
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: artifacts/**/*
+          body_path: release-notes.md
+          draft: false
+          prerelease: false

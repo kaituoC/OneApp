@@ -6,6 +6,21 @@
 
 ---
 
+## [1.4.0] - 2026-06-02
+
+### ✨ 新增功能
+
+#### CI 多平台自动发布
+- 打 `vX.Y.Z` tag 通过 GitHub Actions 自动构建 macOS（Intel + Apple Silicon）/ Windows / Linux 安装包并发布 GitHub Release
+- 构建前校验 tag 与 `package.json` 版本一致，防止误发
+- Release notes 自动取自 CHANGELOG 对应版本段；支持 `workflow_dispatch` 手动验证构建
+
+### ♻️ 变更
+- 安装包命名改为含平台架构：`OneApp-<版本>-<os>-<arch>.<ext>`（如 `OneApp-1.4.0-mac-arm64.dmg`）
+- 新增 `dist:mac` / `dist:win` / `dist:linux` 打包脚本
+
+---
+
 ## [1.3.0] - 2026-06-01
 
 ### ✨ 新增功能
@@ -136,6 +151,7 @@
 
 ---
 
+**[1.4.0]**: 2026-06-02 - CI 多平台自动发布
 **[1.3.0]**: 2026-06-01 - 文件目录树浏览
 **[1.2.0]**: 2026-05-13 - HTML 编辑器 + 最近文件按类型隔离
 **[1.1.0]**: 2026-05-10 - Markdown 最近打开文件 + 系统对话框打开文件

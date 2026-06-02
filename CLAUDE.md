@@ -12,7 +12,7 @@ OneApp 是一个基于 Electron + Vue 3 的桌面应用程序，提供开发者�
 npm run dev        # 启动开发模式（热重载）
 npm run build      # 生产构建（输出到 out/）
 npm run preview    # 预览生产构建
-npm run dist       # 打包可分发文件（DMG/ZIP for Mac）
+npm run dist       # 构建并打包（electron-builder 三平台 target；单平台用 dist:mac/win/linux）
 npm test           # 运行单元测试
 npm run test:watch # 运行测试（监听模式）
 npm test -- tests/jsonHelper.test.js  # 运行单个测试文件
@@ -54,7 +54,7 @@ npm test -- tests/jsonHelper.test.js  # 运行单个测试文件
 9. **归档** `/opsx:archive` — delta 合并进主 specs，change 移入 `archive/`
 10. **提交** — 仅在用户明确要求时提交；按主题分组 commit（feat / fix / test / docs / chore），message 末尾按规范署名
 11. **Push + PR ⚠️** — 用户确认后 `git push` 并 `gh pr create`；**不擅自合并 PR**
-12. **Release ⚠️（仅发版时）** — PR 合并后 `npm run dist` 构建安装包，`gh release create` 打 tag 并上传产物，release notes 取自 CHANGELOG
+12. **Release ⚠️（仅发版时）** — PR 合并后：确认 `package.json` 版本号与 CHANGELOG 就绪 → 打 `vX.Y.Z` tag 并 `git push origin vX.Y.Z` → GitHub Actions（`.github/workflows/release.yml`）自动三平台构建并创建 GitHub Release（产物含 mac x64/arm64、win、linux；notes 取自 CHANGELOG 对应版本段）。**不再**本地手动 `npm run dist` + `gh release create`；tag 与 package.json 版本不一致时 CI 会失败。正式打 tag 前可用 `workflow_dispatch` 手动触发 workflow 验证三平台构建（仅 build、不创建 Release）。
 
 **简化流程（小修复 / 文档类）：** 跳过探索、提案、归档（第 1-2、9 步）；保留：建分支 → 实现 → 自测 → 文档（按需）→ 版本号 ⚠️ → 提交 → Push + PR ⚠️。
 

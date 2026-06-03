@@ -72,8 +72,8 @@
 
 ### 🐧 Linux
 
-- `OneApp-<版本>-linux-x64.AppImage` — 通用格式，`chmod +x` 后直接运行
-- `OneApp-<版本>-linux-x64.deb` — Debian / Ubuntu 系统安装
+- `OneApp-<版本>-linux-x86_64.AppImage` — 通用格式，`chmod +x` 后直接运行
+- `OneApp-<版本>-linux-amd64.deb` — Debian / Ubuntu 系统安装
 
 ---
 
@@ -88,7 +88,7 @@ npm install            # 国内用户可用 ./install.sh（已配镜像）
 npm run dist:mac       # 或 dist:win / dist:linux，产物输出到 dist/
 ```
 
-> Linux AppImage 下载后需 `chmod +x OneApp-<版本>-linux-x64.AppImage` 再运行。
+> Linux AppImage 下载后需 `chmod +x OneApp-<版本>-linux-x86_64.AppImage` 再运行。
 
 ---
 

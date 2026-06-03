@@ -72,8 +72,22 @@
 
 ### 🐧 Linux
 
-- `OneApp-<版本>-linux-x86_64.AppImage` — 通用格式，`chmod +x` 后直接运行
+- `OneApp-<版本>-linux-x86_64.AppImage` — 通用格式，免安装单文件
 - `OneApp-<版本>-linux-amd64.deb` — Debian / Ubuntu 系统安装
+
+**AppImage 运行：**
+
+```bash
+# 加可执行权限后直接运行（或右键 → 属性 → 勾选「允许作为程序执行」）
+chmod +x OneApp-<版本>-linux-x86_64.AppImage
+./OneApp-<版本>-linux-x86_64.AppImage
+```
+
+> ⚠️ **FUSE 提示**：部分发行版（如 Ubuntu 22.04+）默认缺少旧版 FUSE，运行时可能报 `dlopen(): error loading libfuse.so.2`。二选一解决：
+> - 安装 FUSE：`sudo apt install libfuse2`
+> - 或免 FUSE 解压运行：`./OneApp-<版本>-linux-x86_64.AppImage --appimage-extract-and-run`
+
+**deb 安装：** `sudo apt install ./OneApp-<版本>-linux-amd64.deb`（或 `sudo dpkg -i OneApp-<版本>-linux-amd64.deb`）
 
 ---
 
@@ -87,8 +101,6 @@ cd OneApp
 npm install            # 国内用户可用 ./install.sh（已配镜像）
 npm run dist:mac       # 或 dist:win / dist:linux，产物输出到 dist/
 ```
-
-> Linux AppImage 下载后需 `chmod +x OneApp-<版本>-linux-x86_64.AppImage` 再运行。
 
 ---
 

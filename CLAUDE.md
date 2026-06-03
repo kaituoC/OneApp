@@ -54,7 +54,11 @@ npm test -- tests/jsonHelper.test.js  # 运行单个测试文件
 9. **归档** `/opsx:archive` — delta 合并进主 specs，change 移入 `archive/`
 10. **提交** — 仅在用户明确要求时提交；按主题分组 commit（feat / fix / test / docs / chore），message 末尾按规范署名
 11. **Push + PR ⚠️** — 用户确认后 `git push` 并 `gh pr create`；**不擅自合并 PR**
-12. **Release ⚠️（仅发版时）** — PR 合并后：确认 `package.json` 版本号与 CHANGELOG 就绪 → 打 `vX.Y.Z` tag 并 `git push origin vX.Y.Z` → GitHub Actions（`.github/workflows/release.yml`）自动三平台构建并创建 GitHub Release（产物含 mac x64/arm64、win、linux；notes 取自 CHANGELOG 对应版本段）。**不再**本地手动 `npm run dist` + `gh release create`；tag 与 package.json 版本不一致时 CI 会失败。正式打 tag 前可用 `workflow_dispatch` 手动触发 workflow 验证三平台构建（仅 build、不创建 Release）。
+12. **Release ⚠️（仅发版时）** — PR 合并后：
+    1. 确认 `package.json` 版本号与 CHANGELOG 就绪；正式打 tag 前可用 `workflow_dispatch` 手动触发验证 CI 三平台构建（仅 build、不创建 Release）。
+    2. 打 `vX.Y.Z` tag 并 `git push origin vX.Y.Z` → GitHub Actions（`.github/workflows/release.yml`）自动构建 **mac arm64 / Windows / Linux** 三平台并创建 GitHub Release（notes 取自 CHANGELOG 对应版本段）。tag 与 package.json 版本不一致时 CI 会失败。
+    3. **mac Intel(x64) 包不走 CI**（macos-13 Intel runner 排队严重）：在本机（Intel Mac）执行 `npm run dist:mac` 本地打包，再 `gh release upload vX.Y.Z dist/OneApp-X.Y.Z-mac-x64.dmg dist/OneApp-X.Y.Z-mac-x64.zip` 把 Intel 包补传到该 Release。
+    - **不再**本地手动 `npm run dist` 全量打包 + `gh release create`（发布由 CI 负责，本地仅补 Intel 包）。
 
 **简化流程（小修复 / 文档类）：** 跳过探索、提案、归档（第 1-2、9 步）；保留：建分支 → 实现 → 自测 → 文档（按需）→ 版本号 ⚠️ → 提交 → Push + PR ⚠️。
 

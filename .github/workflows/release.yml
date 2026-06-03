@@ -17,9 +17,10 @@ jobs:
     strategy:
       fail-fast: false # 单平台失败不影响其它平台
       matrix:
+        # 仅 CI 三平台：mac arm64 / Windows / Linux。
+        # macOS Intel(x64) 不走 CI（macos-13 Intel runner 排队严重），改由维护者本机
+        # 执行 `npm run dist:mac` 本地打包后 `gh release upload` 补传。
         include:
-          - os: macos-13     # Intel x64（macos-latest 已是 Apple Silicon，单独保留 Intel）
-            script: dist:mac
           - os: macos-latest # Apple Silicon arm64
             script: dist:mac
           - os: windows-latest
@@ -49,7 +50,9 @@ jobs:
           fi
 
       - name: Install dependencies
-        run: npm ci
+        # 用 npm install 而非 npm ci：本地(node24/npm11)与 CI(node20/npm10) 解析依赖树存在差异，
+        # npm ci 的严格 lock 匹配在跨环境下会失败；npm install 按 package.json 解析更鲁棒
+        run: npm install --no-audit --no-fund
 
       - name: Build distributables
         # --publish never：禁用 electron-builder 检测到 git tag 时的隐式 publish（缺 token 会失败）

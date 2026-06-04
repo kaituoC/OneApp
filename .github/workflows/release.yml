@@ -58,7 +58,7 @@ jobs:
         # --publish never：禁用 electron-builder 检测到 git tag 时的隐式 publish（缺 token 会失败）
         run: npm run ${{ matrix.script }} -- --publish never
         env:
-          CSC_IDENTITY_AUTO_DISCOVERY: false # 无签名证书：关闭自动签名探测，避免 CI 失败
+          CSC_IDENTITY_AUTO_DISCOVERY: ${{ runner.os == 'macOS' && 'true' || 'false' }} # macOS 保留 ad-hoc 签名避免 Gatekeeper 报"已损坏"；其它平台无需签名
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4

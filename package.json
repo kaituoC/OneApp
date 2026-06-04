@@ -1,7 +1,7 @@
 {
   "type": "module",
   "name": "oneapp",
-  "version": "1.4.3",
+  "version": "1.4.4",
   "description": "OneApp - 多功能开发工具",
   "author": "kaituoC <changktforever@gmail.com>",
   "repository": {
@@ -52,6 +52,17 @@
       "target": [
         "dmg",
         "zip"
+      ]
+    },
+    "dmg": {
+      "iconSize": 80,
+      "window": {
+        "width": 660,
+        "height": 400
+      },
+      "contents": [
+        { "x": 180, "y": 170 },
+        { "x": 480, "y": 170, "type": "link", "path": "/Applications" }
       ]
     },
     "win": {

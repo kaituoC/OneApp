@@ -70,29 +70,26 @@ jobs:
             codesign --verify --deep --strict "$APP_PATH" && echo "✅ Signature verified"
           fi
 
-      - name: Re-package DMG and ZIP after signing (macOS)
+      - name: Create styled DMG and re-package ZIP (macOS)
         if: runner.os == 'macOS'
         run: |
+          set -euo pipefail
           APP_PATH=$(find dist/mac-arm64 -name '*.app' -maxdepth 1 | head -1)
           if [ -z "$APP_PATH" ]; then exit 0; fi
           APP_NAME=$(basename "$APP_PATH" .app)
           VERSION=$(node -p "require('./package.json').version")
 
-          # 构建含 Applications 快捷方式的 DMG
+          # 用自定义脚本创建 HFS+ DMG（背景图 + 图标布局 + Applications 快捷方式）
+          # 替换 electron-builder 的 APFS DMG（APFS 不支持 Finder 自定义背景）
           DMG_PATH="dist/${APP_NAME}-${VERSION}-mac-arm64.dmg"
           rm -f "$DMG_PATH"
-          DMG_STAGE=$(mktemp -d)
-          cp -R "$APP_PATH" "$DMG_STAGE/"
-          ln -s /Applications "$DMG_STAGE/Applications"
-          hdiutil create -volname "${APP_NAME} ${VERSION}-arm64" -srcfolder "$DMG_STAGE" -ov -format UDZO "$DMG_PATH"
-          rm -rf "$DMG_STAGE"
+          bash scripts/create-dmg.sh "$APP_PATH" "$DMG_PATH"
 
-          # 重新生成 ZIP
+          # 重新打包 ZIP（使用签名后的 app）
           ZIP_PATH="dist/${APP_NAME}-${VERSION}-mac-arm64.zip"
           rm -f "$ZIP_PATH"
-          cd dist/mac-arm64 && zip -ry "../${APP_NAME}-${VERSION}-mac-arm64.zip" "$(basename "$APP_PATH")" && cd ../..
-
-          echo "✅ Re-packaged: $DMG_PATH, $ZIP_PATH"
+          (cd dist/mac-arm64 && zip -ry "../$(basename "$ZIP_PATH")" "$(basename "$APP_PATH")")
+          echo "✅ ZIP re-packaged"
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4

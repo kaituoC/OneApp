@@ -6,6 +6,18 @@
 
 ---
 
+## [1.4.4] - 2026-06-04
+
+### ✨ 新增功能
+- macOS DMG 安装体验全面优化：自定义浅灰色背景、弧形箭头引导、"拖入 Applications 安装"文字提示、正确的 Applications 文件夹图标、无侧边栏干净窗口
+- 新增 `scripts/create-dmg.sh` 脚本，使用 HFS+ 格式 + AppleScript 创建专业 DMG（替代 electron-builder 的 APFS DMG，解决 APFS 不支持自定义背景的问题）
+- 新增 `scripts/generate-dmg-background.py` 背景图生成脚本，支持 1x/2x Retina
+
+### 🐛 修复
+- 修复 CI macOS 安装包 Gatekeeper 报"已损坏"（ad-hoc 签名）、DMG 缺少 Applications 快捷方式、Applications 显示为黑框等系列问题
+
+---
+
 ## [1.4.3] - 2026-06-04
 
 ### 🐛 修复
@@ -172,6 +184,7 @@
 
 ---
 
+**[1.4.4]**: 2026-06-04 - macOS DMG 安装体验全面优化
 **[1.4.3]**: 2026-06-04 - 修复 DMG 缺少 Applications 快捷方式
 **[1.4.2]**: 2026-06-04 - 修复 CI macOS 包 ad-hoc 签名
 **[1.4.1]**: 2026-06-04 - 修复 CI macOS 包 Gatekeeper 报损问题（未生效）

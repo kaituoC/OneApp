@@ -387,6 +387,7 @@ document.addEventListener('keydown', (e) => {
 }
 
 .recent-files-section:not(.collapsed) {
+  min-height: 160px;
   max-height: 40%;
 }
 

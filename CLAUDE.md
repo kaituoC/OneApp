@@ -54,15 +54,15 @@ npm test -- tests/jsonHelper.test.js  # 运行单个测试文件
 9. **归档** `/opsx:archive` — delta 合并进主 specs，change 移入 `archive/`
 10. **提交** — 仅在用户明确要求时提交；按主题分组 commit（feat / fix / test / docs / chore），message 末尾按规范署名
 11. **Push + PR ⚠️** — 用户确认后 `git push` 并 `gh pr create`；**不擅自合并 PR**
-12. **Release ⚠️（仅发版时）** — PR 合并后：
+12. **Release ⚠️（仅发版时）** — PR 合并后，以下步骤作为**完整的发布序列**一次性执行，⚠️ 仅需用户在本步骤启动前一次性确认，步骤内部无需再次询问：
     1. 确认 `package.json` 版本号与 CHANGELOG 就绪；正式打 tag 前可用 `workflow_dispatch` 手动触发验证 CI 三平台构建（仅 build、不创建 Release）。
     2. 打 `vX.Y.Z` tag 并 `git push origin vX.Y.Z` → GitHub Actions（`.github/workflows/release.yml`）自动构建 **mac arm64 / Windows / Linux** 三平台并创建 GitHub Release（notes 取自 CHANGELOG 对应版本段）。tag 与 package.json 版本不一致时 CI 会失败。
-    3. **mac Intel(x64) 包不走 CI**（macos-13 Intel runner 排队严重）：在本机（Intel Mac）执行 `npm run dist:mac` 本地打包，再 `gh release upload vX.Y.Z dist/OneApp-X.Y.Z-mac-x64.dmg dist/OneApp-X.Y.Z-mac-x64.zip` 把 Intel 包补传到该 Release。
+    3. **mac Intel(x64) 包补传（必做，无需额外确认）**：先用 `uname -m` 自检当前机器架构（x86_64 = Intel，arm64 = Apple Silicon）；若为 Intel，在 CI 跑包期间并行执行 `npm run dist:mac` 本地打包，CI 完成/Release 创建后立即执行 `gh release upload vX.Y.Z dist/OneApp-X.Y.Z-mac-x64.dmg dist/OneApp-X.Y.Z-mac-x64.zip` 补传。架构判断由 Claude 自行完成，不询问用户。
     - **不再**本地手动 `npm run dist` 全量打包 + `gh release create`（发布由 CI 负责，本地仅补 Intel 包）。
 
 **简化流程（小修复 / 文档类）：** 跳过探索、提案、归档（第 1-2、9 步）；保留：建分支 → 实现 → 自测 → 文档（按需）→ 版本号 ⚠️ → 提交 → Push + PR ⚠️。
 
-**确认卡点（⚠️）汇总：** 升版本号、`git push` / 创建 PR、打 tag、发布 release 之前必须先征得用户同意；任何情况下都不擅自合并 PR。
+**确认卡点（⚠️）汇总：** 升版本号、`git push` / 创建 PR、打 tag / 启动发布序列（第 12 步整体）之前必须先征得用户同意；发布序列内部的子步骤（补传 Intel 包、等待 CI）**不再单独确认**；任何情况下都不擅自合并 PR。
 
 ### 贯穿全程的硬性约定
 

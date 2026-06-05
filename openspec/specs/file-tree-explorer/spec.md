@@ -5,7 +5,7 @@ TBD - created by archiving change add-file-tree-explorer. Update Purpose after a
 ## Requirements
 ### Requirement: Lazy-loaded directory tree
 
-系统 SHALL 在 Markdown 与 HTML 编辑器侧边栏提供一棵目录树，文件夹节点在首次展开时才读取其直接子项（懒加载），不一次性递归整个目录。
+系统 SHALL 在统一编辑器侧边栏提供一棵目录树，文件夹节点在首次展开时才读取其直接子项（懒加载），不一次性递归整个目录。
 
 #### Scenario: Expand a folder node loads its children
 - **WHEN** 用户点击树中某个折叠的文件夹节点
@@ -45,34 +45,16 @@ TBD - created by archiving change add-file-tree-explorer. Update Purpose after a
 - **WHEN** 用户点击「打开文件夹」并选择一个目录
 - **THEN** 目录树以新选择的目录为根重新渲染
 
-### Requirement: Recent folders quick switch
-
-系统 SHALL 记忆最近打开过的文件夹并提供下拉入口供快速切换根目录。最近文件夹存储于 electron-store 的 `recentFolders` 键，为 `{ path, timestamp }` 对象数组，按 timestamp 降序、去重、最多 50 条。该列表 SHALL 由 Markdown 与 HTML 编辑器共享，不按类型隔离。
-
-#### Scenario: Folder recorded on switch
-- **WHEN** 用户成功切换树的根目录（通过「打开文件夹」或最近文件夹下拉）
-- **THEN** 该文件夹路径与当前时间戳被加入 `recentFolders`
-- **THEN** 若已存在则更新时间戳并移到最前
-- **THEN** 超过 50 条时移除最旧的一条
-
-#### Scenario: Quick switch from recent folders
-- **WHEN** 用户从最近文件夹下拉中选择一个文件夹
-- **THEN** 目录树以该文件夹为根重新渲染
-
-#### Scenario: Shared across editor types
-- **WHEN** 用户在 Markdown 编辑器中打开某文件夹后切换到 HTML 编辑器
-- **THEN** 该文件夹出现在 HTML 编辑器的最近文件夹列表中
-
 ### Requirement: Type-based file filtering in tree
 
-目录树 SHALL 只显示文件夹以及当前编辑器可编辑的目标类型文件。Markdown 编辑器显示 `.md`；HTML 编辑器显示 `.html` 与 `.htm`。其它类型文件不显示。
+目录树 SHALL 只显示文件夹以及统一编辑器当前 `mode` 对应的可编辑类型文件：`markdown` 模式显示 `.md`，`html` 模式显示 `.html` 与 `.htm`。其它类型文件不显示。
 
-#### Scenario: Markdown editor shows only .md files
-- **WHEN** 用户在 Markdown 编辑器的目录树中浏览某文件夹
+#### Scenario: Markdown mode shows only .md files
+- **WHEN** 统一编辑器处于 `markdown` 模式，用户在目录树中浏览某文件夹
 - **THEN** 树中显示子文件夹与 `.md` 文件，不显示其它扩展名文件
 
-#### Scenario: HTML editor shows only .html/.htm files
-- **WHEN** 用户在 HTML 编辑器的目录树中浏览某文件夹
+#### Scenario: HTML mode shows only .html/.htm files
+- **WHEN** 统一编辑器处于 `html` 模式，用户在目录树中浏览某文件夹
 - **THEN** 树中显示子文件夹与 `.html` / `.htm` 文件，不显示其它扩展名文件
 
 ### Requirement: Hidden item toggle
@@ -96,5 +78,5 @@ TBD - created by archiving change add-file-tree-explorer. Update Purpose after a
 #### Scenario: Click file opens it in editor
 - **WHEN** 用户点击树中某个目标类型文件节点
 - **THEN** 该文件内容加载到编辑器
-- **THEN** 该文件按其类型加入对应的最近打开文件列表
+- **THEN** 编辑器 `mode` 按该文件后缀更新
 

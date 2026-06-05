@@ -33,9 +33,16 @@ npm test -- tests/jsonHelper.test.js  # 运行单个测试文件
 
 ### 版本管理
 
-- **在执行 `git push` 或 `gh pr create` 之前，必须先向用户确认是否需要更新版本号**
-- 新功能增加次版本号（如 1.1.0 → 1.2.0），Bug 修复增加修订号（如 1.1.0 → 1.1.1）
-- 版本修改在 `package.json` 中完成
+版本号遵循 [Semantic Versioning](https://semver.org/)，由 `/opsx:propose` 在生成 tasks 时自动判断并纳入「升级版本号」任务，无需人工单独确认：
+
+| 改动类型 | 版本位 | 示例 |
+|----------|--------|------|
+| 重量级功能、架构重设计、大范围破坏性变更 | 大版本 X | 1.x.x → 2.0.0 |
+| 新功能、较大功能改动、中等破坏性变更 | 中间版本 Y | 1.4.x → 1.5.0 |
+| Bug 修复、小改动、文档、样式微调 | 小版本 Z | 1.4.4 → 1.4.5 |
+
+- 版本修改在 `package.json` 中完成，CHANGELOG 同步更新
+- 简化流程（小修复/文档类）同样适用上表规则，直接在实现时完成，无需额外确认
 
 ### 需求开发全流程
 
@@ -44,25 +51,24 @@ npm test -- tests/jsonHelper.test.js  # 运行单个测试文件
 **完整流程（新功能 / 较大需求）：**
 
 1. **探索** `/opsx:explore` — 厘清方案与关键决策
-2. **提案** `/opsx:propose` — 生成 proposal / design / specs / tasks
+2. **提案** `/opsx:propose` — 生成 proposal / design / specs / tasks；**tasks 中必须包含「升级版本号」任务**，按「版本管理」规则判断升哪一位
 3. **建分支** — 先 `git checkout main && git pull origin main`，再开 `feature/*`
-4. **实现** `/opsx:apply` — 按 tasks 落地并逐项勾选
+4. **实现** `/opsx:apply` — 按 tasks 落地并逐项勾选（含版本号升级与 CHANGELOG 更新）
 5. **自测（门禁，必做）** — `npm test` 全部通过（环境相关用例如时区断言，注意区分 flaky 与真回归）+ `npm run build` 编译通过（构建需关沙箱），必要时 `npm run dev` 手动验证
 6. **Code Review** `/code-review`（high）— 修复高优先级问题后复跑构建与测试
 7. **文档** — 同步 README / CHANGELOG / CLAUDE.md
-8. **版本号 ⚠️** — push/PR 前确认是否升版本（见上「版本管理」）
-9. **归档** `/opsx:archive` — delta 合并进主 specs，change 移入 `archive/`
-10. **提交** — 仅在用户明确要求时提交；按主题分组 commit（feat / fix / test / docs / chore），message 末尾按规范署名
-11. **Push + PR ⚠️** — 用户确认后 `git push` 并 `gh pr create`；**不擅自合并 PR**
-12. **Release ⚠️（仅发版时）** — PR 合并后，以下步骤作为**完整的发布序列**一次性执行，⚠️ 仅需用户在本步骤启动前一次性确认，步骤内部无需再次询问：
+8. **归档** `/opsx:archive` — delta 合并进主 specs，change 移入 `archive/`
+9. **提交** — 仅在用户明确要求时提交；按主题分组 commit（feat / fix / test / docs / chore），message 末尾按规范署名
+10. **Push + PR ⚠️** — 用户确认后 `git push` 并 `gh pr create`；**不擅自合并 PR**
+11. **Release ⚠️（仅发版时）** — PR 合并后，以下步骤作为**完整的发布序列**一次性执行，⚠️ 仅需用户在本步骤启动前一次性确认，步骤内部无需再次询问：
     1. 确认 `package.json` 版本号与 CHANGELOG 就绪；正式打 tag 前可用 `workflow_dispatch` 手动触发验证 CI 三平台构建（仅 build、不创建 Release）。
     2. 打 `vX.Y.Z` tag 并 `git push origin vX.Y.Z` → GitHub Actions（`.github/workflows/release.yml`）自动构建 **mac arm64 / Windows / Linux** 三平台并创建 GitHub Release（notes 取自 CHANGELOG 对应版本段）。tag 与 package.json 版本不一致时 CI 会失败。
     3. **mac Intel(x64) 包补传（必做，无需额外确认）**：先用 `uname -m` 自检当前机器架构（x86_64 = Intel，arm64 = Apple Silicon）；若为 Intel，在 CI 跑包期间并行执行 `npm run dist:mac` 本地打包，CI 完成/Release 创建后立即执行 `gh release upload vX.Y.Z dist/OneApp-X.Y.Z-mac-x64.dmg dist/OneApp-X.Y.Z-mac-x64.zip` 补传。架构判断由 Claude 自行完成，不询问用户。
     - **不再**本地手动 `npm run dist` 全量打包 + `gh release create`（发布由 CI 负责，本地仅补 Intel 包）。
 
-**简化流程（小修复 / 文档类）：** 跳过探索、提案、归档（第 1-2、9 步）；保留：建分支 → 实现 → 自测 → 文档（按需）→ 版本号 ⚠️ → 提交 → Push + PR ⚠️。
+**简化流程（小修复 / 文档类）：** 跳过探索、提案、归档（第 1-2、8 步）；保留：建分支 → 实现（含版本号升级）→ 自测 → 文档（按需）→ 提交 → Push + PR ⚠️。
 
-**确认卡点（⚠️）汇总：** 升版本号、`git push` / 创建 PR、打 tag / 启动发布序列（第 12 步整体）之前必须先征得用户同意；发布序列内部的子步骤（补传 Intel 包、等待 CI）**不再单独确认**；任何情况下都不擅自合并 PR。
+**确认卡点（⚠️）汇总：** `git push` / 创建 PR、打 tag / 启动发布序列（第 11 步整体）之前必须先征得用户同意；版本号升级**不再是独立确认卡点**，由 propose 的 tasks 自动覆盖；发布序列内部的子步骤（补传 Intel 包、等待 CI）不再单独确认；任何情况下都不擅自合并 PR。
 
 ### 贯穿全程的硬性约定
 
@@ -116,11 +122,11 @@ electron-vite 构建三个独立的 bundle：
 
 ### 核心组件
 
-- **App.vue**：根组件，管理标签页状态、主题、字号、最近文件和键盘快捷键（Ctrl+1-6、Ctrl+Tab）
+- **App.vue**：根组件，管理标签页状态（5 个）、主题、字号、最近文件和键盘快捷键（Ctrl+1-5、Ctrl+Tab）
 - **EditorWithLineNumbers.vue**：可复用的 textarea，带同步行号列
-- **MarkdownTab.vue**：文件管理、编辑器/预览切换、滚动同步、PDF/HTML 导出
-- **HtmlTab.vue**：HTML 编辑、iframe 沙箱实时预览（`HtmlPreview.vue`）、滚动同步
-- **FileTree.vue / TreeNode.vue**：可复用的懒加载目录树，被 MarkdownTab 与 HtmlTab 共用，通过 `editableExtensions` prop 区分显示的文件类型
+- **EditorTab.vue**：统一编辑器标签，按文件后缀驱动 `mode`（markdown / html），多态预览（`MarkdownPreview` / `HtmlPreview`）、上下文工具栏（markdown 模式额外含导出 HTML/PDF、语法介绍）、滚动同步（markdown 双向 / html 单向），使用 `useEditorFile` composable
+- **composables/useEditorFile.js**：编辑器共用逻辑——打开/新建/保存/快捷键，后缀→mode 派生，Ctrl+S/N 成对绑定/解绑
+- **FileTree.vue / TreeNode.vue**：可复用的懒加载目录树，被 EditorTab 使用，通过 `editableExtensions` prop 按 mode 过滤显示文件类型
 - **DiffTab.vue**：并排/统一差异视图，带滚动同步，使用 diff-match-patch 库
 - **SettingsTab.vue**：平台感知快捷键（Cmd vs Ctrl），electron-store 持久化
 

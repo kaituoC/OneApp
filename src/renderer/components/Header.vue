@@ -21,8 +21,7 @@ defineProps({
 defineEmits(['tab-change'])
 
 const tabs = [
-  { key: 'markdown', label: 'Markdown编辑' },
-  { key: 'html', label: 'HTML编辑' },
+  { key: 'editor', label: '编辑器' },
   { key: 'json', label: 'JSON工具' },
   { key: 'diff', label: '文本对比' },
   { key: 'time', label: '时间工具' },

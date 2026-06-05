@@ -1,7 +1,7 @@
 <template>
   <footer class="status-bar">
     <span class="status-item">
-      {{ activeTab === 'markdown' ? (currentFile || '无文件') : tabNames[activeTab] }}
+      {{ activeTab === 'editor' ? (currentFile || '无文件') : tabNames[activeTab] }}
     </span>
     <span class="status-right">
       OneApp v{{ version }} | {{ buildDate }}
@@ -19,7 +19,7 @@ defineProps({
 })
 
 const tabNames = {
-  markdown: 'Markdown编辑',
+  editor: '编辑器',
   json: 'JSON工具',
   diff: '文本对比',
   time: '时间工具',

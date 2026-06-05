@@ -1,9 +1,5 @@
-# html-preview Specification
+## MODIFIED Requirements
 
-## Purpose
-TBD - created by archiving change add-html-editor. Update Purpose after archive.
-
-## Requirements
 ### Requirement: HTML preview with iframe sandbox
 
 系统 SHALL 使用 iframe 沙箱渲染 HTML 预览，确保用户 HTML 的脚本和样式不泄漏到应用程序。

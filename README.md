@@ -1,6 +1,6 @@
 # OneApp
 
-多功能开发工具桌面应用，集成 Markdown 编辑、HTML 编辑、JSON 工具、文本对比和时间转换功能。
+多功能开发工具桌面应用，集成统一编辑器（Markdown / HTML 自动识别）、JSON 工具、文本对比和时间转换功能。
 
 ## 功能特性
 
@@ -148,7 +148,7 @@ npm run dist
 | Ctrl/Cmd + R / F5 | 刷新页面 |
 | Ctrl/Cmd + Tab | 切换下一个标签 |
 | Ctrl/Cmd + Shift + Tab | 切换上一个标签 |
-| Ctrl/Cmd + 1~6 | 切换到指定标签 |
+| Ctrl/Cmd + 1~5 | 切换到指定标签 |
 | F12 | 打开/关闭调试工具 |
 
 ## 技术栈

@@ -34,6 +34,7 @@ export function filterTreeItems(items, { editableExtensions = [], showHidden = f
   return items.filter(item => {
     if (!showHidden && isHiddenEntry(item)) return false
     if (item.isDirectory) return true
+    if (exts.length === 0) return true
     const dot = item.name.lastIndexOf('.')
     const ext = dot >= 0 ? item.name.slice(dot + 1).toLowerCase() : ''
     return exts.includes(ext)

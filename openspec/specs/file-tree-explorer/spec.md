@@ -47,15 +47,19 @@ TBD - created by archiving change add-file-tree-explorer. Update Purpose after a
 
 ### Requirement: Type-based file filtering in tree
 
-目录树 SHALL 只显示文件夹以及统一编辑器当前 `mode` 对应的可编辑类型文件：`markdown` 模式显示 `.md`，`html` 模式显示 `.html` 与 `.htm`。其它类型文件不显示。
+目录树 SHALL 显示当前根目录下的所有非隐藏文件和文件夹（不再按 `editableExtensions` 后缀过滤）。隐藏文件的显示/隐藏仍受「显示隐藏项」开关控制。
 
-#### Scenario: Markdown mode shows only .md files
-- **WHEN** 统一编辑器处于 `markdown` 模式，用户在目录树中浏览某文件夹
-- **THEN** 树中显示子文件夹与 `.md` 文件，不显示其它扩展名文件
+#### Scenario: Tree shows all file types
+- **WHEN** 用户打开一个包含 `.md`、`.html`、`.txt`、`.js`、`.json` 文件的目录
+- **THEN** 目录树显示所有这些文件（隐藏项除外）
 
-#### Scenario: HTML mode shows only .html/.htm files
-- **WHEN** 统一编辑器处于 `html` 模式，用户在目录树中浏览某文件夹
-- **THEN** 树中显示子文件夹与 `.html` / `.htm` 文件，不显示其它扩展名文件
+#### Scenario: Hidden files toggle still works
+- **WHEN** 用户关闭「显示隐藏项」
+- **THEN** 以 `.` 开头的文件和 `node_modules` 等目录不显示
+
+#### Scenario: Click file opens in editor
+- **WHEN** 用户点击目录树中任意文件
+- **THEN** 文件在编辑器中打开，`mode` 按后缀自动设置
 
 ### Requirement: Hidden item toggle
 

@@ -1,6 +1,6 @@
 ## MODIFIED Requirements
 
-### Requirement: Display files in directory tree
+### Requirement: Type-based file filtering in tree
 
 目录树 SHALL 显示当前根目录下的所有非隐藏文件和文件夹（不再按 `editableExtensions` 后缀过滤）。隐藏文件的显示/隐藏仍受「显示隐藏项」开关控制。
 

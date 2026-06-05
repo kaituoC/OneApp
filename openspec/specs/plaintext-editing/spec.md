@@ -1,11 +1,8 @@
 # plaintext-editing Specification
 
 ## Purpose
-
-支持在统一编辑器中打开、编辑、保存任意纯文本文件（非 Markdown / HTML 后缀），以 plaintext mode 提供无预览的全屏编辑体验。
-
+TBD - created by archiving change plaintext-support. Update Purpose after archive.
 ## Requirements
-
 ### Requirement: Plaintext mode for unknown extensions
 
 统一编辑器 SHALL 将非 `.md`、`.html`、`.htm` 后缀的文件识别为 `plaintext` mode。
@@ -49,3 +46,4 @@
 #### Scenario: Open dialog shows all files filter
 - **WHEN** 用户点击"打开文件"
 - **THEN** 对话框过滤列表包含"所有文件 (*)"选项
+

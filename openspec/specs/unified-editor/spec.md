@@ -3,9 +3,7 @@
 ## Purpose
 
 统一编辑器将原先分立的 Markdown 与 HTML 两个编辑器标签合并为单一「编辑器」标签，以当前文件后缀驱动编辑模式（`mode`），共享工具栏、目录树侧栏、预览区与滚动同步逻辑。
-
 ## Requirements
-
 ### Requirement: Single editor tab
 
 应用 SHALL 以单一「编辑器」标签提供 Markdown 与 HTML 文件的编辑，取代原先分立的「Markdown」与「HTML」两个标签，一次编辑一个文件。
@@ -20,15 +18,19 @@
 
 ### Requirement: File type drives editing mode
 
-统一编辑器 SHALL 根据当前文件后缀确定编辑模式 `mode`：`.md` → `markdown`，`.html`/`.htm` → `html`；无文件时默认 `markdown`。`mode` SHALL 驱动预览组件、滚动同步策略、工具栏专属按钮、目录树可编辑类型、新建模板与保存默认扩展名。
+统一编辑器 SHALL 根据当前文件后缀确定编辑模式 `mode`：`.md` → `markdown`，`.html`/`.htm` → `html`，其他后缀或无后缀 → `plaintext`；无文件时默认 `markdown`。`mode` SHALL 驱动预览组件（plaintext 无预览）、滚动同步策略、工具栏专属按钮、目录树可编辑类型、新建模板与保存默认扩展名。
 
 #### Scenario: Open markdown file sets markdown mode
 - **WHEN** 用户打开 `.md` 文件
-- **THEN** `mode` 为 `markdown`，预览使用 Markdown 渲染，目录树显示 `.md`
+- **THEN** `mode` 为 `markdown`，预览使用 Markdown 渲染
 
 #### Scenario: Open html file sets html mode
 - **WHEN** 用户打开 `.html` 或 `.htm` 文件
-- **THEN** `mode` 为 `html`，预览使用 iframe 沙箱，目录树显示 `.html`/`.htm`
+- **THEN** `mode` 为 `html`，预览使用 iframe 沙箱
+
+#### Scenario: Open plaintext file sets plaintext mode
+- **WHEN** 用户打开非 `.md`/`.html`/`.htm` 后缀的文件
+- **THEN** `mode` 为 `plaintext`，无预览区
 
 #### Scenario: Default mode without file
 - **WHEN** 编辑器无当前文件
@@ -48,7 +50,7 @@
 
 ### Requirement: Create new file by type
 
-工具栏「新建」SHALL 提供「新建 Markdown」与「新建 HTML」两项，分别载入对应模板、清空当前文件路径并设置对应 `mode`。
+工具栏「新建」SHALL 提供「新建 Markdown」、「新建 HTML」与「新建纯文本」三项，分别载入对应模板（纯文本为空内容）、清空当前文件路径并设置对应 `mode`。
 
 #### Scenario: New markdown file
 - **WHEN** 用户选择「新建 Markdown」
@@ -58,9 +60,13 @@
 - **WHEN** 用户选择「新建 HTML」
 - **THEN** 编辑器载入 HTML5 模板，`mode` 为 `html`，当前文件路径清空
 
+#### Scenario: New plaintext file
+- **WHEN** 用户选择「新建纯文本」
+- **THEN** 编辑器内容清空，`mode` 为 `plaintext`，当前文件路径清空，默认保存为 `.txt`
+
 ### Requirement: Save file
 
-统一编辑器 SHALL 支持保存当前文件；已有文件写回原路径，新文件弹出保存对话框且默认扩展名随 `mode`（markdown → `.md`，html → `.html`），保存后刷新目录树。
+统一编辑器 SHALL 支持保存当前文件；已有文件写回原路径，新文件弹出保存对话框且默认扩展名随 `mode`（markdown → `.md`，html → `.html`，plaintext → `.txt`），保存后刷新目录树。
 
 #### Scenario: Save existing file
 - **WHEN** 用户编辑已有文件并点击「保存」
@@ -153,3 +159,4 @@
 #### Scenario: Listener cleaned up on unmount
 - **WHEN** 用户离开编辑器标签使组件卸载
 - **THEN** 键盘监听被解绑，不再重复触发
+

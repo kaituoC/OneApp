@@ -5,13 +5,13 @@ import { readFile, writeFile, saveFile as dialogSaveFile, openFile } from '../ut
 const MARKDOWN_TEMPLATE = '# 新文档\n\n开始编写...'
 const HTML_TEMPLATE = '<!DOCTYPE html>\n<html lang="zh-CN">\n<head>\n  <meta charset="UTF-8">\n  <title>新文档</title>\n</head>\n<body>\n  <h1>新文档</h1>\n  <p>开始编写...</p>\n</body>\n</html>'
 
-// 后缀 → mode 映射（无文件或未知后缀默认 markdown）
 function modeFromPath(filePath) {
   if (!filePath) return 'markdown'
   const dot = filePath.lastIndexOf('.')
   const ext = dot >= 0 ? filePath.slice(dot + 1).toLowerCase() : ''
+  if (ext === 'md') return 'markdown'
   if (ext === 'html' || ext === 'htm') return 'html'
-  return 'markdown'
+  return 'plaintext'
 }
 
 /**
@@ -23,6 +23,7 @@ function modeFromPath(filePath) {
  * @param {() => void} [opts.refreshTree] 保存后刷新目录树
  */
 const EDITOR_FILTERS = [
+  { name: '所有文件', extensions: ['*'] },
   { name: 'Markdown / HTML', extensions: ['md', 'html', 'htm'] },
   { name: 'Markdown', extensions: ['md'] },
   { name: 'HTML', extensions: ['html', 'htm'] }
@@ -55,11 +56,13 @@ export function useEditorFile({ workDir, onFileOpen, onSaveStatus, refreshTree, 
     }
   }
 
-  // 新建：按类型套模板，路径清空（未落盘）
   function newFile(type = 'markdown') {
     if (type === 'html') {
       editorContent.value = HTML_TEMPLATE
       mode.value = 'html'
+    } else if (type === 'plaintext') {
+      editorContent.value = ''
+      mode.value = 'plaintext'
     } else {
       editorContent.value = MARKDOWN_TEMPLATE
       mode.value = 'markdown'
@@ -75,11 +78,10 @@ export function useEditorFile({ workDir, onFileOpen, onSaveStatus, refreshTree, 
         onSaveStatus?.('已保存')
         refreshTree?.()
       } else {
-        // 新文件：按 mode 决定默认名与扩展名
-        const isHtml = mode.value === 'html'
-        const defaultName = isHtml ? 'untitled.html' : 'untitled.md'
-        const fileType = isHtml
-          ? { name: 'HTML', extensions: ['html'] }
+        const defaultName = mode.value === 'html' ? 'untitled.html'
+          : mode.value === 'plaintext' ? 'untitled.txt' : 'untitled.md'
+        const fileType = mode.value === 'html' ? { name: 'HTML', extensions: ['html'] }
+          : mode.value === 'plaintext' ? { name: '文本文件', extensions: ['txt'] }
           : { name: 'Markdown', extensions: ['md'] }
         const savedPath = await dialogSaveFile(editorContent.value, defaultName, fileType, workDir?.value)
         if (savedPath) {

@@ -3,13 +3,14 @@
     <div class="toolbar">
       <button @click="showFileList = !showFileList">{{ showFileList ? '隐藏列表' : '显示列表' }}</button>
       <button @click="showEditor = !showEditor">{{ showEditor ? '隐藏编辑' : '显示编辑' }}</button>
-      <button @click="showPreview = !showPreview">{{ showPreview ? '隐藏预览' : '显示预览' }}</button>
+      <button v-if="mode !== 'plaintext'" @click="showPreview = !showPreview">{{ showPreview ? '隐藏预览' : '显示预览' }}</button>
       <button @click="openFileDialog">打开文件</button>
       <div class="new-btn-wrap">
         <button @click="showNewMenu = !showNewMenu">新建 ▾</button>
         <div v-if="showNewMenu" class="new-menu" @mouseleave="showNewMenu = false">
           <div class="new-menu-item" @click="handleNewFile('markdown')">新建 Markdown</div>
           <div class="new-menu-item" @click="handleNewFile('html')">新建 HTML</div>
+          <div class="new-menu-item" @click="handleNewFile('plaintext')">新建纯文本</div>
         </div>
       </div>
       <button @click="saveFile">保存</button>
@@ -31,7 +32,7 @@
         />
       </aside>
 
-      <div v-if="showEditor" :class="['editor-container', { 'with-preview': showPreview }]">
+      <div v-if="showEditor" :class="['editor-container', { 'with-preview': showPreview && mode !== 'plaintext' }]">
         <EditorWithLineNumbers
           ref="editorRef"
           v-model="editorContent"
@@ -43,7 +44,7 @@
 
       <component
         :is="mode === 'html' ? HtmlPreview : MarkdownPreview"
-        v-if="showPreview"
+        v-if="showPreview && mode !== 'plaintext'"
         ref="previewRef"
         :content="editorContent"
         :class="['preview-container', { 'full-width': !showEditor }]"
@@ -100,7 +101,7 @@ const { editorContent, currentFilePath, mode, openFileDialog, openFromTree, newF
     isActive: computed(() => props.isActive)
   })
 
-const editableExtensions = ['md', 'html', 'htm']
+const editableExtensions = []
 
 function handleNewFile(type) {
   newFile(type)

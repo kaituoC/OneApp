@@ -15,10 +15,7 @@ const store = new Store({
     workDir: '',
     theme: 'dark',
     fontSize: 14,
-    recentFiles: [],
-    recentMdFiles: [],
-    recentHtmlFiles: [],
-    recentFolders: []
+    recentFiles: []
   }
 })
 

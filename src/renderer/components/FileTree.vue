@@ -1,25 +1,10 @@
 <template>
   <div class="file-tree">
-    <!-- 顶部：当前根 + 打开文件夹 + 最近文件夹 + 显示隐藏项 -->
+    <!-- 顶部：当前根 + 打开文件夹 + 显示隐藏项 + 刷新 -->
     <div class="tree-toolbar">
       <div class="root-row">
         <span class="root-name" :title="currentRoot">{{ rootDisplayName }}</span>
         <button class="icon-btn" title="打开文件夹" @click="openFolder">📂</button>
-        <div ref="recentWrapRef" class="recent-folders-wrap">
-          <button class="icon-btn" title="最近文件夹" @click="toggleRecentMenu">▾</button>
-          <div v-if="recentMenuOpen" class="recent-menu">
-            <div v-if="recentFolders.length === 0" class="recent-menu-empty">暂无最近文件夹</div>
-            <div
-              v-for="folder in recentFolders"
-              :key="folder.path"
-              class="recent-menu-item"
-              :title="folder.path"
-              @click="selectRecentFolder(folder.path)"
-            >
-              {{ folderShortName(folder.path) }}
-            </div>
-          </div>
-        </div>
         <button
           :class="['icon-btn', { on: showHidden }]"
           :title="showHidden ? '隐藏隐藏项' : '显示隐藏项'"
@@ -56,9 +41,9 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import TreeNode from './TreeNode.vue'
-import { readDir, filterTreeItems, chooseDirectory, addRecentFolder, getRecentFolders } from '../utils/fileHelper.js'
+import { readDir, filterTreeItems, chooseDirectory } from '../utils/fileHelper.js'
 
 const props = defineProps({
   rootPath: { type: String, default: '' },
@@ -73,10 +58,6 @@ const rawRootItems = ref([])
 const loading = ref(false)
 const error = ref(false)
 const showHidden = ref(false)
-const recentFolders = ref([])
-const recentMenuOpen = ref(false)
-const recentWrapRef = ref(null)
-// 递增即可强制重建所有 TreeNode（清空子层缓存与展开态），用于刷新
 const treeVersion = ref(0)
 
 const rootDisplayName = computed(() => {
@@ -91,12 +72,6 @@ const filteredRootItems = computed(() =>
     showHidden: showHidden.value
   })
 )
-
-function folderShortName(p) {
-  const parts = p.split('/').filter(Boolean)
-  if (parts.length <= 2) return p
-  return `.../${parts.slice(-2).join('/')}`
-}
 
 async function loadRoot() {
   if (!currentRoot.value) {
@@ -114,7 +89,6 @@ async function loadRoot() {
   loading.value = false
 }
 
-// 刷新：重读根层并重建所有子节点（清空懒加载缓存与展开态），供 ↻ 按钮和父组件保存后调用
 function refresh() {
   treeVersion.value++
   loadRoot()
@@ -123,42 +97,10 @@ function refresh() {
 async function openFolder() {
   const dir = await chooseDirectory()
   if (!dir) return
-  await switchRoot(dir)
-}
-
-async function switchRoot(dir) {
   currentRoot.value = dir
-  recentMenuOpen.value = false
-  await addRecentFolder(dir)
-  await loadRecentFolders()
   await loadRoot()
 }
 
-async function selectRecentFolder(dir) {
-  await switchRoot(dir)
-}
-
-function toggleRecentMenu() {
-  recentMenuOpen.value = !recentMenuOpen.value
-}
-
-// 点击下拉菜单外部时关闭（点 ▾ 或菜单项本身在 wrap 内，不会被关闭）
-function onDocClick(e) {
-  if (!recentMenuOpen.value) return
-  if (recentWrapRef.value && !recentWrapRef.value.contains(e.target)) {
-    recentMenuOpen.value = false
-  }
-}
-
-async function loadRecentFolders() {
-  try {
-    recentFolders.value = await getRecentFolders()
-  } catch {
-    recentFolders.value = []
-  }
-}
-
-// workDir 变化时若用户尚未手动换根，则跟随
 watch(() => props.rootPath, (newRoot) => {
   if (newRoot && newRoot !== currentRoot.value) {
     currentRoot.value = newRoot
@@ -167,13 +109,7 @@ watch(() => props.rootPath, (newRoot) => {
 })
 
 onMounted(() => {
-  loadRecentFolders()
   if (currentRoot.value) loadRoot()
-  document.addEventListener('click', onDocClick)
-})
-
-onUnmounted(() => {
-  document.removeEventListener('click', onDocClick)
 })
 
 defineExpose({ refresh })
@@ -228,47 +164,6 @@ defineExpose({ refresh })
 
 .icon-btn.on {
   color: var(--accent);
-}
-
-.recent-folders-wrap {
-  position: relative;
-}
-
-.recent-menu {
-  position: absolute;
-  top: 100%;
-  right: 0;
-  z-index: 1000;
-  min-width: 200px;
-  max-width: 320px;
-  max-height: 280px;
-  overflow-y: auto;
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-color);
-  border-radius: 4px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-}
-
-.recent-menu-item {
-  padding: 6px 10px;
-  font-size: 12px;
-  font-family: var(--font-mono);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  cursor: pointer;
-}
-
-.recent-menu-item:hover {
-  background: var(--bg-tertiary);
-  color: var(--accent);
-}
-
-.recent-menu-empty {
-  padding: 10px;
-  font-size: 12px;
-  color: var(--text-secondary);
-  text-align: center;
 }
 
 .tree-body {

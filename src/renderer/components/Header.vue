@@ -26,6 +26,7 @@ const tabs = [
   { key: 'diff', label: '文本对比' },
   { key: 'time', label: '时间工具' },
   { key: 'regex', label: '正则' },
+  { key: 'encode', label: '编码' },
   { key: 'settings', label: '设置' }
 ]
 </script>

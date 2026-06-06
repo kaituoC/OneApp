@@ -18,8 +18,8 @@ OneApp 的功能开发规划（backlog）。本文件只记录**待开发**的�
 
 ## P1 · 高频核心工具（开发者日常高频、纯前端离线、实现简单）
 
-- [ ] **正则测试器** —— 实时高亮匹配、分组、常用速查
-- [ ] **编码转换合集** —— Base64 / URL encode·decode / JWT 解码 / Hash(MD5·SHA) / 进制转换 / Unicode·Emoji 转义
+- [x] **正则测试器** —— 实时高亮匹配、分组、常用速查（v1.6.0 已完成）
+- [x] **编码转换合集** —— Base64 / URL encode·decode / JWT 解码 / Hash(MD5·SHA) / 进制转换 / Unicode·Emoji 转义（v1.7.0 已完成）
 - [ ] **YAML ⇆ JSON 转换** —— 复用现有 JSON 工具的校验/错误定位架构
 - [ ] **生成器合集** —— UUID / 随机密码 / Lorem 占位文本
 

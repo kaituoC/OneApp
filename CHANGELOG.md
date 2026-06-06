@@ -6,6 +6,24 @@
 
 ---
 
+## [1.7.0] - 2026-06-06
+
+### ✨ 新增
+- 新增「编码」工具标签（位列「正则」与「设置」之间，Ctrl+6 直达，设置顺延为 Ctrl+7），工具标签总数 6 → 7
+- 标签内左侧菜单切换 6 个子工具，纯前端离线、零数据外传：
+  - **Base64**：文本 ⇄ Base64，经 UTF-8 正确支持中文 / emoji
+  - **URL**：文本 ⇄ URL 编码（`encodeURIComponent` / `decodeURIComponent`）
+  - **JWT**：解码展示 Header / Payload / Signature 三段，`exp` / `iat` / `nbf` 附人类可读时间（不验签）
+  - **Hash**：一次性输出 MD5 / SHA-1 / SHA-256 / SHA-512（hex 小写）
+  - **进制**：Dec / Hex / Oct / Bin 四框联动，基于 BigInt 支持任意大非负整数
+  - **Unicode**：文本 ⇄ 转义，格式三选一（`\u` / `\u{}` / HTML 实体），正确处理 emoji 代理对
+- 编解码类工具采用「左源右果 + ⇄ 方向切换」实时计算，各结果支持一键复制，非法输入就地红字提示
+
+### 🎨 其他
+- 测试：在 `vitest.config.js` 钉死时区为 `Asia/Shanghai`，消除 `timeHelper` 绝对时间戳断言在非 UTC+8 机器上的 flaky 失败
+
+---
+
 ## [1.6.0] - 2026-06-06
 
 ### ✨ 新增

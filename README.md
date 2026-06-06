@@ -2,6 +2,20 @@
 
 多功能开发工具桌面应用，集成统一编辑器（Markdown / HTML 自动识别）、JSON 工具、文本对比、时间转换和正则测试功能。
 
+## 界面预览
+
+| 统一编辑器 | JSON 工具 |
+|------------|-----------|
+| ![统一编辑器](docs/screenshots/editor.png) | ![JSON 工具](docs/screenshots/json.png) |
+
+| 文本对比 | 时间工具 |
+|----------|----------|
+| ![文本对比](docs/screenshots/diff.png) | ![时间工具](docs/screenshots/time.png) |
+
+| 正则测试器 |
+|------------|
+| ![正则测试器](docs/screenshots/regex.png) |
+
 ## 功能特性
 
 ### 编辑器（Markdown / HTML）

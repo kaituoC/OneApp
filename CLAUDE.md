@@ -4,7 +4,7 @@
 
 ## 项目概述
 
-OneApp 是一个基于 Electron + Vue 3 的桌面应用程序，提供开发者工具：统一编辑器（按文件后缀自动切换 Markdown / HTML 模式）、JSON 格式化、文本差异对比和时间转换工具。编辑器侧边栏提供懒加载目录树，可像文件管理器一样浏览目录并打开文件。
+OneApp 是一个基于 Electron + Vue 3 的桌面应用程序，提供开发者工具：统一编辑器（按文件后缀自动切换 Markdown / HTML 模式）、JSON 格式化、文本差异对比、时间转换和正则测试工具。编辑器侧边栏提供懒加载目录树，可像文件管理器一样浏览目录并打开文件。
 
 ## 命令
 
@@ -112,6 +112,7 @@ ipcMain.handle('read-file', async (event, filePath) => { ... })
 - **diffHelper.js**：diffTextUnified（git 风格）、diffTextSplit（并排对比）、diffStats — 使用 diff-match-patch 库
 - **timeHelper.js**：formatDate、parseDate、timestampToDate、dateToTimestamp — 纯日期/时间戳转换
 - **fileHelper.js**：IPC 封装，包含路径校验
+- **regexHelper.js**：runRegex — 编译正则并执行匹配，返回 `{ success, matches/error }`，含捕获组位置/命名、命中计数与海量匹配截断；被 Web Worker 引用且可独立单元测试
 
 ### 构建系统
 
@@ -124,12 +125,15 @@ electron-vite 构建三个独立的 bundle：
 
 ### 核心组件
 
-- **App.vue**：根组件，管理标签页状态（5 个）、主题、字号、最近文件和键盘快捷键（Ctrl+1-5、Ctrl+Tab）
+- **App.vue**：根组件，管理标签页状态（6 个）、主题、字号、最近文件和键盘快捷键（Ctrl+1-6、Ctrl+Tab）
 - **EditorWithLineNumbers.vue**：可复用的 textarea，带同步行号列
 - **EditorTab.vue**：统一编辑器标签，按文件后缀驱动 `mode`（markdown / html），多态预览（`MarkdownPreview` / `HtmlPreview`）、上下文工具栏（markdown 模式额外含导出 HTML/PDF、语法介绍）、滚动同步（markdown 双向 / html 单向），使用 `useEditorFile` composable
 - **composables/useEditorFile.js**：编辑器共用逻辑——打开/新建/保存/快捷键，后缀→mode 派生，Ctrl+S/N 成对绑定/解绑
 - **FileTree.vue / TreeNode.vue**：可复用的懒加载目录树，被 EditorTab 使用，通过 `editableExtensions` prop 按 mode 过滤显示文件类型
 - **DiffTab.vue**：并排/统一差异视图，带滚动同步，使用 diff-match-patch 库
+- **RegexTab.vue**：正则测试器，结构化 `/pattern/flags` 输入、实时匹配、编辑/高亮预览双区、捕获组多色、匹配结果列表（与预览双向 hover 联动）、右侧速查抽屉；匹配经 `useRegexMatcher` 在 Web Worker 中执行
+- **composables/useRegexMatcher.js**：封装正则匹配 Worker 的生命周期——发起匹配、超时（1.5s）`terminate` 兜底、重建待命 Worker、组件卸载释放，杜绝灾难性回溯冻结 UI
+- **workers/regex.worker.js**：子线程内调用 `regexHelper.runRegex` 执行匹配，postMessage 回传位置数组
 - **SettingsTab.vue**：平台感知快捷键（Cmd vs Ctrl），electron-store 持久化
 
 ### 应用配置

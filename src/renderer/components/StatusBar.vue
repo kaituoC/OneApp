@@ -23,6 +23,7 @@ const tabNames = {
   json: 'JSON工具',
   diff: '文本对比',
   time: '时间工具',
+  regex: '正则',
   settings: '设置'
 }
 </script>

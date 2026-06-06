@@ -25,6 +25,7 @@ const tabs = [
   { key: 'json', label: 'JSON工具' },
   { key: 'diff', label: '文本对比' },
   { key: 'time', label: '时间工具' },
+  { key: 'regex', label: '正则' },
   { key: 'settings', label: '设置' }
 ]
 </script>

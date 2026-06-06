@@ -24,6 +24,7 @@ const tabNames = {
   diff: '文本对比',
   time: '时间工具',
   regex: '正则',
+  encode: '编码',
   settings: '设置'
 }
 </script>

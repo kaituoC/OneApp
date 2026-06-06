@@ -1,6 +1,6 @@
 # OneApp
 
-多功能开发工具桌面应用，集成统一编辑器（Markdown / HTML 自动识别）、JSON 工具、文本对比、时间转换和正则测试功能。
+多功能开发工具桌面应用，集成统一编辑器（Markdown / HTML 自动识别）、JSON 工具、文本对比、时间转换、正则测试和编码工具合集。
 
 ## 界面预览
 
@@ -51,6 +51,15 @@
 - 匹配结果列表（序号、位置、匹配值、各捕获组值），与预览高亮双向 hover 联动
 - 右侧速查抽屉：常用模式（邮箱/URL/IP…点击填入）、语法元字符（点击插入光标处）、flags 说明
 - 正则匹配在 Web Worker 中执行并设超时兜底，灾难性回溯也不会冻结界面
+
+### 编码工具合集
+左侧菜单切换 6 个子工具，纯前端离线、零数据外传：
+- **Base64**：文本 ⇄ Base64，正确支持中文 / emoji（UTF-8）
+- **URL**：文本 ⇄ URL 编码（`encodeURIComponent`）
+- **JWT**：解码展示 Header / Payload / Signature 三段，`exp` / `iat` / `nbf` 附人类可读时间（不验签）
+- **Hash**：一次性输出 MD5 / SHA-1 / SHA-256 / SHA-512（hex 小写）
+- **进制**：Dec / Hex / Oct / Bin 四框联动，基于 BigInt 支持大整数
+- **Unicode**：文本 ⇄ 转义，格式三选一（`\u` / `\u{}` / HTML 实体），正确处理 emoji
 
 ## 系统要求
 
@@ -170,7 +179,7 @@ npm run dist
 | Ctrl/Cmd + R / F5 | 刷新页面 |
 | Ctrl/Cmd + Tab | 切换下一个标签 |
 | Ctrl/Cmd + Shift + Tab | 切换上一个标签 |
-| Ctrl/Cmd + 1~6 | 切换到指定标签 |
+| Ctrl/Cmd + 1~7 | 切换到指定标签 |
 | F12 | 打开/关闭调试工具 |
 
 ## 技术栈
@@ -181,6 +190,7 @@ npm run dist
 - marked (Markdown 解析)
 - diff-match-patch (文本对比)
 - CodeMirror 6 (JSON 编辑器)
+- js-md5 (MD5 计算，SHA 系列走原生 Web Crypto)
 - electron-store (配置持久化)
 
 ## 项目结构

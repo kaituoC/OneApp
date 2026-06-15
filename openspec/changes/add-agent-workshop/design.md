@@ -41,6 +41,8 @@ Alternative considered: a generic command-template adapter. That is deferred bec
 
 Agent detection will resolve CLI paths with a login shell because Electron apps launched from the Dock may not inherit the user's shell `PATH`. Detection caches status, resolved path, version, checked time, and error details in `electron-store`. Runtime invocations use the cached resolved path with `spawn(..., { shell: false })`.
 
+Detection also probes login state after resolving the CLI: ClaudeCode via `claude auth status` (parsing the JSON `loggedIn` field) and Codex via `codex login status` (exit code 0 means logged in). Both commands return quickly without consuming model usage (verified on real CLIs). An agent counts as ready for discussion only when it is both installed and logged in; an installed-but-logged-out agent is shown as such, cannot be selected, and is pointed to its login command.
+
 Alternative considered: directly calling `spawn("codex")` and `spawn("claude")`. That is less reliable for packaged Electron apps and more exposed to shell quoting problems.
 
 ### 4. Fixed discussion flow
@@ -65,7 +67,7 @@ Alternative considered: generating a rich repository context pack. That is defer
 Each invocation will include read-only CLI options where supported, repeated prompt constraints, and Git working tree snapshot checks:
 - Codex adapter uses `--sandbox read-only`, `--ephemeral`, `--color never`, and stdin prompt input.
 - ClaudeCode adapter uses `--print`, `--input-format text`, `--output-format text`, `--permission-mode plan`, `--tools Read,Grep,Glob,LS`, `--add-dir <repoDir>`, and `--no-session-persistence`.
-- The prompt for every phase states that the agent must not create, modify, delete, format, install dependencies, commit, switch branches, push, or otherwise mutate the workspace.
+- The prompt for every phase states that the agent must not create, modify, delete, format, install dependencies, commit, switch branches, push, or otherwise mutate the workspace. The prompt also instructs the agent to output only its analysis and plan as text, to never attempt a write action even when the idea mentions implementing or creating something, and to never ask whether to exit read-only or plan mode. (Verified on real CLIs: ClaudeCode plan mode otherwise pauses in non-interactive runs to ask for confirmation, while Codex read-only sandbox hard-rejects writes at the tool layer.)
 - For Git repositories, the main process records `git status --short` before the run and rechecks after each phase. If the status changes, the run stops and records a system warning.
 
 Alternative considered: relying only on prompt instructions. That is insufficient because local CLI behavior can vary by version and prompt constraints are not a hard boundary.
@@ -84,6 +86,8 @@ The main process will expose short IPC methods and one event channel:
 
 The event payload includes `runId`, `type`, and `payload`. Event types include run/phase/invocation started and finished, message creation, failures, cancellation, and completion.
 
+Because the existing `preload.cjs` only bridges request/response `invoke` calls and exposes no event channel, the preload will add a single dedicated subscription `onAgentDiscussionEvent(callback)` that returns an `unsubscribe` function; it listens only on `agent-discussion:event` and never exposes a generic `on(channel, ...)`. Renderer components subscribe on mount and call `unsubscribe` on unmount to avoid leaked or duplicated listeners.
+
 Alternative considered: polling the main process for run state. Events are more responsive and fit the phase/message timeline UI.
 
 ### 8. Persist records outside `electron-store`
@@ -94,17 +98,23 @@ Alternative considered: storing full records in `electron-store`. That is reject
 
 ### 9. Single-page UI with left control/progress rail and right timeline
 
-The Agent Workshop tab will use a two-column layout. Before running, the left rail holds repository, agent, moderator, and action controls while the right side holds the idea input. During and after a run, the left rail shows phase progress and actions, while the right side shows a Markdown timeline. Completion, failure, and cancellation stay in the same page; completed content remains exportable.
+The Agent Workshop tab will use a two-column layout. Before running, the left rail holds repository, agent, moderator, and action controls while the right side holds the idea input. During and after a run, the left rail shows phase progress and actions, while the right side shows a Markdown timeline. Completion, failure, and cancellation stay in the same page; completed content remains exportable. The tab is placed after 编码 (encode) and before 设置 (settings), extending the tab keyboard shortcuts to Ctrl+1–8.
 
 Alternative considered: a multi-step wizard. That would add navigation overhead for a workflow users may run repeatedly.
+
+### 10. Agents run with the user's existing local configuration
+
+V1 invokes Codex and ClaudeCode with the user's normal local setup, including global instruction files and installed skills/plugins; the orchestrator does not pass isolation flags such as Codex `--ignore-user-config`/`--ignore-rules`. This lets each agent bring its own analysis capabilities into the discussion.
+
+Alternative considered: isolating agents from local configuration. That is deferred because the user's local skills can improve plan quality; isolation can be revisited if global configuration noticeably biases or degrades output.
 
 ## Risks / Trade-offs
 
 - CLI versions may change argument behavior -> keep adapter construction covered by tests, expose useful failure messages, and allow manual re-detection.
 - ClaudeCode read-only enforcement depends on tool/permission behavior -> restrict tools to read-only operations and add prompt and Git snapshot defenses.
 - A user may edit files while a discussion is running -> treat any Git status change as a safety stop, even if the agent did not cause it.
-- Long agent output can make later prompts too large -> cap stored/displayed content separately from the per-agent content passed to later phases and mark truncation explicitly.
-- Agent calls can be slow or costly -> show call-count estimates before running and show a first-use cost notice remembered in local config.
+- Long agent output can make later prompts too large -> cap stored/displayed content at 512 KB and cap each per-agent response injected into later phases at 20000 characters, marking truncation explicitly.
+- Agent calls can be slow or costly -> each agent invocation uses a 600s timeout, the UI shows call-count estimates before running, and a first-use cost notice is remembered in local config. V1 keeps each CLI's default model and reasoning settings (e.g. Codex defaults to high reasoning effort, ~16k tokens for a trivial task in testing); cost tuning is deferred until real usage shows it is needed.
 - Final summary can fail after successful earlier rounds -> mark the run failed, keep completed messages, and allow Markdown export of partial records.
 - Packaged Electron PATH differences can make CLIs appear unavailable -> detect through login shell and run through resolved executable paths.
 

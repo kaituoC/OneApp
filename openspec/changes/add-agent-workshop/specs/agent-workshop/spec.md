@@ -14,7 +14,7 @@ OneApp SHALL provide an "Agent 研讨室" feature tab that matches the existing 
 
 ### Requirement: Agent availability detection
 
-Agent 研讨室 SHALL support only Codex and ClaudeCode in V1, detect their local CLI availability, cache detection results locally, and allow users to manually run detection again.
+Agent 研讨室 SHALL support only Codex and ClaudeCode in V1, detect their local CLI availability and login state, cache detection results locally, and allow users to manually run detection again.
 
 #### Scenario: First entry without cached detection
 - **WHEN** the user opens Agent 研讨室 and no cached availability result exists
@@ -31,6 +31,14 @@ Agent 研讨室 SHALL support only Codex and ClaudeCode in V1, detect their loca
 #### Scenario: Unavailable agent is disabled
 - **WHEN** an agent is unavailable or detection fails
 - **THEN** the system shows that agent as unavailable, prevents selecting it for discussion, and excludes it from moderator choices
+
+#### Scenario: Logged-in agent is ready
+- **WHEN** an installed agent reports a logged-in state (`claude auth status` JSON `loggedIn` is true, or `codex login status` exits 0)
+- **THEN** the system marks that agent as ready and allows selecting it for discussion
+
+#### Scenario: Installed but logged-out agent
+- **WHEN** an installed agent reports a logged-out state
+- **THEN** the system shows the agent as installed but not logged in, prevents selecting it, excludes it from moderator choices, and points the user to the corresponding login command
 
 ### Requirement: Local repository selection
 
@@ -124,6 +132,10 @@ Agent 研讨室 SHALL invoke agents from the selected repository root in read-on
 - **WHEN** any agent phase prompt is generated
 - **THEN** the prompt states that the agent MUST NOT modify, create, delete, format, install dependencies, commit, switch branches, push, or otherwise mutate the workspace
 
+#### Scenario: Plan-only output without write attempts
+- **WHEN** any agent phase prompt is generated
+- **THEN** the prompt instructs the agent to output only its analysis and plan as text, to not attempt any write or mutation even when the input mentions implementing or creating something, and to not ask whether to exit read-only or plan mode
+
 #### Scenario: Minimal repository context
 - **WHEN** any agent phase prompt is generated
 - **THEN** the prompt includes only minimal repository facts and tells the agent it may read repository files as needed, without injecting key files, OpenSpec summaries, package metadata, file trees, or code snippets
@@ -159,6 +171,10 @@ Agent 研讨室 SHALL show phase progress and a Markdown timeline while a discus
 #### Scenario: Markdown message timeline
 - **WHEN** a user prompt, agent response, moderator summary, system warning, failure, or cancellation message is created
 - **THEN** the right timeline displays it as Markdown in chronological order
+
+#### Scenario: Oversized output truncation
+- **WHEN** an agent response exceeds the stored/display limit, or is injected into a later phase prompt beyond the downstream limit
+- **THEN** the system truncates the content for that purpose and explicitly marks it as truncated
 
 ### Requirement: Failure and cancellation behavior
 

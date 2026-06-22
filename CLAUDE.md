@@ -4,7 +4,7 @@
 
 ## 项目概述
 
-OneApp 是一个基于 Electron + Vue 3 的桌面应用程序，提供开发者工具：统一编辑器（按文件后缀自动切换 Markdown / HTML 模式）、JSON 格式化、文本差异对比、时间转换、正则测试和编码工具合集（Base64 / URL / JWT / Hash / 进制 / Unicode）。编辑器侧边栏提供懒加载目录树，可像文件管理器一样浏览目录并打开文件。
+OneApp 是一个基于 Electron + Vue 3 的桌面应用程序，提供开发者工具：统一编辑器（按文件后缀自动切换 Markdown / HTML 模式）、JSON 格式化、文本差异对比、时间转换、正则测试、编码工具合集（Base64 / URL / JWT / Hash / 进制 / Unicode）和 Agent 研讨室（多个本地 AI agent 在只读模式下研讨本地仓库并汇总实现方案）。编辑器侧边栏提供懒加载目录树，可像文件管理器一样浏览目录并打开文件。
 
 ## 命令
 
@@ -74,7 +74,7 @@ npm test -- tests/jsonHelper.test.js  # 运行单个测试文件
 
 ### 贯穿全程的硬性约定
 
-- **沙箱**：`npm run build` / `npm run dist` / `git push` / `gh` 等构建与网络命令在沙箱内常因证书或依赖解析（如 `vue/compiler-sfc`）失败；确认是沙箱限制后在沙箱外重试（`/sandbox` 管理白名单）。`npm test` 可在沙箱内运行。
+- **沙箱**：`npm run build` / `npm run dist` / `git push` / `gh` 等构建与网络命令在沙箱内常因证书或依赖解析（如 `vue/compiler-sfc`）失败；确认是沙箱限制后在沙箱外重试（`/sandbox` 管理白名单）。`npm test` 多数可在沙箱内运行，但 `tests/safeMarkdown.test.js` 用 jsdom 环境，会加载 `parse5/dist/common/token.js` 等被沙箱 `*token*` 读取拒绝规则命中的文件而导致 worker 启动失败——跑含 DOM 环境的完整测试需在沙箱外执行。
 - **发布文案**：GitHub Release 的标题与 notes 用中文，notes 取自 CHANGELOG 对应版本；未签名的 macOS 包需在 notes 提示用户「右键 → 打开」绕过 Gatekeeper。
 - **测试稳定性**：环境相关用例（如 `timeHelper` 时区断言）在不同时区机器上可能失败，判断 flaky 时先排除环境因素，不要误判为本次回归。
 - **OpenSpec 数据卫生**：`/opsx:archive` 会把 delta 合并进主 specs；若主 spec 残留 delta 头（`## ADDED`/`## REMOVED Requirements`）会阻塞归档，需先规范化为 `# 标题 / ## Purpose / ## Requirements` 结构。
@@ -105,6 +105,8 @@ ipcMain.handle('read-file', async (event, filePath) => { ... })
 
 **fileHelper.js** 封装了 IPC 调用并添加了额外逻辑（路径校验）。
 
+**事件型 IPC（Agent 研讨室）**：研讨是长任务，由主进程编排并通过 `webContents.send('agent-discussion:event', …)` 向渲染层推送阶段/调用/消息/失败/完成事件；preload 暴露窄接口 `electronAPI.agentWorkshop`（`onEvent(cb)` 返回取消订阅函数，仅订阅单一 channel，不暴露通用 `on`）。主进程逻辑位于 `electron/agentWorkshop/`：`adapters`（只读参数构造）、`detection`（登录 shell 解析路径 + `claude auth status` / `codex login status` 登录态探测）、`runner`（spawn / 超时 / 取消 / 进程组终止 / 输出截断）、`gitSafety`（`git status` 快照与比较，作为咨询式二次防线——变化只提示不中断，实时只读靠 CLI 沙箱参数）、`records`（userData 下 JSON 记录持久化）、`orchestrator`（依赖注入的流程编排状态机，决策可单测；第二轮仅第一轮成功子集进入）、`ipc`（handlers 与事件发射，由 main.js 注册；start 在主进程侧 `validateStartParams` 复核 + 运行互斥 + try/catch/finally 异常兜底）。Windows 暂不支持（detection 用登录 shell、runner 用进程组终止，均未适配），由 `AgentWorkshopTab.vue` 用 `navigator.platform` 门控显示「暂不支持」。
+
 ### 工具模块
 
 `src/renderer/utils/` 中的核心工具函数为纯 JavaScript，可单元测试：
@@ -114,6 +116,8 @@ ipcMain.handle('read-file', async (event, filePath) => { ... })
 - **fileHelper.js**：IPC 封装，包含路径校验
 - **regexHelper.js**：runRegex — 编译正则并执行匹配，返回 `{ success, matches/error }`，含捕获组位置/命名、命中计数与海量匹配截断；被 Web Worker 引用且可独立单元测试
 - **encodeHelper.js**：编码工具合集纯逻辑——base64Encode/Decode（TextEncoder 处理 UTF-8）、urlEncode/Decode、decodeJWT（三段拆分 + exp/iat/nbf 转可读时间，不验签）、hashAll（MD5 via js-md5 + SHA-1/256/512 via crypto.subtle，异步）、convertBase（BigInt 四进制联动）、unicodeEscape/Unescape（`\u` / `\u{}` / HTML 实体三格式），均返回 `{ success, result/error }`
+- **agentWorkshopHelper.js**：Agent 研讨室与进程无关的纯逻辑——常量/状态枚举、就绪态与配置派生（readyAgents、三态 agentCardState、moderator 默认与回退、validateStart、主进程侧 validateStartParams）、调用次数估算（2n+1）、三阶段 prompt 构造（含只读/plan-only/不反问约束）、minimal 仓库上下文、研讨记录 Markdown 导出；渲染进程与主进程双向 import、可单测
+- **safeMarkdown.js**：`marked` 解析 + `DOMPurify` 消毒的安全 Markdown 渲染（剥离 `<script>`/`on*`/`javascript:`，外链补 `target=_blank`+`rel=noopener`），供 Agent 研讨室时间线 `v-html` 使用；测试在 jsdom 环境下运行
 
 ### 构建系统
 
@@ -126,7 +130,7 @@ electron-vite 构建三个独立的 bundle：
 
 ### 核心组件
 
-- **App.vue**：根组件，管理标签页状态（7 个）、主题、字号、最近文件和键盘快捷键（Ctrl+1-7、Ctrl+Tab）
+- **App.vue**：根组件，管理标签页状态（8 个）、主题、字号、最近文件和键盘快捷键（Ctrl+1-8、Ctrl+Tab）
 - **EditorWithLineNumbers.vue**：可复用的 textarea，带同步行号列
 - **EditorTab.vue**：统一编辑器标签，按文件后缀驱动 `mode`（markdown / html），多态预览（`MarkdownPreview` / `HtmlPreview`）、上下文工具栏（markdown 模式额外含导出 HTML/PDF、语法介绍）、滚动同步（markdown 双向 / html 单向），使用 `useEditorFile` composable
 - **composables/useEditorFile.js**：编辑器共用逻辑——打开/新建/保存/快捷键，后缀→mode 派生，Ctrl+S/N 成对绑定/解绑
@@ -136,6 +140,7 @@ electron-vite 构建三个独立的 bundle：
 - **composables/useRegexMatcher.js**：封装正则匹配 Worker 的生命周期——发起匹配、超时（1.5s）`terminate` 兜底、重建待命 Worker、组件卸载释放，杜绝灾难性回溯冻结 UI
 - **workers/regex.worker.js**：子线程内调用 `regexHelper.runRegex` 执行匹配，postMessage 回传位置数组
 - **EncodeTab.vue**：编码工具合集，左侧菜单切换 6 个子工具（Base64 / URL / JWT / Hash / 进制 / Unicode）；编解码类用「左源右果 + ⇄ 方向」实时计算，Hash 异步（generation 计数防过期响应），进制四框联动，纯逻辑全在 `encodeHelper.js`
+- **AgentWorkshopTab.vue**：Agent 研讨室标签，左栏配置（仓库选择 / agent 三态检测卡片 / 主持选择 / 调用估算 / 开始-停止）与运行进度，右栏想法输入或 Markdown 时间线；经 `window.electronAPI.agentWorkshop` 调用主进程，订阅 `agent-discussion:event` 事件流（卸载时取消订阅），用 `activeRunId` 区分本会话运行与恢复查看的旧记录
 - **SettingsTab.vue**：平台感知快捷键（Cmd vs Ctrl），electron-store 持久化
 
 ### 应用配置

@@ -31,6 +31,11 @@
         v-show="activeTab === 'encode'"
         :font-size="editorFontSize"
       />
+      <AgentWorkshopTab
+        v-show="activeTab === 'agent'"
+        :is-active="activeTab === 'agent'"
+        :font-size="editorFontSize"
+      />
       <SettingsTab
         v-show="activeTab === 'settings'"
         v-model:work-dir="workDir"
@@ -53,6 +58,7 @@ import DiffTab from './components/DiffTab.vue'
 import TimeTab from './components/TimeTab.vue'
 import RegexTab from './components/RegexTab.vue'
 import EncodeTab from './components/EncodeTab.vue'
+import AgentWorkshopTab from './components/AgentWorkshopTab.vue'
 import SettingsTab from './components/SettingsTab.vue'
 import StatusBar from './components/StatusBar.vue'
 
@@ -103,10 +109,10 @@ function onFileOpen(filePath) {
   }
 }
 
-const tabs = ['editor', 'json', 'diff', 'time', 'regex', 'encode', 'settings']
+const tabs = ['editor', 'json', 'diff', 'time', 'regex', 'encode', 'agent', 'settings']
 
 document.addEventListener('keydown', (e) => {
-  if (e.ctrlKey && e.key >= '1' && e.key <= '7') {
+  if (e.ctrlKey && e.key >= '1' && e.key <= '8') {
     e.preventDefault()
     activeTab.value = tabs[Number(e.key) - 1]
   }

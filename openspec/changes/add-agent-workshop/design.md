@@ -146,8 +146,8 @@ These were added after a security/robustness review of the initial implementatio
 ## Risks / Trade-offs
 
 - CLI versions may change argument behavior -> keep adapter construction covered by tests, expose useful failure messages, and allow manual re-detection.
-- ClaudeCode read-only enforcement depends on tool/permission behavior -> restrict tools to read-only operations and add prompt and Git snapshot defenses.
-- A user may edit files while a discussion is running -> treat any Git status change as a safety stop, even if the agent did not cause it.
+- ClaudeCode read-only enforcement depends on tool/permission behavior -> restrict tools to read-only operations and add prompt constraints, backed by an advisory Git snapshot.
+- A user may edit files (or build artifacts/logs may change) while a discussion is running -> the Git check is advisory only: record a one-time advisory message and continue rather than hard-stopping, since a hard stop would cause false-positive aborts on actively-developed repositories. Real-time read-only is enforced by the CLI sandbox options, not by the Git check.
 - Long agent output can make later prompts too large -> cap stored/displayed content at 512 KB and cap each per-agent response injected into later phases at 20000 characters, marking truncation explicitly.
 - Agent calls can be slow or costly -> each agent invocation uses a 600s timeout, the UI shows call-count estimates before running, and a first-use cost notice is remembered in local config. V1 keeps each CLI's default model and reasoning settings (e.g. Codex defaults to high reasoning effort, ~16k tokens for a trivial task in testing); cost tuning is deferred until real usage shows it is needed.
 - Final summary can fail after successful earlier rounds -> mark the run failed, keep completed messages, and allow Markdown export of partial records.

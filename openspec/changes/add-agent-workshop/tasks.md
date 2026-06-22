@@ -15,7 +15,7 @@
 - [x] 2.4 Implement Codex adapter argument construction for `codex exec` with repo cwd, read-only sandbox, ephemeral mode, color disabled, stdin prompt, and output capture
 - [x] 2.5 Implement ClaudeCode adapter argument construction for `claude --print` with repo cwd, text input/output, plan permission mode, read-only tools, `--add-dir`, and no session persistence
 - [x] 2.6 Implement a generic agent invocation runner with stdin prompt writing, stdout/stderr collection, timeout handling (600s default), cancellation handling, output truncation (512 KB stored / 20000-char downstream), and process-tree termination
-- [x] 2.7 Implement Git safety snapshot helpers for baseline `git status --short`, post-phase comparison, non-Git warnings, and safety-stop errors
+- [x] 2.7 Implement Git snapshot helpers for baseline `git status --short`, post-phase comparison, non-Git warnings, and advisory (non-stopping) change messages
 - [x] 2.8 Implement the discussion orchestrator for Round 1 parallel execution, Round 2 parallel execution, single-agent self-review, Final moderator summary, partial failure handling, cancellation, and record updates
 - [x] 2.9 Add main-process IPC handlers and event emission for get/set config, check agents, get last run, start, stop, export Markdown, and discussion events
 

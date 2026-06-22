@@ -1,6 +1,6 @@
 # OneApp
 
-多功能开发工具桌面应用，集成统一编辑器（Markdown / HTML 自动识别）、JSON 工具、文本对比、时间转换、正则测试和编码工具合集。
+多功能开发工具桌面应用，集成统一编辑器（Markdown / HTML 自动识别）、JSON 工具、文本对比、时间转换、正则测试、编码工具合集和 Agent 研讨室。
 
 ## 界面预览
 
@@ -60,6 +60,15 @@
 - **Hash**：一次性输出 MD5 / SHA-1 / SHA-256 / SHA-512（hex 小写）
 - **进制**：Dec / Hex / Oct / Bin 四框联动，基于 BigInt 支持大整数
 - **Unicode**：文本 ⇄ 转义，格式三选一（`\u` / `\u{}` / HTML 实体），正确处理 emoji
+
+### Agent 研讨室
+- 让多个本地 AI 编码 agent（V1 支持 **Codex** 与 **ClaudeCode**）在**只读**模式下独立审视所选本地仓库，再交叉评审、由主持 agent 汇总出实现方案
+- 固定流程：第一轮独立提案 → 第二轮交叉评审（单 agent 时为自我评审，仅第一轮成功的 agent 进入第二轮）→ 主持 agent 最终汇总
+- **只读安全多重保障**：以 Codex 内核级只读沙箱、ClaudeCode plan 模式 + 只读工具白名单为主防线；每阶段 `git status` 快照比对为咨询式二次防线，发现工作区变化仅提示、不中断
+- **输出安全渲染**：Agent 输出经 DOMPurify 消毒后再展示，剥离脚本 / 事件属性 / `javascript:` 链接
+- 自动检测 CLI 安装与登录态，仅「就绪」agent 可参与；研讨记录可恢复查看并导出为 Markdown
+- 开始前提示预计调用次数与首次成本（会真实调用本地 CLI、消耗对应服务用量）
+- 平台：目前仅 **macOS / Linux** 可用，Windows 暂显示「暂不支持」
 
 ## 系统要求
 
@@ -179,7 +188,7 @@ npm run dist
 | Ctrl/Cmd + R / F5 | 刷新页面 |
 | Ctrl/Cmd + Tab | 切换下一个标签 |
 | Ctrl/Cmd + Shift + Tab | 切换上一个标签 |
-| Ctrl/Cmd + 1~7 | 切换到指定标签 |
+| Ctrl/Cmd + 1~8 | 切换到指定标签 |
 | F12 | 打开/关闭调试工具 |
 
 ## 技术栈

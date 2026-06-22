@@ -49,7 +49,7 @@ Alternative considered: directly calling `spawn("codex")` and `spawn("claude")`.
 
 The flow is:
 1. Round 1: all selected agents run in parallel with the same frozen input package and no access to other agents' responses.
-2. Round 2: all selected agents run in parallel after Round 1, reading all successful Round 1 proposals and producing one cross-review response.
+2. Round 2: only the agents that succeeded in Round 1 (subset S1) run in parallel, reading the other successful Round 1 proposals and producing one cross-review response. Agents that failed Round 1 do not get a second invocation.
 3. Final: the moderator agent runs once after Round 2 and produces the final Markdown summary.
 
 For one selected agent, Round 2 becomes self-review. The moderator defaults to the first selected available agent and can be changed to any selected agent.
@@ -66,11 +66,11 @@ Alternative considered: generating a rich repository context pack. That is defer
 
 Each invocation will include read-only CLI options where supported, repeated prompt constraints, and Git working tree snapshot checks:
 - Codex adapter uses `--sandbox read-only`, `--ephemeral`, `--color never`, and stdin prompt input.
-- ClaudeCode adapter uses `--print`, `--input-format text`, `--output-format text`, `--permission-mode plan`, `--tools Read,Grep,Glob,LS`, `--add-dir <repoDir>`, and `--no-session-persistence`.
+- ClaudeCode adapter uses `--print`, `--input-format text`, `--output-format text`, `--permission-mode plan`, `--allowedTools Read Grep Glob LS`, `--add-dir <repoDir>`, and `--no-session-persistence`.
 - The prompt for every phase states that the agent must not create, modify, delete, format, install dependencies, commit, switch branches, push, or otherwise mutate the workspace. The prompt also instructs the agent to output only its analysis and plan as text, to never attempt a write action even when the idea mentions implementing or creating something, and to never ask whether to exit read-only or plan mode. (Verified on real CLIs: ClaudeCode plan mode otherwise pauses in non-interactive runs to ask for confirmation, while Codex read-only sandbox hard-rejects writes at the tool layer.)
-- For Git repositories, the main process records `git status --short` before the run and rechecks after each phase. If the status changes, the run stops and records a system warning.
+- The CLI sandbox options are the **primary** read-only boundary. The Git check is a **secondary, advisory** defense: for Git repositories the main process records `git status --short` before the run and rechecks after each phase; if the status changes, it records a one-time system advisory message and continues the discussion rather than stopping. This avoids false-positive aborts when researching an actively-developed (dirty) repository, where build artifacts, logs, or concurrent user edits would otherwise trip a hard stop. The `git status --short` string snapshot cannot detect a re-modification of an already-modified file, which is acceptable because real-time read-only enforcement is the CLI sandbox, not the Git check.
 
-Alternative considered: relying only on prompt instructions. That is insufficient because local CLI behavior can vary by version and prompt constraints are not a hard boundary.
+Alternative considered: relying only on prompt instructions. That is insufficient because local CLI behavior can vary by version and prompt constraints are not a hard boundary. Alternative considered: hard-stopping the run on any Git working-tree change; rejected because the tool's purpose is researching active repositories and the CLI sandbox already enforces read-only.
 
 ### 7. Event-based IPC for long-running work
 
@@ -107,6 +107,41 @@ Alternative considered: a multi-step wizard. That would add navigation overhead 
 V1 invokes Codex and ClaudeCode with the user's normal local setup, including global instruction files and installed skills/plugins; the orchestrator does not pass isolation flags such as Codex `--ignore-user-config`/`--ignore-rules`. This lets each agent bring its own analysis capabilities into the discussion.
 
 Alternative considered: isolating agents from local configuration. That is deferred because the user's local skills can improve plan quality; isolation can be revisited if global configuration noticeably biases or degrades output.
+
+### 11. Main-process module layout
+
+Main-process code lives under `electron/agentWorkshop/`:
+- `adapters.js` — pure argument construction for Codex/ClaudeCode (no process execution).
+- `gitSafety.js` — baseline snapshot via `git status --short` plus a pure status-diff comparison.
+- `runner.js` — spawn a single agent invocation with stdin prompt, stdout/stderr capture, timeout, cancellation, output truncation, and process-tree kill.
+- `detection.js` — login-shell path/version resolution plus auth probes.
+- `records.js` — JSON record create/load-latest/incremental-save under `app.getPath('userData')`.
+- `orchestrator.js` — phase sequencing with dependency-injected callbacks.
+- `ipc.js` — IPC handlers and event emission, registered from `main.js`.
+
+Pure parts (adapter args, git status diff, orchestrator decisions) are unit-tested; side-effecting modules are thin wrappers.
+
+### 12. Orchestrator as an injectable state machine
+
+States: `round1 → round2 → final → completed`, with `failed` / `canceled` as terminal side exits.
+- Round 1: invoke all selected agents in parallel; the successful subset S1 carries forward. Empty S1 → `failed`.
+- Round 2: only S1 is invoked, in parallel; multi-agent reads the other agents' S1 proposals, single-agent self-reviews; successful subset S2 carries forward. Agents absent from S1 are not re-invoked.
+- Final: the moderator runs once using available S1/S2 output; success → `completed`, failure → `failed`.
+- After every phase an advisory Git check runs; a changed working tree records a one-time system advisory message but does **not** stop or fail the run.
+- A user stop terminates active processes and marks the run `canceled`.
+
+The orchestrator receives injected `invoke`, `gitCheck`, `emit`, and `shouldCancel` callbacks and never touches spawn/fs directly, so its decisions (partial Round 1 failure, total failure, Round 2 subset entry, Round 2 failure, Final failure, cancellation, Git advisory) are unit-testable with mocked invocations.
+
+### 13. Process management
+
+Each invocation uses `spawn(resolvedPath, args, { cwd: repoDir, shell: false, detached: true })`, writes the prompt to stdin then ends it, and accumulates stdout/stderr. On 600s timeout or cancellation the whole process group is terminated (`process.kill(-pid, 'SIGTERM')`, then `SIGKILL` after a short grace period; the escalation timer is cleared once the process settles). Output beyond 512 KB is truncated and marked. Process-group termination and login-shell detection are POSIX-specific, so the feature is gated to macOS/Linux (see Decision 14).
+
+### 14. Output sanitization, start hardening, and platform gating
+
+These were added after a security/robustness review of the initial implementation:
+- **Output sanitization**: Agent output is local-CLI output that may echo malicious content from the analyzed repository. It is rendered with `v-html`, and in Electron an injected `on*` handler can reach `window.electronAPI`. So the renderer pipes Markdown through `safeMarkdown()` (`marked` → `DOMPurify.sanitize`), stripping `<script>`, event-handler attributes, and `javascript:` URLs, and forcing `target="_blank"` + `rel="noopener noreferrer"` on links.
+- **Start hardening**: `agent-discussion:start` does not trust renderer parameters. It re-validates with `validateStartParams` (repo dir exists, idea non-empty, selected agents deduped/known/ready, moderator within selection), enforces single-run mutual exclusion (rejects a second start while one is active), scopes `shouldCancel` to the current `runId`, and wraps the orchestrator in `try/catch/finally` so an exception records a system message, marks the run `failed`, emits `run-finished`, and clears `active` instead of leaving the record stuck in `running`. The renderer also gates re-entry with a `starting` flag.
+- **Platform gating**: detection (login shell) and process-group termination are not implemented for Windows, so `AgentWorkshopTab.vue` detects Windows via `navigator.platform` and shows an "unsupported on Windows" panel instead of the workshop UI; macOS/Linux are supported.
 
 ## Risks / Trade-offs
 

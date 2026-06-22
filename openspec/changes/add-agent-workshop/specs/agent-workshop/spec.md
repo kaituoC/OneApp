@@ -106,7 +106,7 @@ Agent 研讨室 SHALL run a fixed flow consisting of independent first-round pro
 
 #### Scenario: Cross-review round
 - **WHEN** at least one first-round proposal succeeds
-- **THEN** each selected agent receives the successful first-round proposals and produces one cross-review response
+- **THEN** each agent that produced a successful first-round proposal (the successful subset) receives the other successful first-round proposals and produces one cross-review response; agents that failed the first round are not invoked again
 
 #### Scenario: Single-agent self-review
 - **WHEN** only one agent is selected and its first-round proposal succeeds
@@ -140,17 +140,17 @@ Agent 研讨室 SHALL invoke agents from the selected repository root in read-on
 - **WHEN** any agent phase prompt is generated
 - **THEN** the prompt includes only minimal repository facts and tells the agent it may read repository files as needed, without injecting key files, OpenSpec summaries, package metadata, file trees, or code snippets
 
-### Requirement: Git workspace safety check
+### Requirement: Git workspace advisory check
 
-Agent 研讨室 SHALL record Git working tree status before a run and stop the run if the status changes after a phase.
+Agent 研讨室 SHALL record Git working tree status before a run and, after each phase, record a one-time advisory system message if the status changes, without stopping or failing the run. Real-time read-only enforcement is provided by the CLI sandbox options, not by this check.
 
 #### Scenario: Git status unchanged
 - **WHEN** the selected directory is a Git repository and the status after a phase matches the baseline status
-- **THEN** the system allows the discussion to continue
+- **THEN** the system allows the discussion to continue without an advisory message
 
 #### Scenario: Git status changed
 - **WHEN** the selected directory is a Git repository and the status after a phase differs from the baseline status
-- **THEN** the system stops the discussion, records a system warning, and marks the run as failed
+- **THEN** the system records a one-time advisory system message and continues the discussion; it does not stop or fail the run
 
 #### Scenario: Non-Git directory
 - **WHEN** the selected directory is not a Git repository

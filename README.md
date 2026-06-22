@@ -121,7 +121,7 @@ chmod +x OneApp-<版本>-linux-x86_64.AppImage
 
 ### 🔧 从源码构建（所有平台）
 
-需 Node.js 18+（推荐 20 LTS）与 Git：
+需 Node.js 20+（推荐 20 LTS）与 Git：
 
 ```bash
 git clone https://github.com/kaituoC/OneApp.git

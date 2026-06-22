@@ -55,7 +55,7 @@
 - [ ] 6.4 Verify a two-agent run uses parallel Round 1, parallel Round 2, serial Final, and produces Markdown timeline messages
 - [ ] 6.5 Verify a one-agent run performs Round 1, self-review, and Final with a 3-call estimate
 - [ ] 6.6 Verify stopping a running discussion terminates active processes and preserves completed messages
-- [ ] 6.7 Verify Git working tree changes during a run trigger a safety stop
+- [ ] 6.7 Verify Git working tree changes during a run record a one-time advisory message and do not stop or fail the run
 - [ ] 6.8 Verify completed, failed, and canceled records can be restored for viewing and exported as Markdown
 
 ## 7. Documentation And Release Readiness

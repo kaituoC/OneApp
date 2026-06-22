@@ -27,6 +27,7 @@ const tabs = [
   { key: 'time', label: '时间工具' },
   { key: 'regex', label: '正则' },
   { key: 'encode', label: '编码' },
+  { key: 'agent', label: 'Agent 研讨室' },
   { key: 'settings', label: '设置' }
 ]
 </script>

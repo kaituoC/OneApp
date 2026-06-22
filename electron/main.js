@@ -3,6 +3,7 @@ import path from 'path'
 import { fileURLToPath } from 'url'
 import fs from 'fs'
 import Store from 'electron-store'
+import { registerAgentWorkshopIpc } from './agentWorkshop/ipc.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -182,7 +183,10 @@ ipcMain.handle('toggle-devtools', () => {
   if (win) win.webContents.toggleDevTools()
 })
 
-app.whenReady().then(createWindow)
+app.whenReady().then(() => {
+  createWindow()
+  registerAgentWorkshopIpc({ store, getWindow: () => mainWindow })
+})
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit()

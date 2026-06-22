@@ -74,19 +74,21 @@ export async function runDiscussion(opts) {
     if (res.ok) {
       push({ type: MESSAGE_TYPE.AGENT, agentId, agentName: nameOf(agentId), phase: PHASES.ROUND1, content: res.text, truncated: res.truncated })
       s1.push({ agentId, agentName: nameOf(agentId), text: res.text })
-    } else {
+    } else if (!res.canceled) {
       push({ type: MESSAGE_TYPE.SYSTEM, phase: PHASES.ROUND1, content: `${nameOf(agentId)}（${agentId}）第一轮失败：${res.error || '未知错误'}` })
     }
   }
   phases[PHASES.ROUND1] = { total: selectedAgents.length, succeeded: s1.map((x) => x.agentId) }
 
+  // 取消优先于「全失败」判定：停止研讨会让本轮调用都以 canceled 失败返回，
+  // 不能据此误判为 failed（res.canceled 兜底，防 shouldCancel 未及时翻转）
+  if (canceled() || r1.some(({ res }) => res.canceled)) return cancelOut()
   const g1 = await checkGit(PHASES.ROUND1)
   adviseGit(g1)
   if (s1.length === 0) {
     push({ type: MESSAGE_TYPE.SYSTEM, content: '所有 Agent 第一轮均失败，研讨结束。' })
     return finish(RUN_STATUS.FAILED)
   }
-  if (canceled()) return cancelOut()
 
   // ── Round 2：并行；仅第一轮成功的子集 S1 进入；多 agent 交叉评审，单 agent 自评 ──
   const r2 = await Promise.all(
@@ -102,19 +104,20 @@ export async function runDiscussion(opts) {
     if (res.ok) {
       push({ type: MESSAGE_TYPE.AGENT, agentId, agentName: nameOf(agentId), phase: PHASES.ROUND2, content: res.text, truncated: res.truncated })
       s2.push({ agentId, agentName: nameOf(agentId), text: res.text })
-    } else {
+    } else if (!res.canceled) {
       push({ type: MESSAGE_TYPE.SYSTEM, phase: PHASES.ROUND2, content: `${nameOf(agentId)}（${agentId}）交叉评审失败：${res.error || '未知错误'}` })
     }
   }
   phases[PHASES.ROUND2] = { total: s1.length, succeeded: s2.map((x) => x.agentId) }
 
+  if (canceled() || r2.some(({ res }) => res.canceled)) return cancelOut()
   const g2 = await checkGit(PHASES.ROUND2)
   adviseGit(g2)
-  if (canceled()) return cancelOut()
 
   // ── Final：主持 agent 汇总（用已有的 round1/round2 成功输出）──
   const finalPrompt = buildFinalPrompt({ idea, repoContext, round1: s1, round2: s2 })
   const fres = await runInvoke(moderator, PHASES.FINAL, finalPrompt)
+  if (canceled() || fres.canceled) return cancelOut()
   if (!fres.ok) {
     push({ type: MESSAGE_TYPE.SYSTEM, phase: PHASES.FINAL, content: `最终汇总失败：${fres.error || '未知错误'}` })
     phases[PHASES.FINAL] = { succeeded: [] }

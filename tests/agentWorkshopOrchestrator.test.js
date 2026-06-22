@@ -105,6 +105,32 @@ describe('runDiscussion 编排状态机', () => {
     expect(rec.status).toBe('canceled')
   })
 
+  it('停止研讨使 round1 调用全部 canceled 返回：判为 canceled 而非 failed', async () => {
+    // 模拟真实停止：runAgent 因 abort 返回 { ok:false, canceled:true }；
+    // 即便 shouldCancel 未及时翻转，也应靠 res.canceled 兜底判为取消
+    const invoke = async () => ({ ok: false, canceled: true, error: '已取消' })
+    const rec = await runDiscussion({
+      ...baseOpts,
+      selectedAgents: ['codex', 'claude'],
+      moderator: 'codex',
+      invoke,
+      shouldCancel: () => false
+    })
+    expect(rec.status).toBe('canceled')
+    // 不应出现「第一轮失败」噪声，也不应标记为 failed
+    expect(rec.messages.some((m) => /第一轮失败/.test(m.content || ''))).toBe(false)
+  })
+
+  it('Final 阶段被取消：判为 canceled 而非「最终汇总失败」', async () => {
+    const invoke = async ({ phase }) => {
+      if (phase === 'final') return { ok: false, canceled: true, error: '已取消' }
+      return { ok: true, text: 't' }
+    }
+    const rec = await runDiscussion({ ...baseOpts, selectedAgents: ['codex'], moderator: 'codex', invoke })
+    expect(rec.status).toBe('canceled')
+    expect(rec.messages.some((m) => /最终汇总失败/.test(m.content || ''))).toBe(false)
+  })
+
   it('Git 工作区变化：咨询式提示一次，不中断研讨', async () => {
     const invoke = async () => ({ ok: true, text: 't' })
     const rec = await runDiscussion({

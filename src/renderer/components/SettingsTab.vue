@@ -1,5 +1,13 @@
 <template>
   <div class="settings-tab">
+    <header class="settings-hero">
+      <div>
+        <h2>设置</h2>
+        <p>工作目录、界面偏好、最近文件和快捷键。</p>
+      </div>
+      <span class="version-pill">v{{ version }}</span>
+    </header>
+
     <section class="setting-section">
       <h3 class="section-title">工作目录</h3>
       <div class="setting-row">
@@ -52,7 +60,7 @@
           <tr><td>{{ isMac ? 'Cmd' : 'Ctrl' }}+R / F5</td><td>刷新页面</td></tr>
           <tr><td>{{ isMac ? 'Cmd' : 'Ctrl' }}+Tab</td><td>切换下一个标签</td></tr>
           <tr><td>{{ isMac ? 'Cmd' : 'Ctrl' }}+Shift+Tab</td><td>切换上一个标签</td></tr>
-          <tr><td>{{ isMac ? 'Cmd' : 'Ctrl' }}+1~7</td><td>切换到指定标签</td></tr>
+          <tr><td>{{ isMac ? 'Cmd' : 'Ctrl' }}+1~8</td><td>切换到指定工具</td></tr>
           <tr><td>{{ isMac ? 'Cmd+Option+I' : 'Ctrl+Shift+I' }} / F12</td><td>打开/关闭调试工具</td></tr>
         </tbody>
       </table>
@@ -74,8 +82,8 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
 import { chooseDirectory } from '../utils/fileHelper.js'
+import { IS_MAC } from '../utils/navigation.js'
 
 const version = __APP_VERSION__
 const buildDate = __BUILD_DATE__
@@ -90,7 +98,7 @@ defineProps({
 
 defineEmits(['clear-recent'])
 
-const isMac = computed(() => navigator.platform.toLowerCase().includes('mac'))
+const isMac = IS_MAC
 
 async function chooseDir() {
   const dir = await chooseDirectory()
@@ -110,16 +118,45 @@ function openGitHub() {
 .settings-tab {
   padding: 20px;
   overflow-y: auto;
-  max-width: 700px;
+  max-width: 860px;
   margin: 0 auto;
   width: 100%;
   height: 100%;
   background: var(--bg-primary);
 }
+.settings-hero {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+  padding: 18px;
+  background: linear-gradient(135deg, var(--bg-secondary), var(--surface-raised));
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+}
+.settings-hero h2 {
+  font-size: 20px;
+  margin-bottom: 4px;
+}
+.settings-hero p {
+  color: var(--text-muted);
+  font-size: 13px;
+}
+.version-pill {
+  flex: none;
+  border: 1px solid var(--accent-border);
+  border-radius: 999px;
+  padding: 4px 10px;
+  color: var(--accent);
+  background: var(--accent-soft);
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
 .setting-section {
   background: var(--bg-secondary);
   border: 1px solid var(--border-color);
-  border-radius: 4px;
+  border-radius: var(--radius-md);
   padding: 16px;
   margin-bottom: 16px;
 }
@@ -150,11 +187,12 @@ function openGitHub() {
 }
 .btn-group {
   display: flex;
-  gap: 4px;
+  gap: 6px;
 }
 .btn-group button.active {
   background: var(--accent);
   border-color: var(--accent);
+  color: #fff;
 }
 .recent-files {
   display: flex;
@@ -167,8 +205,9 @@ function openGitHub() {
   font-family: var(--font-mono);
   color: var(--text-secondary);
   background: var(--bg-tertiary);
-  padding: 2px 8px;
-  border-radius: 3px;
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-subtle);
 }
 .empty-hint {
   font-size: 12px;
@@ -180,8 +219,8 @@ function openGitHub() {
   border-collapse: collapse;
 }
 .shortcut-table td {
-  padding: 4px 8px;
-  border-bottom: 1px solid var(--border-color);
+  padding: 7px 8px;
+  border-bottom: 1px solid var(--border-subtle);
 }
 .shortcut-table td:first-child {
   font-family: var(--font-mono);

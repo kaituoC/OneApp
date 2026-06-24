@@ -88,23 +88,26 @@ async function loadChildren() {
   display: flex;
   align-items: center;
   gap: 4px;
-  padding-top: 4px;
-  padding-bottom: 4px;
+  min-height: 26px;
+  padding-top: 3px;
+  padding-bottom: 3px;
   padding-right: 8px;
   cursor: pointer;
   font-size: 13px;
   white-space: nowrap;
   overflow: hidden;
   user-select: none;
+  border-radius: var(--radius-sm);
 }
 
 .node-row:hover {
-  background: var(--bg-tertiary);
+  background: var(--surface-hover);
 }
 
 .node-row.active {
-  background: var(--accent);
-  color: white;
+  background: var(--accent-soft);
+  color: var(--accent);
+  box-shadow: inset 0 0 0 1px var(--accent-border);
 }
 
 .twisty {
@@ -133,7 +136,7 @@ async function loadChildren() {
   padding-top: 4px;
   padding-bottom: 4px;
   font-size: 12px;
-  color: var(--text-secondary);
+  color: var(--text-muted);
 }
 
 .node-error {

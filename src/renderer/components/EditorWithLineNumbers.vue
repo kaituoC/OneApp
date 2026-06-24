@@ -72,8 +72,8 @@ defineExpose({ textareaRef })
 .line-numbers {
   width: 48px;
   min-width: 48px;
-  background: var(--bg-secondary);
-  color: var(--text-secondary);
+  background: var(--surface-raised);
+  color: var(--text-muted);
   font-family: var(--font-mono);
   font-size: 13px;
   line-height: 1.6;
@@ -81,7 +81,7 @@ defineExpose({ textareaRef })
   overflow: hidden;
   text-align: right;
   user-select: none;
-  border-right: 1px solid var(--border-color);
+  border-right: 1px solid var(--border-subtle);
 }
 
 .line-number {

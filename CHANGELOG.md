@@ -6,6 +6,31 @@
 
 ---
 
+## [1.9.0] - 2026-06-24
+
+### ✨ 新增
+- 全面刷新 workbench shell：将原横向 tab bar 升级为分组左侧 navigation，支持工作区编辑、数据处理、文本调试、AI 和系统设置分组。
+- 引入 `lucide-vue-next` icon library，为一级工具入口和紧凑控件提供一致的图标辅助识别。
+- 将 Agent Workshop 提升为 AI 分组下的核心入口，同时保持原有本地 repo 研讨 workflow 不变。
+- 新增 `AGENTS.md`，并同步 `CLAUDE.md` 中的需求开发全流程、文档语言规则和自动推进模式。
+
+### 🎨 优化
+- 优化 Editor 首屏布局：新建空文档默认隐藏 Preview，优先展示 file tree 和 editor panel，避免三栏同时挤压。
+- Editor file tree 增加可读最小宽度，横向空间不足时不再被压缩成不可用竖条。
+- 优化 JSON、Diff、Regex、Encode、Time、Settings 和 Agent Workshop 的 panel、command bar、status feedback 与 responsive fallback。
+- 左侧 navigation 支持 compact 模式，收起后仅保留工具 icon、快捷键提示和 tooltip 信息。
+- 优化 dark/light theme token，统一 surface、border、focus、semantic state 和底部 status bar 表现。
+
+### 🐛 修复
+- 修复打开文件对话框取消或读取失败时，Editor Preview 会基于旧文件状态被误重新打开的问题。
+- 清理未使用的全局 tool panel/chip/icon button CSS，降低后续维护误导。
+
+### 🧪 测试
+- 新增 navigation metadata 测试，确保导航说明短文案和 tooltip 可用。
+- 新增 editor file 测试，覆盖取消打开文件和读取失败时的返回值与状态保持。
+
+---
+
 ## [1.8.0] - 2026-06-22
 
 ### ✨ 新增

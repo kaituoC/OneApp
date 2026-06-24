@@ -1,6 +1,6 @@
 <template>
   <div class="diff-tab">
-    <div class="toolbar">
+    <div class="toolbar tool-command-bar">
       <button @click="compare" :disabled="!textA && !textB">对比</button>
       <button @click="loadFileA">加载文件A</button>
       <button @click="loadFileB">加载文件B</button>
@@ -215,15 +215,6 @@ watch([textA, textB], () => {
   height: 100%;
 }
 
-.toolbar {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  padding: 6px 8px;
-  background: var(--bg-secondary);
-  border-bottom: 1px solid var(--border-color);
-}
-
 .toolbar-separator {
   width: 1px;
   height: 20px;
@@ -263,11 +254,15 @@ watch([textA, textB], () => {
   flex: 1;
   display: flex;
   overflow: hidden;
+  padding: 12px;
+  min-height: 0;
 }
 
 .input-area {
   flex: 1;
   display: flex;
+  gap: 12px;
+  min-width: 0;
 }
 
 .panel {
@@ -275,18 +270,19 @@ watch([textA, textB], () => {
   display: flex;
   flex-direction: column;
   min-width: 0;
-}
-
-.panel + .panel {
-  border-left: 1px solid var(--border-color);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  overflow: hidden;
 }
 
 .panel-header {
   padding: 6px 12px;
   font-size: 12px;
   color: var(--text-secondary);
-  background: var(--bg-secondary);
-  border-bottom: 1px solid var(--border-color);
+  background: var(--surface-raised);
+  border-bottom: 1px solid var(--border-subtle);
+  font-weight: 700;
 }
 
 /* 并排对比模式 */
@@ -294,6 +290,7 @@ watch([textA, textB], () => {
   flex: 1;
   display: flex;
   overflow: hidden;
+  gap: 12px;
 }
 
 .diff-panel {
@@ -302,6 +299,10 @@ watch([textA, textB], () => {
   flex-direction: column;
   flex-shrink: 0;
   flex-grow: 0;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  overflow: hidden;
 }
 
 .diff-panel + .diff-panel {
@@ -314,8 +315,9 @@ watch([textA, textB], () => {
   padding: 6px 12px;
   font-size: 12px;
   color: var(--text-secondary);
-  background: var(--bg-secondary);
-  border-bottom: 1px solid var(--border-color);
+  background: var(--surface-raised);
+  border-bottom: 1px solid var(--border-subtle);
+  font-weight: 700;
 }
 
 .line-count {
@@ -336,6 +338,10 @@ watch([textA, textB], () => {
   flex: 1;
   display: flex;
   flex-direction: column;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  overflow: hidden;
 }
 
 .unified-content {
@@ -351,8 +357,8 @@ watch([textA, textB], () => {
   justify-content: space-between;
   padding: 6px 12px;
   font-size: 12px;
-  background: var(--bg-secondary);
-  border-bottom: 1px solid var(--border-color);
+  background: var(--surface-raised);
+  border-bottom: 1px solid var(--border-subtle);
 }
 
 .stats {
@@ -414,5 +420,31 @@ watch([textA, textB], () => {
 .diff-line.modify {
   background: var(--diff-modify);
   color: var(--warning);
+}
+
+@media (max-width: 900px) {
+  .main-area {
+    overflow: auto;
+  }
+
+  .input-area,
+  .split-view {
+    flex-direction: column;
+    min-height: max-content;
+  }
+
+  .panel,
+  .diff-panel {
+    width: 100%;
+    min-height: 260px;
+  }
+
+  .diff-panel {
+    flex: 0 0 300px;
+  }
+
+  .toolbar-separator {
+    display: none;
+  }
 }
 </style>

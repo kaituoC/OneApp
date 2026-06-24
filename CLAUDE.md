@@ -47,30 +47,74 @@ npm test -- tests/jsonHelper.test.js  # 运行单个测试文件
 
 ### 需求开发全流程
 
-每个需求一条分支。完整流程是**规格驱动开发（SDD），由 OpenSpec 工具全程串起：explore → propose → apply → archive**。按改动大小**分级**执行：新功能/较大需求走完整流程，小修复/文档类走简化流程。标 **⚠️** 的步骤是**确认卡点，必须停下来征得用户同意后才能继续**；外发动作（push / 创建 PR / 合并 PR / 打 tag / 发布）一律不自作主张。
+每个需求一条分支。完整流程是**规格驱动开发（SDD），由 OpenSpec 工具全程串起**；工程顺序为：explore → 建分支 → propose → apply → archive。按改动大小**分级**执行：新功能/较大需求走完整流程，小修复/文档类走简化流程。标 **⚠️** 的步骤是**确认卡点，必须停下来征得用户同意后才能继续**；外发动作（push / 创建 PR / 合并 PR / 打 tag / 发布）一律不自作主张。
 
 **完整流程（新功能 / 较大需求）：**
 
 1. **探索** `/opsx:explore` — 厘清方案与关键决策
-2. **提案** `/opsx:propose` — 生成 proposal / design / specs / tasks
-3. **建分支** — 先 `git checkout main && git pull origin main`，再开 `feature/*`
+2. **建分支** — 在执行 `/opsx:propose` 前创建需求分支。先确保当前工作区干净；若存在未提交改动，先停下来让用户决定提交、暂存、stash 或换分支。然后 `git checkout main && git pull origin main`，再开 `feature/*`
+3. **提案** `/opsx:propose` — 在新分支上生成 proposal / design / specs / tasks，确保 OpenSpec 变更文件从创建开始就属于需求分支
 4. **实现** `/opsx:apply` — 按 tasks 落地并逐项勾选
 5. **自测（门禁，必做）** — `npm test` 全部通过（环境相关用例如时区断言，注意区分 flaky 与真回归）+ `npm run build` 编译通过（构建需关沙箱），必要时 `npm run dev` 手动验证
 6. **Code Review** `/code-review`（high）— 修复高优先级问题后复跑构建与测试
-7. **文档** — 同步 README / CHANGELOG / CLAUDE.md
-8. **归档** `/opsx:archive` — delta 合并进主 specs，change 移入 `archive/`
-9. **版本号** — 所有改动就绪后，升级 `package.json` 版本号 + 更新 CHANGELOG
-10. **提交** — 仅在用户明确要求时提交；按主题分组 commit（feat / fix / test / docs / chore），message 末尾按规范署名
-11. **Push + PR ⚠️** — 用户确认后 `git push` 并 `gh pr create`；**不擅自合并 PR**
-12. **Release ⚠️（仅发版时）** — PR 合并后，以下步骤作为**完整的发布序列**一次性执行，⚠️ 仅需用户在本步骤启动前一次性确认，步骤内部无需再次询问：
+7. **归档** `/opsx:archive` — delta 合并进主 specs，change 移入 `archive/`；归档后运行 `openspec validate --specs --strict`
+8. **文档收尾** — 同步 README / CLAUDE.md / AGENTS.md 等项目文档；不要在这里重复维护发布版本记录
+9. **版本与 CHANGELOG** — 所有改动就绪后，根据语义化版本升级 `package.json` 版本号，并更新 CHANGELOG
+10. **最终验证** — 版本、CHANGELOG、归档和文档都就绪后，再跑一次 `npm test` + `npm run build`
+11. **提交** — 仅在用户明确要求时提交；按主题分组 commit（feat / fix / test / docs / chore），message 末尾按规范署名
+12. **Push + PR ⚠️** — 用户确认后 `git push` 并 `gh pr create`；**不擅自合并 PR**
+13. **Release ⚠️（仅发版时）** — PR 合并后，以下步骤作为**完整的发布序列**一次性执行，⚠️ 仅需用户在本步骤启动前一次性确认，步骤内部无需再次询问：
     1. 确认 `package.json` 版本号与 CHANGELOG 就绪；正式打 tag 前可用 `workflow_dispatch` 手动触发验证 CI 三平台构建（仅 build、不创建 Release）。
     2. 打 `vX.Y.Z` tag 并 `git push origin vX.Y.Z` → GitHub Actions（`.github/workflows/release.yml`）自动构建 **mac arm64 / Windows / Linux** 三平台并创建 GitHub Release（notes 取自 CHANGELOG 对应版本段）。tag 与 package.json 版本不一致时 CI 会失败。
     3. **mac Intel(x64) 包补传（必做，无需额外确认）**：先用 `uname -m` 自检当前机器架构（x86_64 = Intel，arm64 = Apple Silicon）；若为 Intel，在 CI 跑包期间并行执行 `npm run dist:mac` 本地打包，CI 完成/Release 创建后立即执行 `gh release upload vX.Y.Z dist/OneApp-X.Y.Z-mac-x64.dmg dist/OneApp-X.Y.Z-mac-x64.zip` 补传。架构判断由 Claude 自行完成，不询问用户。
     - **不再**本地手动 `npm run dist` 全量打包 + `gh release create`（发布由 CI 负责，本地仅补 Intel 包）。
 
-**简化流程（小修复 / 文档类）：** 跳过探索、提案、归档（第 1-2、8 步）；保留：建分支 → 实现 → 自测 → 文档（按需）→ 版本号 → 提交 → Push + PR ⚠️。
+**简化流程（小修复 / 文档类）：** 跳过探索、提案、归档；保留：建分支 → 实现 → 自测/校验 → 文档（按需）→ 版本与 CHANGELOG（仅影响功能或发布时）→ 最终验证 → 提交 → Push + PR ⚠️。
 
-**确认卡点（⚠️）汇总：** `git push` / 创建 PR、打 tag / 启动发布序列（第 12 步整体）之前必须先征得用户同意；版本号升级不是独立确认卡点，在 push 前自动完成；发布序列内部的子步骤（补传 Intel 包、等待 CI）不再单独确认；任何情况下都不擅自合并 PR。
+**确认卡点（⚠️）汇总：** `git push` / 创建 PR、打 tag / 启动发布序列（第 13 步整体）之前必须先征得用户同意；版本号升级不是独立确认卡点，在 push 前自动完成；发布序列内部的子步骤（补传 Intel 包、等待 CI）不再单独确认；任何情况下都不擅自合并 PR。
+
+### 自动推进模式
+
+自动推进模式用于把需求确认后的本地开发流程交给 agent 连续执行，减少用户在机械步骤上的介入。默认不启用；只有当用户明确表达「进入自动推进模式」「按流程自动推进」「方案确认，继续自动执行」等授权时才启用。
+
+启用自动推进前，agent 必须在 explore 阶段给出并获得用户确认：
+
+- 需求范围与不做范围
+- 建议 change name 与 branch name
+- 预计流程类型：完整流程或简化流程
+- 验收标准与必须执行的验证命令
+- 版本影响预估：不升版本、patch、minor 或 major
+- 是否允许本地自动提交；若未明确允许，则本地 commit 仍需用户单独确认
+
+自动推进模式下，agent 可以在无需再次询问的情况下执行本地动作：
+
+- 检查工作区状态，并在干净工作区上创建需求分支
+- 执行 `/opsx:propose` 生成 OpenSpec 文件
+- 执行 `/opsx:apply` 实现 tasks，并逐项勾选
+- 运行相关测试、`npm test`、`npm run build` 和必要的本地 UI smoke test
+- 运行 code review，修复明确的问题并复跑验证
+- 执行 `/opsx:archive`，同步主 specs 并归档 change
+- 更新项目文档、版本号和 `CHANGELOG.md`
+- 在所有收尾完成后执行最终验证
+- 仅在用户已授权本地自动提交时创建本地 commit
+
+自动推进模式下，遇到以下情况必须暂停并请求用户介入：
+
+- 工作区存在非本需求产生的未提交改动，或无法判断改动归属
+- 需要改变已确认的需求范围、方案方向、branch name 或 change name
+- OpenSpec delta 与主 specs 冲突，无法无歧义同步
+- 测试或构建失败，且原因不是明确的本次代码回归或可直接修复的问题
+- code review 提出架构级分歧、产品取舍或高风险改动
+- 需要升 major version，或版本影响和 explore 阶段预估不一致
+- 需要新增/变更 CI、发布流程、权限、安全边界或外部服务配置
+- 需要访问敏感凭证、付费资源、外部账号或用户本机隐私数据
+- 需要执行 `git push`、创建 PR、合并 PR、打 tag、发布 Release、删除分支、丢弃改动或其他外发/破坏性动作
+
+自动推进的停止条件：
+
+- 成功：本地实现、归档、版本/CHANGELOG、最终验证完成；如已授权本地提交，则 commit 完成，然后等待用户确认 push/PR。
+- 受阻：出现必须用户介入的情况；agent 汇报当前状态、已完成事项、阻塞原因和可选方案。
+- 失败：验证无法通过或方案不可行；agent 保留现场，不回滚用户或未知来源改动，并给出下一步建议。
 
 ### 贯穿全程的硬性约定
 
@@ -78,6 +122,7 @@ npm test -- tests/jsonHelper.test.js  # 运行单个测试文件
 - **发布文案**：GitHub Release 的标题与 notes 用中文，notes 取自 CHANGELOG 对应版本；未签名的 macOS 包需在 notes 提示用户「右键 → 打开」绕过 Gatekeeper。
 - **测试稳定性**：环境相关用例（如 `timeHelper` 时区断言）在不同时区机器上可能失败，判断 flaky 时先排除环境因素，不要误判为本次回归。
 - **OpenSpec 数据卫生**：`/opsx:archive` 会把 delta 合并进主 specs；若主 spec 残留 delta 头（`## ADDED`/`## REMOVED Requirements`）会阻塞归档，需先规范化为 `# 标题 / ## Purpose / ## Requirements` 结构。
+- **流程文档同步**：如果调整需求开发流程，必须同步更新 `AGENTS.md` 与 `CLAUDE.md`，避免 Codex 和 ClaudeCode 按不同流程执行。
 
 ## 架构
 

@@ -127,8 +127,9 @@ defineExpose({ refresh })
 
 .tree-toolbar {
   flex-shrink: 0;
-  border-bottom: 1px solid var(--border-color);
-  padding: 6px 8px;
+  border-bottom: 1px solid var(--border-subtle);
+  padding: 8px;
+  background: var(--surface-raised);
 }
 
 .root-row {
@@ -148,17 +149,19 @@ defineExpose({ refresh })
 }
 
 .icon-btn {
-  background: transparent;
-  border: none;
+  min-width: 28px;
+  min-height: 28px;
+  background: var(--surface-subtle);
+  border: 1px solid var(--border-subtle);
   color: var(--text-secondary);
   cursor: pointer;
-  padding: 2px 5px;
+  padding: 0;
   font-size: 13px;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
 }
 
 .icon-btn:hover {
-  background: var(--bg-tertiary);
+  background: var(--surface-hover);
   color: var(--accent);
 }
 
@@ -170,6 +173,7 @@ defineExpose({ refresh })
   flex: 1;
   overflow-y: auto;
   min-height: 0;
+  padding: 6px;
 }
 
 .tree-hint {

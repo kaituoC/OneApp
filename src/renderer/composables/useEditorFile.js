@@ -37,12 +37,13 @@ export function useEditorFile({ workDir, onFileOpen, onSaveStatus, refreshTree, 
 
   async function openFileDialog() {
     const filePath = await openFile(workDir?.value, EDITOR_FILTERS)
-    if (filePath) await loadFile(filePath)
+    if (!filePath) return false
+    return loadFile(filePath)
   }
 
   // 从目录树点击打开
   async function openFromTree(filePath) {
-    await loadFile(filePath)
+    return loadFile(filePath)
   }
 
   async function loadFile(filePath) {
@@ -51,8 +52,10 @@ export function useEditorFile({ workDir, onFileOpen, onSaveStatus, refreshTree, 
       currentFilePath.value = filePath
       mode.value = modeFromPath(filePath)
       onFileOpen?.(filePath)
+      return true
     } catch (e) {
       console.error('打开文件失败:', e)
+      return false
     }
   }
 

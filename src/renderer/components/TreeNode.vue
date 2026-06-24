@@ -6,9 +6,13 @@
       :title="item.path"
       @click="onClick"
     >
-      <span v-if="item.isDirectory" class="twisty">{{ expanded ? '▾' : '▸' }}</span>
+      <span v-if="item.isDirectory" class="twisty">
+        <component :is="expanded ? ChevronDown : ChevronRight" :size="13" aria-hidden="true" />
+      </span>
       <span v-else class="twisty spacer"></span>
-      <span class="node-icon">{{ item.isDirectory ? '📁' : '📄' }}</span>
+      <span class="node-icon">
+        <component :is="item.isDirectory ? Folder : FileText" :size="14" aria-hidden="true" />
+      </span>
       <span class="node-name">{{ item.name }}</span>
     </div>
 
@@ -32,6 +36,7 @@
 
 <script setup>
 import { ref, computed } from 'vue'
+import { ChevronDown, ChevronRight, FileText, Folder } from 'lucide-vue-next'
 import { readDir, filterTreeItems } from '../utils/fileHelper.js'
 
 const props = defineProps({
@@ -113,9 +118,9 @@ async function loadChildren() {
 .twisty {
   width: 12px;
   flex-shrink: 0;
-  font-size: 10px;
   color: var(--text-secondary);
-  text-align: center;
+  display: grid;
+  place-items: center;
 }
 
 .twisty.spacer {
@@ -124,7 +129,9 @@ async function loadChildren() {
 
 .node-icon {
   flex-shrink: 0;
-  font-size: 12px;
+  color: var(--text-muted);
+  display: grid;
+  place-items: center;
 }
 
 .node-name {

@@ -6,6 +6,22 @@
 
 ---
 
+## [1.10.0] - 2026-06-24
+
+### 🎨 优化
+- 统一 Editor、JSON、Diff、Regex、Encode、Time、Settings 和 Agent Workshop 内部 tool surface：panel、command bar、segmented control、status chip、empty state 与 copy feedback 采用一致视觉语言。
+- Editor file tree、toolbar 和 tree node 全面替换为 lucide icon，空文档默认不占用 Preview 空间，DevTools 占用宽度或 compact 场景下不再把 file tree 压成不可读竖条。
+- Encode 工具完成重点 polish：子工具导航更清晰，Base64 / URL / Unicode 双向转换面板一致，JWT / Hash / 进制结果更结构化且便于复制。
+- Diff、Regex、Time 和 Settings 优化结果摘要、错误/成功反馈、复制提示、最近文件长路径展示与窄宽度布局。
+- Agent Workshop 增加历史/终态记录提示区，优化 setup、progress、timeline 和窄宽度布局，但不改变底层 workflow、IPC、只读约束或记录持久化语义。
+
+### 🧪 测试
+- 完整通过 `npm test`（13 个测试文件、179 个用例）。
+- 完整通过 `npm run build` 与 `openspec validate polish-tool-surfaces --strict`。
+- 完成 light/dark、正常宽度、DevTools 占用宽度和 compact 宽度视觉烟测。
+
+---
+
 ## [1.9.0] - 2026-06-24
 
 ### ✨ 新增

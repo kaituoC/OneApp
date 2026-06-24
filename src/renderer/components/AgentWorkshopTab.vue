@@ -77,6 +77,17 @@
 
     <!-- 右栏：想法输入 / 时间线 -->
     <main v-if="supported" class="aw-right">
+      <div v-if="record && !running" class="aw-record-banner tool-panel">
+        <div>
+          <div class="aw-record-title">{{ recordBanner.title }}</div>
+          <div class="aw-record-copy">{{ recordBanner.copy }}</div>
+        </div>
+        <div class="aw-record-actions">
+          <button class="aw-btn" @click="newDiscussion">新研讨</button>
+          <button class="aw-btn" :disabled="!record" @click="exportMd">导出 Markdown</button>
+        </div>
+      </div>
+
       <div v-if="!running && !record" class="aw-idea">
         <div class="aw-block-title">你的想法 / 初始方案</div>
         <textarea
@@ -188,6 +199,16 @@ const statusText = computed(() => {
   if (s === 'running' && record.value?.id !== activeRunId.value) return '已中断（仅供查看）'
   return ({ running: '进行中', completed: '已完成', failed: '失败', canceled: '已取消' }[s] || '—')
 })
+
+const RECORD_BANNERS = {
+  completed: { title: '历史研讨记录', copy: '这是上次完成的记录，可继续查看 timeline、导出 Markdown，或开始一轮新研讨。' },
+  failed: { title: '失败的研讨记录', copy: '这次研讨未正常完成，已保留已有消息，便于排查或导出。' },
+  canceled: { title: '已取消的研讨记录', copy: '这次研讨已取消，已保留取消前产生的内容。' },
+  running: { title: '已中断的研讨记录', copy: '这是恢复到本窗口前的运行中记录，当前仅供查看。' }
+}
+const RECORD_BANNER_DEFAULT = { title: '研讨记录', copy: '可查看已有消息，或开始一轮新研讨。' }
+
+const recordBanner = computed(() => RECORD_BANNERS[record.value?.status] || RECORD_BANNER_DEFAULT)
 
 const agentsForPhase = (phase) => (phase === 'final' ? (config.moderator ? [config.moderator] : []) : config.selectedAgents)
 
@@ -339,8 +360,8 @@ onUnmounted(() => {
   min-width: 0;
 }
 .aw-left {
-  width: 340px;
-  min-width: 340px;
+  width: clamp(300px, 30vw, 380px);
+  min-width: 300px;
   border-right: 1px solid var(--border-color);
   padding: 14px;
   overflow-y: auto;
@@ -351,6 +372,30 @@ onUnmounted(() => {
   overflow-y: auto;
   padding: 16px;
   min-width: 0;
+}
+.aw-record-banner {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 12px;
+  padding: 12px 14px;
+  border-left: 3px solid var(--accent);
+}
+.aw-record-title {
+  color: var(--text-primary);
+  font-weight: 700;
+  margin-bottom: 3px;
+}
+.aw-record-copy {
+  color: var(--text-muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+.aw-record-actions {
+  flex: none;
+  display: flex;
+  gap: 6px;
 }
 .aw-block {
   margin-bottom: 14px;
@@ -501,7 +546,7 @@ onUnmounted(() => {
   .aw-left {
     width: auto;
     min-width: 0;
-    max-height: 42%;
+    max-height: 38%;
     border-right: none;
     border-bottom: 1px solid var(--border-color);
   }
@@ -511,7 +556,9 @@ onUnmounted(() => {
   }
 
   .aw-repo,
-  .aw-actions {
+  .aw-actions,
+  .aw-record-banner,
+  .aw-record-actions {
     flex-wrap: wrap;
   }
 }

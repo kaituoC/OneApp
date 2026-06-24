@@ -1,7 +1,7 @@
 <template>
   <div class="json-tab">
     <div class="toolbar tool-command-bar">
-      <button @click="doFormat">格式化</button>
+      <button class="primary" @click="doFormat">格式化</button>
       <button @click="doMinify">压缩</button>
       <button @click="doValidate">校验</button>
       <button @click="doUnescape">去除转义</button>
@@ -10,11 +10,11 @@
       <button @click="clearAll">清空</button>
     </div>
 
-    <div class="content">
-      <div class="panel">
-        <div class="panel-header">
-          <span>输入</span>
-          <span class="panel-meta">{{ input.length.toLocaleString() }} 字符</span>
+    <div class="content tool-workspace">
+      <div class="panel tool-panel">
+        <div class="panel-header tool-panel-header">
+          <span class="tool-panel-title">输入</span>
+          <span class="tool-panel-meta">{{ input.length.toLocaleString() }} 字符</span>
         </div>
         <EditorWithLineNumbers
           v-model="input"
@@ -22,10 +22,10 @@
           placeholder="在此粘贴 JSON 内容..."
         />
       </div>
-      <div class="panel">
-        <div class="panel-header">
-          <span>输出</span>
-          <span :class="['status-chip', hasError ? 'error' : 'success']">
+      <div class="panel tool-panel">
+        <div class="panel-header tool-panel-header">
+          <span class="tool-panel-title">输出</span>
+          <span :class="['tool-status-chip', hasError ? 'error' : 'success']">
             {{ hasError ? '错误' : (output ? '就绪' : '待处理') }}
           </span>
         </div>
@@ -41,6 +41,7 @@
     <div class="status-bar" :class="{ 'status-error': hasError, empty: !statusMessage }">
       {{ statusMessage || '等待输入 JSON 内容' }}
     </div>
+    <div v-if="copyMessage" class="tool-copy-toast">{{ copyMessage }}</div>
   </div>
 </template>
 
@@ -48,6 +49,7 @@
 import { ref } from 'vue'
 import { formatJSON, minifyJSON, validateJSON, unescapeJSON } from '../utils/jsonHelper.js'
 import EditorWithLineNumbers from './EditorWithLineNumbers.vue'
+import { useCopyToast } from '../composables/useCopyToast.js'
 
 const props = defineProps({
   fontSize: { type: Number, default: 14 }
@@ -57,6 +59,7 @@ const input = ref('')
 const output = ref('')
 const statusMessage = ref('')
 const hasError = ref(false)
+const { copyMessage, copyToClipboard } = useCopyToast()
 
 function doFormat() {
   const result = formatJSON(input.value)
@@ -81,7 +84,7 @@ function doUnescape() {
 function handleResult(result) {
   if (result.success) {
     output.value = result.result || result.message
-    statusMessage.value = '✓ 处理成功'
+    statusMessage.value = '处理成功'
     hasError.value = false
   } else {
     output.value = result.displayMessage
@@ -91,9 +94,8 @@ function handleResult(result) {
 }
 
 async function copyResult() {
-  if (output.value) {
-    await navigator.clipboard.writeText(output.value)
-    statusMessage.value = '✓ 已复制到剪贴板'
+  if (output.value && await copyToClipboard(output.value)) {
+    statusMessage.value = '已复制到剪贴板'
   }
 }
 
@@ -126,41 +128,6 @@ function clearAll() {
   display: flex;
   flex-direction: column;
   min-width: 0;
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-md);
-  overflow: hidden;
-}
-.panel-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 6px 12px;
-  font-size: 12px;
-  color: var(--text-secondary);
-  background: var(--surface-raised);
-  border-bottom: 1px solid var(--border-subtle);
-  font-weight: 700;
-}
-.panel-meta {
-  color: var(--text-faint);
-  font-family: var(--font-mono);
-}
-.status-chip {
-  border-radius: 999px;
-  padding: 2px 8px;
-  font-size: 11px;
-  font-weight: 600;
-  background: var(--surface-subtle);
-  color: var(--text-muted);
-}
-.status-chip.success {
-  background: var(--success-soft);
-  color: var(--success);
-}
-.status-chip.error {
-  background: var(--error-soft);
-  color: var(--error);
 }
 .error-output .editor-textarea {
   color: var(--error) !important;

@@ -7,64 +7,77 @@
         :key="t.key"
         :class="['menu-item', { active: tool === t.key }]"
         @click="tool = t.key"
-      >{{ t.label }}</button>
+      >
+        <component :is="t.icon" :size="15" aria-hidden="true" />
+        <span>{{ t.label }}</span>
+      </button>
     </nav>
 
     <!-- 右侧工作区 -->
-    <section class="work-area" :style="{ fontSize: fontSize + 'px' }">
+    <section class="work-area tool-workspace" :style="{ fontSize: fontSize + 'px' }">
       <!-- Base64 -->
       <div v-show="tool === 'base64'" class="pane">
-        <div class="pane-toolbar">
+        <div class="pane-toolbar tool-panel">
           <button class="dir-btn" @click="b64Dir = b64Dir === 'encode' ? 'decode' : 'encode'">
-            {{ b64Dir === 'encode' ? '文本 → Base64' : 'Base64 → 文本' }}
+            {{ b64Dir === 'encode' ? '文本 -> Base64' : 'Base64 -> 文本' }}
           </button>
         </div>
         <div class="dual">
-          <div class="dual-col">
-            <div class="col-head">{{ b64Dir === 'encode' ? '文本' : 'Base64' }}</div>
+          <div class="dual-col tool-panel">
+            <div class="col-head tool-panel-header">{{ b64Dir === 'encode' ? '文本' : 'Base64' }}</div>
             <textarea v-model="b64Input" class="io" spellcheck="false" placeholder="输入…"></textarea>
           </div>
-          <button class="swap-btn" title="互换" @click="swapB64">⇄</button>
-          <div class="dual-col">
-            <div class="col-head">
+          <button class="swap-btn tool-icon-button" title="互换" aria-label="互换" @click="swapB64">
+            <ArrowLeftRight :size="15" aria-hidden="true" />
+          </button>
+          <div class="dual-col tool-panel">
+            <div class="col-head tool-panel-header">
               <span>{{ b64Dir === 'encode' ? 'Base64' : '文本' }}</span>
-              <button v-if="b64Result.success" class="copy-btn" @click="copy(b64Result.result)">复制</button>
+              <button v-if="b64Result.success" class="copy-btn" @click="copy(b64Result.result)">
+                <Copy :size="13" aria-hidden="true" />
+                复制
+              </button>
             </div>
             <textarea :value="b64Result.success ? b64Result.result : ''" class="io" readonly spellcheck="false"></textarea>
-            <div v-if="!b64Result.success" class="err">⚠ {{ b64Result.error }}</div>
+            <div v-if="!b64Result.success" class="err tool-status-chip error">{{ b64Result.error }}</div>
           </div>
         </div>
       </div>
 
       <!-- URL -->
       <div v-show="tool === 'url'" class="pane">
-        <div class="pane-toolbar">
+        <div class="pane-toolbar tool-panel">
           <button class="dir-btn" @click="urlDir = urlDir === 'encode' ? 'decode' : 'encode'">
-            {{ urlDir === 'encode' ? '文本 → URL 编码' : 'URL 编码 → 文本' }}
+            {{ urlDir === 'encode' ? '文本 -> URL 编码' : 'URL 编码 -> 文本' }}
           </button>
         </div>
         <div class="dual">
-          <div class="dual-col">
-            <div class="col-head">{{ urlDir === 'encode' ? '文本' : 'URL 编码' }}</div>
+          <div class="dual-col tool-panel">
+            <div class="col-head tool-panel-header">{{ urlDir === 'encode' ? '文本' : 'URL 编码' }}</div>
             <textarea v-model="urlInput" class="io" spellcheck="false" placeholder="输入…"></textarea>
           </div>
-          <button class="swap-btn" title="互换" @click="swapUrl">⇄</button>
-          <div class="dual-col">
-            <div class="col-head">
+          <button class="swap-btn tool-icon-button" title="互换" aria-label="互换" @click="swapUrl">
+            <ArrowLeftRight :size="15" aria-hidden="true" />
+          </button>
+          <div class="dual-col tool-panel">
+            <div class="col-head tool-panel-header">
               <span>{{ urlDir === 'encode' ? 'URL 编码' : '文本' }}</span>
-              <button v-if="urlResult.success" class="copy-btn" @click="copy(urlResult.result)">复制</button>
+              <button v-if="urlResult.success" class="copy-btn" @click="copy(urlResult.result)">
+                <Copy :size="13" aria-hidden="true" />
+                复制
+              </button>
             </div>
             <textarea :value="urlResult.success ? urlResult.result : ''" class="io" readonly spellcheck="false"></textarea>
-            <div v-if="!urlResult.success" class="err">⚠ {{ urlResult.error }}</div>
+            <div v-if="!urlResult.success" class="err tool-status-chip error">{{ urlResult.error }}</div>
           </div>
         </div>
       </div>
 
       <!-- Unicode -->
       <div v-show="tool === 'unicode'" class="pane">
-        <div class="pane-toolbar">
+        <div class="pane-toolbar tool-panel">
           <button class="dir-btn" @click="uniDir = uniDir === 'encode' ? 'decode' : 'encode'">
-            {{ uniDir === 'encode' ? '转义 →' : '← 反转义' }}
+            {{ uniDir === 'encode' ? '转义' : '反转义' }}
           </button>
           <label v-if="uniDir === 'encode'" class="fmt-label">
             格式：
@@ -76,65 +89,73 @@
           </label>
         </div>
         <div class="dual">
-          <div class="dual-col">
-            <div class="col-head">{{ uniDir === 'encode' ? '原文' : '转义文本' }}</div>
+          <div class="dual-col tool-panel">
+            <div class="col-head tool-panel-header">{{ uniDir === 'encode' ? '原文' : '转义文本' }}</div>
             <textarea v-model="uniInput" class="io" spellcheck="false" placeholder="输入文本…"></textarea>
           </div>
-          <button class="swap-btn" title="互换" @click="swapUnicode">⇄</button>
-          <div class="dual-col">
-            <div class="col-head">
+          <button class="swap-btn tool-icon-button" title="互换" aria-label="互换" @click="swapUnicode">
+            <ArrowLeftRight :size="15" aria-hidden="true" />
+          </button>
+          <div class="dual-col tool-panel">
+            <div class="col-head tool-panel-header">
               <span>结果</span>
-              <button v-if="uniResult.success" class="copy-btn" @click="copy(uniResult.result)">复制</button>
+              <button v-if="uniResult.success" class="copy-btn" @click="copy(uniResult.result)">
+                <Copy :size="13" aria-hidden="true" />
+                复制
+              </button>
             </div>
             <textarea :value="uniResult.success ? uniResult.result : ''" class="io" readonly spellcheck="false"></textarea>
-            <div v-if="!uniResult.success" class="err">⚠ {{ uniResult.error }}</div>
+            <div v-if="!uniResult.success" class="err tool-status-chip error">{{ uniResult.error }}</div>
           </div>
         </div>
       </div>
 
       <!-- JWT -->
       <div v-show="tool === 'jwt'" class="pane">
-        <div class="jwt-input">
-          <div class="col-head">JWT Token</div>
+        <div class="jwt-input tool-panel">
+          <div class="col-head tool-panel-header">JWT Token</div>
           <textarea v-model="jwtInput" class="io" spellcheck="false" placeholder="粘贴 JWT…"></textarea>
         </div>
-        <div v-if="jwtResult && !jwtResult.success" class="err">⚠ {{ jwtResult.error }}</div>
+        <div v-if="jwtResult && !jwtResult.success" class="err tool-status-chip error">{{ jwtResult.error }}</div>
         <div v-if="jwtResult && jwtResult.success" class="jwt-out">
-          <div class="jwt-seg">
-            <div class="col-head"><span>Header</span><button class="copy-btn" @click="copy(jwtHeaderText)">复制</button></div>
+          <div class="jwt-seg tool-panel">
+            <div class="col-head tool-panel-header"><span>Header</span><button class="copy-btn" @click="copy(jwtHeaderText)"><Copy :size="13" aria-hidden="true" />复制</button></div>
             <pre class="jwt-json">{{ jwtHeaderText }}</pre>
           </div>
-          <div class="jwt-seg">
-            <div class="col-head"><span>Payload</span><button class="copy-btn" @click="copy(jwtPayloadText)">复制</button></div>
+          <div class="jwt-seg tool-panel">
+            <div class="col-head tool-panel-header"><span>Payload</span><button class="copy-btn" @click="copy(jwtPayloadText)"><Copy :size="13" aria-hidden="true" />复制</button></div>
             <pre class="jwt-json">{{ jwtPayloadText }}</pre>
             <ul v-if="jwtTimeList.length" class="jwt-times">
               <li v-for="t in jwtTimeList" :key="t.key"><code>{{ t.key }}</code> = {{ t.human }}</li>
             </ul>
           </div>
-          <div class="jwt-seg">
-            <div class="col-head">Signature <span class="muted">（未验证）</span></div>
+          <div class="jwt-seg tool-panel">
+            <div class="col-head tool-panel-header">Signature <span class="tool-status-chip warning">未验证</span></div>
             <pre class="jwt-json sig">{{ jwtResult.result.signature }}</pre>
           </div>
         </div>
       </div>
 
       <!-- Hash -->
-      <div v-show="tool === 'hash'" class="pane">
-        <div class="col-head">输入文本</div>
+      <div v-show="tool === 'hash'" class="pane hash-pane tool-panel">
+        <div class="col-head tool-panel-header">输入文本</div>
         <textarea v-model="hashInput" class="io hash-in" spellcheck="false" placeholder="输入待计算文本…"></textarea>
-        <div v-if="hashError" class="err">⚠ {{ hashError }}</div>
+        <div v-if="hashError" class="err tool-status-chip error">{{ hashError }}</div>
         <div v-if="hashResult" class="hash-rows">
           <div v-for="row in HASH_ALGOS" :key="row.key" class="hash-row">
             <span class="hash-name">{{ row.label }}</span>
             <code class="hash-val">{{ hashResult[row.key] }}</code>
-            <button class="copy-btn" @click="copy(hashResult[row.key])">复制</button>
+            <button class="copy-btn" @click="copy(hashResult[row.key])">
+              <Copy :size="13" aria-hidden="true" />
+              复制
+            </button>
           </div>
         </div>
       </div>
 
       <!-- 进制 -->
       <div v-show="tool === 'base'" class="pane">
-        <div class="base-grid">
+        <div class="base-grid tool-panel">
           <label v-for="b in BASES" :key="b.key" class="base-field">
             <span class="base-name">{{ b.label }}</span>
             <input
@@ -146,14 +167,18 @@
             />
           </label>
         </div>
-        <div v-if="baseError" class="err">⚠ {{ baseError }}</div>
+        <div v-if="baseError" class="err tool-status-chip error">{{ baseError }}</div>
       </div>
     </section>
+
+    <div v-if="copyMessage" :class="['tool-copy-toast', { error: copyMessage === '复制失败' }]">{{ copyMessage }}</div>
   </div>
 </template>
 
 <script setup>
 import { ref, reactive, computed, watch } from 'vue'
+import { ArrowLeftRight, Binary, Copy, FileCode2, Hash, KeyRound, Languages, Link } from 'lucide-vue-next'
+import { useCopyToast } from '../composables/useCopyToast.js'
 import {
   base64Encode,
   base64Decode,
@@ -171,18 +196,15 @@ defineProps({
 })
 
 const TOOLS = [
-  { key: 'base64', label: 'Base64' },
-  { key: 'url', label: 'URL' },
-  { key: 'jwt', label: 'JWT' },
-  { key: 'hash', label: 'Hash' },
-  { key: 'base', label: '进制' },
-  { key: 'unicode', label: 'Unicode' }
+  { key: 'base64', label: 'Base64', icon: FileCode2 },
+  { key: 'url', label: 'URL', icon: Link },
+  { key: 'jwt', label: 'JWT', icon: KeyRound },
+  { key: 'hash', label: 'Hash', icon: Hash },
+  { key: 'base', label: '进制', icon: Binary },
+  { key: 'unicode', label: 'Unicode', icon: Languages }
 ]
 const tool = ref('base64')
-
-function copy(text) {
-  if (text != null) navigator.clipboard.writeText(String(text)).catch(() => {})
-}
+const { copyMessage, copyToClipboard: copy } = useCopyToast()
 // 把当前结果搬入输入框并翻转方向（自然完成往返），3 个编解码工具共用
 function makeSwap(inputRef, dirRef, resultRef) {
   return () => {
@@ -311,6 +333,7 @@ function onBaseInput(key, e) {
   color: var(--text-secondary);
   text-align: left;
   justify-content: flex-start;
+  gap: 8px;
   padding: 9px 10px;
   cursor: pointer;
   font-size: 13px;
@@ -342,9 +365,6 @@ function onBaseInput(key, e) {
   gap: 16px;
   margin-bottom: 12px;
   padding: 10px 12px;
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-md);
   flex-wrap: wrap;
 }
 .dir-btn {
@@ -372,10 +392,6 @@ function onBaseInput(key, e) {
   display: flex;
   flex-direction: column;
   min-width: 0;
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-md);
-  overflow: hidden;
 }
 .col-head {
   display: flex;
@@ -384,9 +400,6 @@ function onBaseInput(key, e) {
   font-size: 12px;
   color: var(--text-secondary);
   min-height: 34px;
-  padding: 7px 10px;
-  background: var(--surface-raised);
-  border-bottom: 1px solid var(--border-subtle);
   font-weight: 700;
 }
 .io {
@@ -408,20 +421,8 @@ function onBaseInput(key, e) {
 }
 .swap-btn {
   align-self: center;
-  background: var(--bg-tertiary);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-md);
-  color: var(--text-primary);
-  cursor: pointer;
-  font-size: 16px;
-  padding: 6px 8px;
 }
 .copy-btn {
-  background: transparent;
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-sm);
-  color: var(--text-secondary);
-  cursor: pointer;
   font-size: 11px;
   padding: 1px 8px;
 }
@@ -430,9 +431,8 @@ function onBaseInput(key, e) {
   border-color: var(--accent);
 }
 .err {
-  color: #e06c75;
-  font-size: 12px;
-  margin-top: 6px;
+  align-self: flex-start;
+  margin: 8px 10px;
 }
 /* JWT */
 .jwt-input {
@@ -440,23 +440,13 @@ function onBaseInput(key, e) {
   flex-direction: column;
   height: 110px;
   margin-bottom: 12px;
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-md);
-  overflow: hidden;
 }
 .jwt-out {
   display: flex;
   flex-direction: column;
   gap: 12px;
 }
-.jwt-seg .col-head {
-  margin-bottom: 4px;
-}
 .jwt-json {
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-md);
   padding: 8px;
   margin: 0;
   font-family: var(--font-mono);
@@ -487,17 +477,19 @@ function onBaseInput(key, e) {
 .hash-in {
   height: 100px;
   flex: none;
+  border-bottom: 1px solid var(--border-subtle);
 }
 .hash-rows {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  margin-top: 12px;
+  padding: 12px;
 }
 .hash-row {
   display: flex;
   align-items: center;
   gap: 10px;
+  min-width: 0;
 }
 .hash-name {
   width: 80px;
@@ -522,9 +514,6 @@ function onBaseInput(key, e) {
   flex-direction: column;
   gap: 12px;
   max-width: 760px;
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-md);
   padding: 16px;
 }
 .base-field {

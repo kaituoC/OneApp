@@ -177,3 +177,163 @@ input::placeholder {
   background: var(--bg-secondary);
   border-bottom: 1px solid var(--border-color);
 }
+
+.tool-command-bar .primary {
+  color: #fff;
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.tool-command-bar .primary:hover:not(:disabled) {
+  background: var(--accent-hover);
+  border-color: var(--accent-hover);
+}
+
+.tool-command-bar .ghost {
+  background: transparent;
+}
+
+.tool-workspace {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+}
+
+.tool-panel {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.tool-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: 34px;
+  padding: 7px 12px;
+  color: var(--text-secondary);
+  background: var(--surface-raised);
+  border-bottom: 1px solid var(--border-subtle);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.tool-panel-title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tool-panel-meta {
+  flex: none;
+  color: var(--text-faint);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.tool-segmented {
+  display: inline-flex;
+  align-items: center;
+  gap: 0;
+  overflow: hidden;
+  background: var(--surface-subtle);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+}
+
+.tool-segmented button {
+  min-height: 30px;
+  padding: 4px 10px;
+  color: var(--text-muted);
+  background: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+.tool-segmented button + button {
+  border-left: 1px solid var(--border-subtle);
+}
+
+.tool-segmented button.active,
+.tool-segmented button.on {
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.tool-icon-button {
+  width: 30px;
+  min-width: 30px;
+  height: 30px;
+  min-height: 30px;
+  padding: 0;
+  color: var(--text-secondary);
+  background: var(--surface-subtle);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+}
+
+.tool-icon-button:hover:not(:disabled),
+.tool-icon-button.on {
+  color: var(--accent);
+  border-color: var(--accent-border);
+  background: var(--accent-soft);
+}
+
+.tool-status-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border-radius: 999px;
+  padding: 2px 8px;
+  font-size: 11px;
+  font-weight: 700;
+  background: var(--surface-subtle);
+  color: var(--text-muted);
+}
+
+.tool-status-chip.success {
+  background: var(--success-soft);
+  color: var(--success);
+}
+
+.tool-status-chip.error {
+  background: var(--error-soft);
+  color: var(--error);
+}
+
+.tool-status-chip.warning {
+  background: var(--warning-soft);
+  color: var(--warning);
+}
+
+.tool-empty-state {
+  display: grid;
+  place-items: center;
+  min-height: 120px;
+  padding: 20px;
+  color: var(--text-muted);
+  text-align: center;
+  font-size: 13px;
+}
+
+.tool-copy-toast {
+  position: fixed;
+  left: 50%;
+  bottom: 48px;
+  z-index: 1000;
+  transform: translateX(-50%);
+  padding: 6px 14px;
+  border-radius: var(--radius-sm);
+  color: #fff;
+  background: var(--accent);
+  box-shadow: var(--shadow-soft);
+  font-size: 12px;
+}
+
+.tool-copy-toast.error {
+  background: var(--error);
+}

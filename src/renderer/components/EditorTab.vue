@@ -1,7 +1,7 @@
 <template>
   <div class="editor-tab">
     <div class="toolbar tool-command-bar">
-      <div class="view-controls" aria-label="视图控制">
+      <div class="view-controls tool-segmented" aria-label="视图控制">
         <button :class="{ active: showFileList }" title="显示或隐藏文件列表" @click="showFileList = !showFileList">列表</button>
         <button :class="{ active: showEditor }" title="显示或隐藏编辑区" @click="showEditor = !showEditor">编辑</button>
         <button
@@ -11,25 +11,54 @@
           @click="showPreview = !showPreview"
         >预览</button>
       </div>
-      <button @click="openFileDialog">打开文件</button>
+      <button @click="openFileDialog">
+        <FolderOpen :size="15" aria-hidden="true" />
+        打开文件
+      </button>
       <div class="new-btn-wrap">
-        <button @click="showNewMenu = !showNewMenu">新建 ▾</button>
+        <button @click="showNewMenu = !showNewMenu" aria-haspopup="menu" :aria-expanded="showNewMenu">
+          <FilePlus2 :size="15" aria-hidden="true" />
+          新建
+          <ChevronDown :size="14" aria-hidden="true" />
+        </button>
         <div v-if="showNewMenu" class="new-menu" @mouseleave="showNewMenu = false">
           <div class="new-menu-item" @click="handleNewFile('markdown')">新建 Markdown</div>
           <div class="new-menu-item" @click="handleNewFile('html')">新建 HTML</div>
           <div class="new-menu-item" @click="handleNewFile('plaintext')">新建纯文本</div>
         </div>
       </div>
-      <button @click="saveFile">保存</button>
+      <button class="primary" @click="saveFile">
+        <Save :size="15" aria-hidden="true" />
+        保存
+      </button>
       <template v-if="mode === 'markdown'">
-        <button @click="exportHTML">导出 HTML</button>
-        <button @click="exportPDF">导出 PDF</button>
-        <button @click="showSyntaxHelp = true">语法介绍</button>
+        <button @click="exportHTML">
+          <Download :size="15" aria-hidden="true" />
+          导出 HTML
+        </button>
+        <button @click="exportPDF">
+          <FileDown :size="15" aria-hidden="true" />
+          导出 PDF
+        </button>
+        <button @click="showSyntaxHelp = true">
+          <BookOpen :size="15" aria-hidden="true" />
+          语法介绍
+        </button>
       </template>
     </div>
 
-    <div class="content">
-      <aside v-if="showFileList" class="file-list">
+    <div
+      :class="[
+        'content',
+        'tool-workspace',
+        {
+          'has-preview': showPreview && mode !== 'plaintext',
+          'has-file-list': showFileList,
+          'has-editor': showEditor
+        }
+      ]"
+    >
+      <aside v-if="showFileList" class="file-list tool-panel">
         <FileTree
           ref="fileTreeRef"
           :root-path="workDir"
@@ -68,6 +97,7 @@
 
 <script setup>
 import { ref, computed, watch, nextTick } from 'vue'
+import { BookOpen, ChevronDown, Download, FileDown, FilePlus2, FolderOpen, Save } from 'lucide-vue-next'
 import { useEditorFile } from '../composables/useEditorFile.js'
 import { saveFile as dialogSaveFile } from '../utils/fileHelper.js'
 
@@ -228,34 +258,6 @@ async function exportPDF() {
   height: 100%;
 }
 
-.view-controls {
-  display: inline-flex;
-  align-items: center;
-  gap: 0;
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-sm);
-  overflow: hidden;
-  background: var(--surface-subtle);
-}
-
-.view-controls button {
-  min-height: 30px;
-  border: none;
-  border-radius: 0;
-  background: transparent;
-  color: var(--text-muted);
-  padding: 4px 10px;
-}
-
-.view-controls button + button {
-  border-left: 1px solid var(--border-subtle);
-}
-
-.view-controls button.active {
-  color: var(--accent);
-  background: var(--accent-soft);
-}
-
 .new-btn-wrap {
   position: relative;
 }
@@ -296,8 +298,11 @@ async function exportPDF() {
 .file-list {
   flex: 0 0 clamp(220px, 24vw, 280px);
   min-width: 220px;
-  background: var(--bg-secondary);
   border-right: 1px solid var(--border-color);
+  border-top: none;
+  border-bottom: none;
+  border-left: none;
+  border-radius: 0;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -339,17 +344,30 @@ async function exportPDF() {
 }
 
 @media (max-width: 1040px) {
-  .content {
-    overflow-x: auto;
+  .content.has-preview.has-file-list.has-editor {
+    display: grid;
+    grid-template-columns: minmax(220px, 260px) minmax(360px, 1fr);
+    grid-template-rows: minmax(0, 1fr) minmax(220px, 38%);
+    overflow: hidden;
   }
 
-  .file-list {
-    flex-basis: 220px;
+  .content.has-preview.has-file-list.has-editor .file-list {
+    grid-row: 1 / 3;
+    height: 100%;
   }
 
-  .editor-container.with-preview,
-  .preview-container {
-    min-width: 360px;
+  .content.has-preview.has-file-list.has-editor .editor-container.with-preview {
+    grid-column: 2;
+    grid-row: 1;
+    min-width: 0;
+  }
+
+  .content.has-preview.has-file-list.has-editor .preview-container {
+    grid-column: 2;
+    grid-row: 2;
+    min-width: 0;
+    border-left: none;
+    border-top: 1px solid var(--border-color);
   }
 }
 
@@ -361,6 +379,33 @@ async function exportPDF() {
   .toolbar button {
     padding-left: 9px;
     padding-right: 9px;
+  }
+}
+
+@media (max-width: 760px) {
+  .content,
+  .content.has-preview.has-file-list.has-editor {
+    display: flex;
+    flex-direction: column;
+    overflow: auto;
+  }
+
+  .file-list {
+    flex: 0 0 220px;
+    min-width: 0;
+    border-right: none;
+    border-bottom: 1px solid var(--border-color);
+  }
+
+  .editor-container.with-preview,
+  .preview-container {
+    min-width: 0;
+    flex: 0 0 320px;
+  }
+
+  .preview-container {
+    border-left: none;
+    border-top: 1px solid var(--border-color);
   }
 }
 </style>

@@ -105,7 +105,7 @@ defineEmits(['clear-recent'])
 const isMac = IS_MAC
 
 const recentFileItems = computed(() => props.recentFiles.map((path) => {
-  const parts = String(path).split('/')
+  const parts = String(path).split(/[\\/]/)
   const name = parts.pop() || path
   const dir = parts.join('/') || '/'
   return { path, name, dir }

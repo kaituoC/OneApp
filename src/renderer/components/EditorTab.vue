@@ -47,7 +47,17 @@
       </template>
     </div>
 
-    <div :class="['content', 'tool-workspace', { 'has-preview': showPreview && mode !== 'plaintext', 'has-file-list': showFileList }]">
+    <div
+      :class="[
+        'content',
+        'tool-workspace',
+        {
+          'has-preview': showPreview && mode !== 'plaintext',
+          'has-file-list': showFileList,
+          'has-editor': showEditor
+        }
+      ]"
+    >
       <aside v-if="showFileList" class="file-list tool-panel">
         <FileTree
           ref="fileTreeRef"
@@ -334,25 +344,25 @@ async function exportPDF() {
 }
 
 @media (max-width: 1040px) {
-  .content.has-preview.has-file-list {
+  .content.has-preview.has-file-list.has-editor {
     display: grid;
     grid-template-columns: minmax(220px, 260px) minmax(360px, 1fr);
     grid-template-rows: minmax(0, 1fr) minmax(220px, 38%);
     overflow: hidden;
   }
 
-  .content.has-preview.has-file-list .file-list {
+  .content.has-preview.has-file-list.has-editor .file-list {
     grid-row: 1 / 3;
     height: 100%;
   }
 
-  .content.has-preview.has-file-list .editor-container.with-preview {
+  .content.has-preview.has-file-list.has-editor .editor-container.with-preview {
     grid-column: 2;
     grid-row: 1;
     min-width: 0;
   }
 
-  .content.has-preview.has-file-list .preview-container {
+  .content.has-preview.has-file-list.has-editor .preview-container {
     grid-column: 2;
     grid-row: 2;
     min-width: 0;
@@ -374,7 +384,7 @@ async function exportPDF() {
 
 @media (max-width: 760px) {
   .content,
-  .content.has-preview.has-file-list {
+  .content.has-preview.has-file-list.has-editor {
     display: flex;
     flex-direction: column;
     overflow: auto;

@@ -1,7 +1,7 @@
 <template>
   <footer class="status-bar">
     <span class="status-item">
-      {{ activeTab === 'editor' ? (currentFile || '无文件') : tabNames[activeTab] }}
+      {{ statusLabel }}
     </span>
     <span class="status-right">
       OneApp v{{ version }} | {{ buildDate }}
@@ -10,37 +10,43 @@
 </template>
 
 <script setup>
+import { computed } from 'vue'
+import { TAB_BY_KEY } from '../utils/navigation.js'
+
 const version = __APP_VERSION__
 const buildDate = __BUILD_DATE__
 
-defineProps({
+const props = defineProps({
   currentFile: { type: String, default: '' },
   activeTab: { type: String, required: true }
 })
 
-const tabNames = {
-  editor: '编辑器',
-  json: 'JSON工具',
-  diff: '文本对比',
-  time: '时间工具',
-  regex: '正则',
-  encode: '编码',
-  settings: '设置'
-}
+const statusLabel = computed(() => {
+  if (props.activeTab === 'editor') return props.currentFile || '无文件'
+  return TAB_BY_KEY[props.activeTab]?.label || '未知工具'
+})
 </script>
 
 <style scoped>
 .status-bar {
-  background: var(--accent);
-  color: white;
-  padding: 2px 12px;
+  background: var(--status-bar-bg);
+  color: var(--status-bar-text);
+  border-top: 1px solid var(--border-subtle);
+  padding: 0 12px;
   font-size: 12px;
   display: flex;
   justify-content: space-between;
   height: 24px;
   align-items: center;
 }
+.status-item {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .status-right {
-  opacity: 0.85;
+  flex: none;
+  opacity: 0.72;
 }
 </style>

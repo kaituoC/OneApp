@@ -237,9 +237,10 @@ onUnmounted(() => {
 /* 实时时间显示区 */
 .live-section {
   background: var(--bg-secondary);
-  border-radius: 4px;
+  border-radius: var(--radius-md);
   border: 1px solid var(--border-color);
-  padding: 12px 16px;
+  padding: 14px 16px;
+  box-shadow: var(--shadow-soft);
 }
 
 .live-row {
@@ -252,6 +253,10 @@ onUnmounted(() => {
   align-items: center;
   gap: 12px;
   flex: 1;
+  background: var(--surface-raised);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 12px;
 }
 
 .live-label {
@@ -262,7 +267,8 @@ onUnmounted(() => {
 
 .live-value {
   font-family: var(--font-mono);
-  font-size: 14px;
+  font-size: 18px;
+  font-weight: 700;
   color: var(--text-primary);
 }
 
@@ -276,7 +282,8 @@ onUnmounted(() => {
   display: flex;
   gap: 0;
   border: 1px solid var(--border-color);
-  border-radius: 3px;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
 }
 
 .unit-toggle button {
@@ -314,16 +321,18 @@ onUnmounted(() => {
 /* 转换区域 */
 .convert-section {
   background: var(--bg-secondary);
-  border-radius: 4px;
+  border-radius: var(--radius-md);
   border: 1px solid var(--border-color);
+  overflow: hidden;
 }
 
 .section-header {
   padding: 8px 16px;
   font-size: 13px;
-  font-weight: 500;
+  font-weight: 700;
   color: var(--text-primary);
-  border-bottom: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--border-subtle);
+  background: var(--surface-raised);
 }
 
 .convert-content {
@@ -352,7 +361,7 @@ onUnmounted(() => {
   font-family: var(--font-mono);
   font-size: 13px;
   border: 1px solid var(--border-color);
-  border-radius: 3px;
+  border-radius: var(--radius-sm);
   background: var(--bg-primary);
   color: var(--text-primary);
 }
@@ -382,7 +391,7 @@ onUnmounted(() => {
   padding: 6px 10px;
   font-size: 12px;
   border: 1px solid var(--border-color);
-  border-radius: 3px;
+  border-radius: var(--radius-sm);
   background: var(--bg-primary);
   color: var(--text-primary);
 }
@@ -393,8 +402,9 @@ onUnmounted(() => {
   color: var(--text-primary);
   background: var(--bg-tertiary);
   padding: 6px 10px;
-  border-radius: 3px;
+  border-radius: var(--radius-sm);
   min-width: 150px;
+  border: 1px solid var(--border-subtle);
 }
 
 .ts-results-inline {
@@ -409,7 +419,8 @@ onUnmounted(() => {
   gap: 8px;
   background: var(--bg-tertiary);
   padding: 6px 10px;
-  border-radius: 3px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-subtle);
 }
 
 .ts-label {
@@ -432,7 +443,7 @@ onUnmounted(() => {
   background: var(--accent);
   color: white;
   padding: 6px 14px;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   font-size: 12px;
   z-index: 1000;
 }

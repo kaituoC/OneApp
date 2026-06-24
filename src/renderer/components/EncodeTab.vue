@@ -298,36 +298,38 @@ function onBaseInput(key, e) {
 .tool-menu {
   display: flex;
   flex-direction: column;
-  width: 130px;
+  width: 150px;
   flex-shrink: 0;
   border-right: 1px solid var(--border-color);
   background: var(--bg-secondary);
-  padding: 8px 0;
-  gap: 2px;
+  padding: 12px 8px;
+  gap: 4px;
 }
 .menu-item {
   background: transparent;
-  border: none;
-  border-left: 2px solid transparent;
+  border: 1px solid transparent;
   color: var(--text-secondary);
   text-align: left;
-  padding: 10px 16px;
+  justify-content: flex-start;
+  padding: 9px 10px;
   cursor: pointer;
   font-size: 13px;
+  border-radius: var(--radius-sm);
 }
 .menu-item:hover {
   color: var(--text-primary);
-  background: var(--bg-tertiary);
+  background: var(--surface-hover);
 }
 .menu-item.active {
   color: var(--text-primary);
-  border-left-color: var(--accent);
-  background: var(--bg-primary);
+  border-color: var(--accent-border);
+  background: var(--accent-soft);
 }
 .work-area {
   flex: 1;
   overflow: auto;
-  padding: 16px;
+  padding: 12px;
+  min-width: 0;
 }
 .pane {
   height: 100%;
@@ -338,7 +340,12 @@ function onBaseInput(key, e) {
   display: flex;
   align-items: center;
   gap: 16px;
-  margin-bottom: 10px;
+  margin-bottom: 12px;
+  padding: 10px 12px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  flex-wrap: wrap;
 }
 .dir-btn {
   padding: 5px 14px;
@@ -356,7 +363,7 @@ function onBaseInput(key, e) {
 .dual {
   display: flex;
   align-items: stretch;
-  gap: 10px;
+  gap: 12px;
   flex: 1;
   min-height: 0;
 }
@@ -365,6 +372,10 @@ function onBaseInput(key, e) {
   display: flex;
   flex-direction: column;
   min-width: 0;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  overflow: hidden;
 }
 .col-head {
   display: flex;
@@ -372,31 +383,34 @@ function onBaseInput(key, e) {
   justify-content: space-between;
   font-size: 12px;
   color: var(--text-secondary);
-  margin-bottom: 4px;
-  min-height: 22px;
+  min-height: 34px;
+  padding: 7px 10px;
+  background: var(--surface-raised);
+  border-bottom: 1px solid var(--border-subtle);
+  font-weight: 700;
 }
 .io {
   flex: 1;
   width: 100%;
   resize: none;
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-color);
-  border-radius: 4px;
+  background: var(--bg-primary);
+  border: none;
+  border-radius: 0;
   color: var(--text-primary);
   font-family: var(--font-mono);
   font-size: inherit;
-  padding: 8px;
+  padding: 10px;
   line-height: 1.5;
   box-sizing: border-box;
 }
 .io[readonly] {
-  background: var(--bg-tertiary);
+  background: var(--bg-primary);
 }
 .swap-btn {
   align-self: center;
   background: var(--bg-tertiary);
   border: 1px solid var(--border-color);
-  border-radius: 4px;
+  border-radius: var(--radius-md);
   color: var(--text-primary);
   cursor: pointer;
   font-size: 16px;
@@ -405,7 +419,7 @@ function onBaseInput(key, e) {
 .copy-btn {
   background: transparent;
   border: 1px solid var(--border-color);
-  border-radius: 3px;
+  border-radius: var(--radius-sm);
   color: var(--text-secondary);
   cursor: pointer;
   font-size: 11px;
@@ -425,7 +439,11 @@ function onBaseInput(key, e) {
   display: flex;
   flex-direction: column;
   height: 110px;
-  margin-bottom: 10px;
+  margin-bottom: 12px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  overflow: hidden;
 }
 .jwt-out {
   display: flex;
@@ -438,7 +456,7 @@ function onBaseInput(key, e) {
 .jwt-json {
   background: var(--bg-secondary);
   border: 1px solid var(--border-color);
-  border-radius: 4px;
+  border-radius: var(--radius-md);
   padding: 8px;
   margin: 0;
   font-family: var(--font-mono);
@@ -494,7 +512,7 @@ function onBaseInput(key, e) {
   word-break: break-all;
   background: var(--bg-secondary);
   border: 1px solid var(--border-color);
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   padding: 6px 8px;
   color: var(--text-primary);
 }
@@ -503,7 +521,11 @@ function onBaseInput(key, e) {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  max-width: 640px;
+  max-width: 760px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 16px;
 }
 .base-field {
   display: flex;
@@ -525,5 +547,53 @@ function onBaseInput(key, e) {
   border-radius: 4px;
   padding: 8px;
   color: var(--text-primary);
+}
+
+@media (max-width: 900px) {
+  .encode-tab {
+    flex-direction: column;
+  }
+
+  .tool-menu {
+    width: auto;
+    flex-direction: row;
+    overflow-x: auto;
+    border-right: none;
+    border-bottom: 1px solid var(--border-color);
+    padding: 8px;
+  }
+
+  .menu-item {
+    flex: 0 0 auto;
+    white-space: nowrap;
+  }
+}
+
+@media (max-width: 760px) {
+  .dual {
+    flex-direction: column;
+    overflow: auto;
+  }
+
+  .dual-col {
+    flex: 0 0 260px;
+  }
+
+  .swap-btn {
+    align-self: flex-start;
+    transform: rotate(90deg);
+  }
+
+  .base-field,
+  .hash-row {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .base-name,
+  .hash-name {
+    width: auto;
+  }
 }
 </style>

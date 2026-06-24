@@ -265,14 +265,16 @@ onUnmounted(() => clearTimeout(debounceTimer))
   display: flex;
   flex-direction: column;
   height: 100%;
+  position: relative;
 }
 .pattern-bar {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 8px;
+  gap: 8px;
+  padding: 10px 12px;
   background: var(--bg-secondary);
   border-bottom: 1px solid var(--border-color);
+  flex-wrap: wrap;
 }
 .label {
   font-size: 13px;
@@ -285,27 +287,30 @@ onUnmounted(() => clearTimeout(debounceTimer))
 }
 .pattern-input {
   flex: 1;
+  min-width: 220px;
   font-family: monospace;
   font-size: 14px;
-  padding: 5px 8px;
+  padding: 6px 10px;
   background: var(--bg-primary);
   color: var(--text-primary);
   border: 1px solid var(--border-color);
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
 }
 .flags {
   display: flex;
-  gap: 2px;
+  gap: 4px;
+  flex-wrap: wrap;
 }
 .flag {
-  width: 24px;
-  height: 24px;
+  width: 28px;
+  height: 28px;
   font-family: monospace;
   border: 1px solid var(--border-color);
-  background: var(--bg-primary);
+  background: var(--surface-subtle);
   color: var(--text-secondary);
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   cursor: pointer;
+  padding: 0;
 }
 .flag.on {
   background: var(--accent);
@@ -326,12 +331,19 @@ onUnmounted(() => clearTimeout(debounceTimer))
   flex: 1;
   display: flex;
   overflow: hidden;
+  gap: 12px;
+  padding: 12px;
+  min-height: 0;
 }
 .editor-pane, .preview-pane {
   flex: 1;
   display: flex;
   flex-direction: column;
   min-width: 0;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  overflow: hidden;
 }
 .preview-pane {
   border-left: 1px solid var(--border-color);
@@ -342,9 +354,9 @@ onUnmounted(() => clearTimeout(debounceTimer))
   padding: 6px 12px;
   font-size: 12px;
   color: var(--text-secondary);
-  background: var(--bg-secondary);
-  border-bottom: 1px solid var(--border-color);
-  text-transform: uppercase;
+  background: var(--surface-raised);
+  border-bottom: 1px solid var(--border-subtle);
+  font-weight: 700;
 }
 .char-count { font-family: monospace; }
 .char-count.warn { color: var(--accent); }
@@ -377,8 +389,9 @@ onUnmounted(() => clearTimeout(debounceTimer))
   width: 240px;
   overflow-y: auto;
   background: var(--bg-secondary);
-  border-left: 1px solid var(--border-color);
-  padding: 8px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 10px;
 }
 .cheat-section { margin-bottom: 16px; }
 .cheat-title {
@@ -396,7 +409,7 @@ onUnmounted(() => clearTimeout(debounceTimer))
   font-size: 12px;
   background: var(--bg-primary);
   border: 1px solid var(--border-color);
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   color: var(--text-primary);
   cursor: pointer;
 }
@@ -425,7 +438,9 @@ onUnmounted(() => clearTimeout(debounceTimer))
   padding: 6px 12px;
   font-size: 12px;
   color: var(--text-secondary);
-  border-bottom: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--border-subtle);
+  background: var(--surface-raised);
+  font-weight: 700;
 }
 .result-rows {
   flex: 1;
@@ -438,11 +453,39 @@ onUnmounted(() => clearTimeout(debounceTimer))
   padding: 4px 12px;
   font-family: monospace;
   font-size: 12px;
-  border-bottom: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--border-subtle);
 }
-.result-row.active { background: var(--bg-tertiary); }
+.result-row.active { background: var(--accent-soft); }
 .ri { color: var(--text-secondary); }
 .rpos { color: var(--text-secondary); min-width: 60px; }
 .rmatch { color: var(--text-primary); font-weight: bold; }
 .rgroup { font-size: 11px; }
+
+@media (max-width: 1040px) {
+  .cheatsheet {
+    position: absolute;
+    z-index: 20;
+    top: 58px;
+    right: 12px;
+    bottom: 32%;
+    width: min(320px, calc(100% - 24px));
+    box-shadow: var(--shadow-soft);
+  }
+}
+
+@media (max-width: 820px) {
+  .content {
+    flex-direction: column;
+    overflow: auto;
+  }
+
+  .editor-pane,
+  .preview-pane {
+    flex: 0 0 260px;
+  }
+
+  .result-list {
+    min-height: 180px;
+  }
+}
 </style>

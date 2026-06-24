@@ -1,9 +1,16 @@
 <template>
   <div class="editor-tab">
-    <div class="toolbar">
-      <button @click="showFileList = !showFileList">{{ showFileList ? '隐藏列表' : '显示列表' }}</button>
-      <button @click="showEditor = !showEditor">{{ showEditor ? '隐藏编辑' : '显示编辑' }}</button>
-      <button v-if="mode !== 'plaintext'" @click="showPreview = !showPreview">{{ showPreview ? '隐藏预览' : '显示预览' }}</button>
+    <div class="toolbar tool-command-bar">
+      <div class="view-controls" aria-label="视图控制">
+        <button :class="{ active: showFileList }" title="显示或隐藏文件列表" @click="showFileList = !showFileList">列表</button>
+        <button :class="{ active: showEditor }" title="显示或隐藏编辑区" @click="showEditor = !showEditor">编辑</button>
+        <button
+          v-if="mode !== 'plaintext'"
+          :class="{ active: showPreview }"
+          title="显示或隐藏预览区"
+          @click="togglePreview"
+        >预览</button>
+      </div>
       <button @click="openFileDialog">打开文件</button>
       <div class="new-btn-wrap">
         <button @click="showNewMenu = !showNewMenu">新建 ▾</button>
@@ -28,7 +35,7 @@
           :root-path="workDir"
           :editable-extensions="editableExtensions"
           :active-path="currentFilePath"
-          @open-file="openFromTree"
+          @open-file="handleOpenFromTree"
         />
       </aside>
 
@@ -88,11 +95,11 @@ const editorRef = ref(null)
 const previewRef = ref(null)
 const showFileList = ref(true)
 const showEditor = ref(true)
-const showPreview = ref(true)
+const showPreview = ref(false)
 const showSyntaxHelp = ref(false)
 const showNewMenu = ref(false)
 
-const { editorContent, currentFilePath, mode, openFileDialog, openFromTree, newFile, saveFile, onContentChange } =
+const { editorContent, currentFilePath, mode, openFileDialog: baseOpenFileDialog, openFromTree, newFile, saveFile, onContentChange } =
   useEditorFile({
     workDir: computed(() => props.workDir),
     onFileOpen: (p) => emit('file-open', p),
@@ -106,6 +113,25 @@ const editableExtensions = []
 function handleNewFile(type) {
   newFile(type)
   showNewMenu.value = false
+  showPreview.value = false
+}
+
+async function openFileDialog() {
+  const opened = await baseOpenFileDialog()
+  if (opened && mode.value !== 'plaintext') {
+    showPreview.value = true
+  }
+}
+
+async function handleOpenFromTree(filePath) {
+  const opened = await openFromTree(filePath)
+  if (opened && mode.value !== 'plaintext') {
+    showPreview.value = true
+  }
+}
+
+function togglePreview() {
+  showPreview.value = !showPreview.value
 }
 
 // ── 滚动同步 ─────────────────────────────────────────────
@@ -209,12 +235,37 @@ async function exportPDF() {
 
 .toolbar {
   display: flex;
-  gap: 4px;
-  padding: 6px 8px;
-  background: var(--bg-secondary);
-  border-bottom: 1px solid var(--border-color);
+  gap: 8px;
   flex-wrap: wrap;
   align-items: center;
+}
+
+.view-controls {
+  display: inline-flex;
+  align-items: center;
+  gap: 0;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  background: var(--surface-subtle);
+}
+
+.view-controls button {
+  min-height: 30px;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  color: var(--text-muted);
+  padding: 4px 10px;
+}
+
+.view-controls button + button {
+  border-left: 1px solid var(--border-subtle);
+}
+
+.view-controls button.active {
+  color: var(--accent);
+  background: var(--accent-soft);
 }
 
 .new-btn-wrap {
@@ -226,12 +277,13 @@ async function exportPDF() {
   top: 100%;
   left: 0;
   z-index: 100;
-  background: var(--bg-secondary);
+  background: var(--surface);
   border: 1px solid var(--border-color);
-  border-radius: 4px;
+  border-radius: var(--radius-md);
   min-width: 130px;
-  box-shadow: 0 4px 12px rgba(0,0,0,.2);
-  margin-top: 2px;
+  box-shadow: var(--shadow-soft);
+  margin-top: 6px;
+  overflow: hidden;
 }
 
 .new-menu-item {
@@ -242,17 +294,20 @@ async function exportPDF() {
 }
 
 .new-menu-item:hover {
-  background: var(--bg-tertiary);
+  background: var(--surface-hover);
 }
 
 .content {
   flex: 1;
   display: flex;
   overflow: hidden;
+  min-width: 0;
+  min-height: 0;
 }
 
 .file-list {
-  width: 280px;
+  flex: 0 0 clamp(220px, 24vw, 280px);
+  min-width: 220px;
   background: var(--bg-secondary);
   border-right: 1px solid var(--border-color);
   display: flex;
@@ -264,19 +319,21 @@ async function exportPDF() {
   flex: 1;
   display: flex;
   min-width: 0;
+  min-height: 0;
 }
 
 .editor-container.with-preview {
-  width: 50%;
-  flex: none;
+  flex: 1 1 50%;
+  min-width: 320px;
 }
 
 .preview-container {
-  flex: 1;
-  min-width: 300px;
+  flex: 1 1 50%;
+  min-width: 320px;
   border-left: 1px solid var(--border-color);
   display: flex;
   flex-direction: column;
+  min-height: 0;
 }
 
 .preview-container.full-width {
@@ -291,5 +348,31 @@ async function exportPDF() {
   justify-content: center;
   color: var(--text-secondary);
   font-size: 14px;
+}
+
+@media (max-width: 1040px) {
+  .content {
+    overflow-x: auto;
+  }
+
+  .file-list {
+    flex-basis: 220px;
+  }
+
+  .editor-container.with-preview,
+  .preview-container {
+    min-width: 360px;
+  }
+}
+
+@media (max-width: 860px) {
+  .toolbar {
+    gap: 6px;
+  }
+
+  .toolbar button {
+    padding-left: 9px;
+    padding-right: 9px;
+  }
 }
 </style>

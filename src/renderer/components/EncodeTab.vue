@@ -178,6 +178,7 @@
 <script setup>
 import { ref, reactive, computed, watch } from 'vue'
 import { ArrowLeftRight, Binary, Copy, FileCode2, Hash, KeyRound, Languages, Link } from 'lucide-vue-next'
+import { useCopyToast } from '../composables/useCopyToast.js'
 import {
   base64Encode,
   base64Decode,
@@ -203,20 +204,7 @@ const TOOLS = [
   { key: 'unicode', label: 'Unicode', icon: Languages }
 ]
 const tool = ref('base64')
-const copyMessage = ref('')
-
-function copy(text) {
-  if (text == null) return
-  navigator.clipboard.writeText(String(text))
-    .then(() => {
-      copyMessage.value = '已复制'
-      setTimeout(() => { copyMessage.value = '' }, 1500)
-    })
-    .catch(() => {
-      copyMessage.value = '复制失败'
-      setTimeout(() => { copyMessage.value = '' }, 1500)
-    })
-}
+const { copyMessage, copyToClipboard: copy } = useCopyToast()
 // 把当前结果搬入输入框并翻转方向（自然完成往返），3 个编解码工具共用
 function makeSwap(inputRef, dirRef, resultRef) {
   return () => {

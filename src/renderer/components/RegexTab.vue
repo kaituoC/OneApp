@@ -105,7 +105,6 @@
           v-for="(m, i) in renderedMatches"
           :key="i"
           :class="['result-row', { active: i === activeMatch }]"
-          @click="selectMatch(i)"
           @mouseenter="activeMatch = i"
           @mouseleave="activeMatch = null"
         >
@@ -130,6 +129,7 @@ import { ref, reactive, computed, watch, onUnmounted } from 'vue'
 import { BookOpen, CircleAlert, Copy } from 'lucide-vue-next'
 import EditorWithLineNumbers from './EditorWithLineNumbers.vue'
 import { useRegexMatcher } from '../composables/useRegexMatcher.js'
+import { useCopyToast } from '../composables/useCopyToast.js'
 
 defineProps({
   fontSize: { type: Number, default: 14 }
@@ -185,7 +185,7 @@ const flagsString = computed(() => FLAGS.filter(f => flagState[f]).join(''))
 const patternInputRef = ref(null)
 const showCheatsheet = ref(false)
 const activeMatch = ref(null)
-const copyMessage = ref('')
+const { copyMessage, copyToClipboard } = useCopyToast()
 
 const { matches, count, truncated, error, matching, match } = useRegexMatcher()
 
@@ -254,18 +254,7 @@ async function copyAll() {
     }
     lines[i] = line
   }
-  try {
-    await navigator.clipboard.writeText(lines.join('\n'))
-    copyMessage.value = '已复制'
-    setTimeout(() => { copyMessage.value = '' }, 1500)
-  } catch (_) {
-    copyMessage.value = '复制失败'
-    setTimeout(() => { copyMessage.value = '' }, 1500)
-  }
-}
-
-function selectMatch(i) {
-  activeMatch.value = i
+  await copyToClipboard(lines.join('\n'))
 }
 
 // 实时匹配：debounce 250ms
@@ -463,7 +452,6 @@ onUnmounted(() => clearTimeout(debounceTimer))
   font-family: monospace;
   font-size: 12px;
   border-bottom: 1px solid var(--border-subtle);
-  cursor: pointer;
 }
 .result-row.active { background: var(--accent-soft); }
 .ri { color: var(--text-secondary); }

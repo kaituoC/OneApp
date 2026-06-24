@@ -49,6 +49,7 @@
 import { ref } from 'vue'
 import { formatJSON, minifyJSON, validateJSON, unescapeJSON } from '../utils/jsonHelper.js'
 import EditorWithLineNumbers from './EditorWithLineNumbers.vue'
+import { useCopyToast } from '../composables/useCopyToast.js'
 
 const props = defineProps({
   fontSize: { type: Number, default: 14 }
@@ -58,7 +59,7 @@ const input = ref('')
 const output = ref('')
 const statusMessage = ref('')
 const hasError = ref(false)
-const copyMessage = ref('')
+const { copyMessage, copyToClipboard } = useCopyToast()
 
 function doFormat() {
   const result = formatJSON(input.value)
@@ -93,11 +94,8 @@ function handleResult(result) {
 }
 
 async function copyResult() {
-  if (output.value) {
-    await navigator.clipboard.writeText(output.value)
+  if (output.value && await copyToClipboard(output.value)) {
     statusMessage.value = '已复制到剪贴板'
-    copyMessage.value = '已复制'
-    setTimeout(() => { copyMessage.value = '' }, 1500)
   }
 }
 

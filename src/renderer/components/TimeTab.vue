@@ -104,6 +104,7 @@
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { useCopyToast } from '../composables/useCopyToast.js'
 import {
   formatDate,
   parseDate,
@@ -179,18 +180,7 @@ function convertDateToTs() {
 }
 
 // 复制功能
-const copyMessage = ref('')
-
-async function copyToClipboard(text) {
-  try {
-    await navigator.clipboard.writeText(text)
-    copyMessage.value = '已复制'
-    setTimeout(() => copyMessage.value = '', 1500)
-  } catch {
-    copyMessage.value = '复制失败'
-    setTimeout(() => copyMessage.value = '', 1500)
-  }
-}
+const { copyMessage, copyToClipboard } = useCopyToast()
 
 function copyLiveDateTime() {
   copyToClipboard(liveDateTime.value)

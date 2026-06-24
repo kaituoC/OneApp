@@ -79,8 +79,8 @@
     <main v-if="supported" class="aw-right">
       <div v-if="record && !running" class="aw-record-banner tool-panel">
         <div>
-          <div class="aw-record-title">{{ recordBannerTitle }}</div>
-          <div class="aw-record-copy">{{ recordBannerCopy }}</div>
+          <div class="aw-record-title">{{ recordBanner.title }}</div>
+          <div class="aw-record-copy">{{ recordBanner.copy }}</div>
         </div>
         <div class="aw-record-actions">
           <button class="aw-btn" @click="newDiscussion">新研讨</button>
@@ -200,23 +200,15 @@ const statusText = computed(() => {
   return ({ running: '进行中', completed: '已完成', failed: '失败', canceled: '已取消' }[s] || '—')
 })
 
-const recordBannerTitle = computed(() => {
-  const s = record.value?.status
-  if (s === 'completed') return '历史研讨记录'
-  if (s === 'failed') return '失败的研讨记录'
-  if (s === 'canceled') return '已取消的研讨记录'
-  if (s === 'running') return '已中断的研讨记录'
-  return '研讨记录'
-})
+const RECORD_BANNERS = {
+  completed: { title: '历史研讨记录', copy: '这是上次完成的记录，可继续查看 timeline、导出 Markdown，或开始一轮新研讨。' },
+  failed: { title: '失败的研讨记录', copy: '这次研讨未正常完成，已保留已有消息，便于排查或导出。' },
+  canceled: { title: '已取消的研讨记录', copy: '这次研讨已取消，已保留取消前产生的内容。' },
+  running: { title: '已中断的研讨记录', copy: '这是恢复到本窗口前的运行中记录，当前仅供查看。' }
+}
+const RECORD_BANNER_DEFAULT = { title: '研讨记录', copy: '可查看已有消息，或开始一轮新研讨。' }
 
-const recordBannerCopy = computed(() => {
-  const s = record.value?.status
-  if (s === 'completed') return '这是上次完成的记录，可继续查看 timeline、导出 Markdown，或开始一轮新研讨。'
-  if (s === 'failed') return '这次研讨未正常完成，已保留已有消息，便于排查或导出。'
-  if (s === 'canceled') return '这次研讨已取消，已保留取消前产生的内容。'
-  if (s === 'running') return '这是恢复到本窗口前的运行中记录，当前仅供查看。'
-  return '可查看已有消息，或开始一轮新研讨。'
-})
+const recordBanner = computed(() => RECORD_BANNERS[record.value?.status] || RECORD_BANNER_DEFAULT)
 
 const agentsForPhase = (phase) => (phase === 'final' ? (config.moderator ? [config.moderator] : []) : config.selectedAgents)
 

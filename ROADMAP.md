@@ -34,6 +34,15 @@ OneApp 的功能开发规划（backlog）。本文件只记录**待开发**的�
 
 ## P3 · 现有能力增强
 
+- [ ] **Agent 研讨室记录导航** —— 将左侧「进度」模块作为轻量目录使用：
+  点击某一轮次下的 Agent chip（如「第一轮 · Codex」）时，右侧「研讨记录」区域快速滚动到对应轮次、对应 Agent 的消息位置，并短暂高亮目标消息，方便在长记录中定位与回看。
+  - 交互方案：仅对已产生消息的 chip 启用点击与 hover 状态；`pending` / `running` / 无对应消息的状态保持展示用途，避免误导。
+  - 实现边界：优先在 `AgentWorkshopTab.vue` 渲染层建立 `phase + agentId` 到消息 DOM 的锚点映射，不改主进程 IPC、研讨编排、记录持久化格式和 Agent 调用逻辑。
+  - 后续扩展：若记录继续变长，可再评估独立目录、当前阅读位置同步、错误消息跳转等增强。
+- [ ] **检查更新与弹窗图标统一** —— 将设置页「检查更新」从固定 `alert` 文案改为真实检查 GitHub Releases 最新版本，并统一消息弹窗使用 OneApp 应用图标。
+  - 检查更新方案：点击按钮后请求 `kaituoC/OneApp` 最新 GitHub Release，比较当前 `__APP_VERSION__` 与最新 `tag_name`；无新版时提示「已是最新版本」，有新版时展示版本号、发布日期、更新说明摘要，并提供「前往下载 / 打开 Release 页面」入口。
+  - 弹窗方案：新增主进程侧统一消息弹窗 IPC，由 `dialog.showMessageBox` 显示信息、确认等消息，并默认注入 `electron/assets/icon.png`（生产环境使用打包后的 `assets/icon.png`）；替换设置页 `alert`，并同步迁移 Agent 研讨室成本提示等 renderer 原生 `confirm` 弹窗。
+  - 不做范围：暂不接入 `electron-updater`，不自动下载、不自动安装、不提示重启更新；完整自动更新待应用签名与 Release metadata 发布链路就绪后，另起独立需求评估。
 - [ ] **Diff 文件夹对比** —— 在现有文本 Diff 基础上支持目录级对比
 - [ ] **JSON 工具增强** —— JSONPath 查询 / 过滤
 - [ ] **时间工具增强** —— 多时区对照表

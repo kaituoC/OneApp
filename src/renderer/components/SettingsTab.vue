@@ -82,8 +82,8 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
 import { chooseDirectory } from '../utils/fileHelper.js'
+import { IS_MAC } from '../utils/navigation.js'
 
 const version = __APP_VERSION__
 const buildDate = __BUILD_DATE__
@@ -98,7 +98,7 @@ defineProps({
 
 defineEmits(['clear-recent'])
 
-const isMac = computed(() => navigator.platform.toLowerCase().includes('mac'))
+const isMac = IS_MAC
 
 async function chooseDir() {
   const dir = await chooseDirectory()

@@ -215,13 +215,6 @@ watch([textA, textB], () => {
   height: 100%;
 }
 
-.toolbar {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
 .toolbar-separator {
   width: 1px;
   height: 20px;
@@ -281,10 +274,6 @@ watch([textA, textB], () => {
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
   overflow: hidden;
-}
-
-.panel + .panel {
-  border-left: 1px solid var(--border-color);
 }
 
 .panel-header {

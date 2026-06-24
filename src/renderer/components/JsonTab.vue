@@ -111,11 +111,6 @@ function clearAll() {
   flex-direction: column;
   height: 100%;
 }
-.toolbar {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-}
 .toolbar-spacer {
   flex: 1;
 }
@@ -135,9 +130,6 @@ function clearAll() {
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
   overflow: hidden;
-}
-.panel + .panel {
-  border-left: 1px solid var(--border-color);
 }
 .panel-header {
   display: flex;
@@ -199,10 +191,6 @@ function clearAll() {
 
   .panel {
     min-height: 280px;
-  }
-
-  .panel + .panel {
-    border-left: 1px solid var(--border-color);
   }
 }
 </style>

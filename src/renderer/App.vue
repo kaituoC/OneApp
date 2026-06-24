@@ -79,7 +79,7 @@ import EncodeTab from './components/EncodeTab.vue'
 import AgentWorkshopTab from './components/AgentWorkshopTab.vue'
 import SettingsTab from './components/SettingsTab.vue'
 import StatusBar from './components/StatusBar.vue'
-import { TAB_BY_KEY, TAB_KEYS } from './utils/navigation.js'
+import { TAB_BY_KEY, TAB_KEYS, formatShortcut } from './utils/navigation.js'
 
 const activeTab = ref('editor')
 const currentFile = ref('')
@@ -89,10 +89,7 @@ const editorFontSize = ref(14)
 const recentFiles = ref([])
 
 const activeTool = computed(() => TAB_BY_KEY[activeTab.value] || TAB_BY_KEY.editor)
-const shortcutHint = computed(() => {
-  const isMac = navigator.platform.toLowerCase().includes('mac')
-  return `${isMac ? 'Cmd' : 'Ctrl'}+${activeTool.value.shortcut}`
-})
+const shortcutHint = computed(() => formatShortcut(activeTool.value))
 const activeContext = computed(() => {
   if (activeTab.value === 'editor') return currentFile.value || workDir.value || activeTool.value.description
   if (activeTab.value === 'agent') return 'AI · 本地仓库只读研讨'
@@ -141,9 +138,10 @@ function onFileOpen(filePath) {
 
 function onKeydown(e) {
   const primary = e.ctrlKey || e.metaKey
-  if (primary && e.key >= '1' && e.key <= '8') {
+  const num = Number(e.key)
+  if (primary && num >= 1 && num <= TAB_KEYS.length) {
     e.preventDefault()
-    activeTab.value = TAB_KEYS[Number(e.key) - 1]
+    activeTab.value = TAB_KEYS[num - 1]
   }
   if (primary && e.key === 'Tab') {
     e.preventDefault()

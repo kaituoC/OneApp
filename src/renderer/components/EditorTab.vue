@@ -8,7 +8,7 @@
           v-if="mode !== 'plaintext'"
           :class="{ active: showPreview }"
           title="显示或隐藏预览区"
-          @click="togglePreview"
+          @click="showPreview = !showPreview"
         >预览</button>
       </div>
       <button @click="openFileDialog">打开文件</button>
@@ -116,22 +116,17 @@ function handleNewFile(type) {
   showPreview.value = false
 }
 
+// 成功打开非纯文本文件时自动展开预览（取消/失败不动），规则单一来源
+function showPreviewIfOpened(opened) {
+  if (opened && mode.value !== 'plaintext') showPreview.value = true
+}
+
 async function openFileDialog() {
-  const opened = await baseOpenFileDialog()
-  if (opened && mode.value !== 'plaintext') {
-    showPreview.value = true
-  }
+  showPreviewIfOpened(await baseOpenFileDialog())
 }
 
 async function handleOpenFromTree(filePath) {
-  const opened = await openFromTree(filePath)
-  if (opened && mode.value !== 'plaintext') {
-    showPreview.value = true
-  }
-}
-
-function togglePreview() {
-  showPreview.value = !showPreview.value
+  showPreviewIfOpened(await openFromTree(filePath))
 }
 
 // ── 滚动同步 ─────────────────────────────────────────────
@@ -231,13 +226,6 @@ async function exportPDF() {
   display: flex;
   flex-direction: column;
   height: 100%;
-}
-
-.toolbar {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-  align-items: center;
 }
 
 .view-controls {

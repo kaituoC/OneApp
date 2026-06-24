@@ -27,8 +27,8 @@
           :key="tab.key"
           type="button"
           :class="['nav-item', { active: activeTab === tab.key, featured: tab.featured }]"
-          :title="getNavigationTooltip(tab, shortcutModifier)"
-          :aria-label="getNavigationTooltip(tab, shortcutModifier)"
+          :title="getNavigationTooltip(tab)"
+          :aria-label="getNavigationTooltip(tab)"
           @click="$emit('tab-change', tab.key)"
         >
           <span class="nav-icon-wrap">
@@ -46,7 +46,7 @@
 </template>
 
 <script setup>
-import { computed, ref } from 'vue'
+import { ref } from 'vue'
 import { PanelLeftClose, PanelLeftOpen } from 'lucide-vue-next'
 import { NAV_GROUPS, WORKBENCH_ICON, getNavigationTooltip } from '../utils/navigation.js'
 
@@ -57,9 +57,6 @@ defineProps({
 defineEmits(['tab-change'])
 
 const isCollapsed = ref(false)
-const shortcutModifier = computed(() =>
-  navigator.platform.toLowerCase().includes('mac') ? 'Cmd' : 'Ctrl'
-)
 </script>
 
 <style scoped>

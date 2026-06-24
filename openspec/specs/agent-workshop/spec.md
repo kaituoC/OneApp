@@ -1,19 +1,25 @@
 # agent-workshop Specification
 
 ## Purpose
-TBD - created by archiving change add-agent-workshop. Update Purpose after archive.
+
+Agent Workshop 让多个本地 AI agent 以只读方式围绕本地 repository 进行结构化研讨，经过独立提案、交叉评审和 moderator 汇总后产出可执行方案。刷新后的 workbench shell 将它作为 AI 分组中的核心入口呈现，但不改变底层 workshop workflow。
 ## Requirements
-### Requirement: Agent 研讨室 tab
 
-OneApp SHALL provide an "Agent 研讨室" feature tab that matches the existing tool-style application layout and lets users configure and run repository-grounded agent discussions.
+### Requirement: Agent Workshop AI 入口
 
-#### Scenario: Open Agent 研讨室
-- **WHEN** the user selects the "Agent 研讨室" tab
-- **THEN** the system displays a two-column interface with configuration/progress controls on the left and the idea input or discussion timeline on the right
+OneApp SHALL 在刷新后的 workbench shell 中将 Agent Workshop 呈现为醒目的 AI 入口，同时保留现有基于本地 repo 的 workshop workflow。
 
-#### Scenario: Existing tools remain available
-- **WHEN** the Agent 研讨室 tab is added
-- **THEN** the existing editor, JSON, diff, time, regex, encode, and settings tabs remain accessible
+#### Scenario: 从 AI 导航打开 Agent Workshop
+- **WHEN** 用户在 AI 导航分组中选择 Agent Workshop 入口
+- **THEN** 系统显示 Agent Workshop 界面，并包含配置/进度控制以及 idea input 或 discussion timeline
+
+#### Scenario: 现有工具仍可访问
+- **WHEN** Agent Workshop 被提升到 AI 导航分组
+- **THEN** 现有 Editor、JSON、Diff、Time、Regex、Encode 和 Settings 工具仍可通过刷新后的 workbench navigation 访问
+
+#### Scenario: Agent Workshop 保留工作流布局
+- **WHEN** Agent Workshop 入口处于激活状态
+- **THEN** 系统继续呈现 repo 配置、agent 检测、moderator agent 选择、启动控制、stage progress 和 discussion message，并且不改变底层 workshop 行为
 
 ### Requirement: Agent availability detection
 
@@ -238,4 +244,3 @@ Agent 研讨室 SHALL export the current discussion record as a complete Markdow
 #### Scenario: No record to export
 - **WHEN** no discussion record is available
 - **THEN** the system disables export or explains that there is no record to export
-

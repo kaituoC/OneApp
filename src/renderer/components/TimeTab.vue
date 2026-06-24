@@ -1,7 +1,7 @@
 <template>
   <div class="time-tab">
     <!-- 实时时间显示区 -->
-    <div class="live-section">
+    <div class="live-section tool-panel">
       <div class="live-row">
         <div class="live-item">
           <span class="live-label">当前时间</span>
@@ -12,7 +12,7 @@
           <span class="live-label">时间戳</span>
           <div class="live-ts-row">
             <span class="live-value">{{ liveTimestamp }}</span>
-            <div class="unit-toggle">
+          <div class="unit-toggle tool-segmented">
               <button :class="{ active: displayMode === 'second' }" @click="displayMode = 'second'">秒</button>
               <button :class="{ active: displayMode === 'millisecond' }" @click="displayMode = 'millisecond'">毫秒</button>
             </div>
@@ -23,8 +23,8 @@
     </div>
 
     <!-- 时间戳转日期 -->
-    <div class="convert-section">
-      <div class="section-header">时间戳转日期</div>
+    <div class="convert-section tool-panel">
+      <div class="section-header tool-panel-header">时间戳转日期</div>
       <div class="convert-content">
         <div class="convert-row">
           <span class="row-label">时间戳</span>
@@ -65,8 +65,8 @@
     </div>
 
     <!-- 日期转时间戳 -->
-    <div class="convert-section">
-      <div class="section-header">日期转时间戳</div>
+    <div class="convert-section tool-panel">
+      <div class="section-header tool-panel-header">日期转时间戳</div>
       <div class="convert-content">
         <div class="convert-row">
           <span class="row-label">日期时间</span>
@@ -98,7 +98,7 @@
     </div>
 
     <!-- 复制成功提示 -->
-    <div v-if="copyMessage" class="copy-toast">{{ copyMessage }}</div>
+    <div v-if="copyMessage" :class="['tool-copy-toast', { error: copyMessage === '复制失败' }]">{{ copyMessage }}</div>
   </div>
 </template>
 
@@ -236,9 +236,6 @@ onUnmounted(() => {
 
 /* 实时时间显示区 */
 .live-section {
-  background: var(--bg-secondary);
-  border-radius: var(--radius-md);
-  border: 1px solid var(--border-color);
   padding: 14px 16px;
   box-shadow: var(--shadow-soft);
 }
@@ -281,9 +278,6 @@ onUnmounted(() => {
 .unit-toggle {
   display: flex;
   gap: 0;
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-sm);
-  overflow: hidden;
 }
 
 .unit-toggle button {
@@ -292,20 +286,6 @@ onUnmounted(() => {
   background: transparent;
   border: none;
   border-radius: 0;
-}
-
-.unit-toggle button:first-child {
-  border-radius: 2px 0 0 2px;
-}
-
-.unit-toggle button:last-child {
-  border-radius: 0 2px 2px 0;
-  border-left: 1px solid var(--border-color);
-}
-
-.unit-toggle button.active {
-  background: var(--accent);
-  color: white;
 }
 
 .copy-btn {
@@ -320,19 +300,10 @@ onUnmounted(() => {
 
 /* 转换区域 */
 .convert-section {
-  background: var(--bg-secondary);
-  border-radius: var(--radius-md);
-  border: 1px solid var(--border-color);
-  overflow: hidden;
 }
 
 .section-header {
-  padding: 8px 16px;
   font-size: 13px;
-  font-weight: 700;
-  color: var(--text-primary);
-  border-bottom: 1px solid var(--border-subtle);
-  background: var(--surface-raised);
 }
 
 .convert-content {
@@ -434,17 +405,30 @@ onUnmounted(() => {
   color: var(--text-primary);
 }
 
-/* 复制提示 */
-.copy-toast {
-  position: fixed;
-  bottom: 80px;
-  left: 50%;
-  transform: translateX(-50%);
-  background: var(--accent);
-  color: white;
-  padding: 6px 14px;
-  border-radius: var(--radius-sm);
-  font-size: 12px;
-  z-index: 1000;
+@media (max-width: 900px) {
+  .live-row,
+  .convert-row,
+  .ts-results-inline {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .live-item,
+  .live-ts-row {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .row-label,
+  .live-label {
+    min-width: 0;
+  }
+
+  .convert-input,
+  .format-select,
+  .convert-result {
+    width: 100%;
+    min-width: 0;
+  }
 }
 </style>

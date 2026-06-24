@@ -4,24 +4,31 @@
     <div class="tree-toolbar">
       <div class="root-row">
         <span class="root-name" :title="currentRoot">{{ rootDisplayName }}</span>
-        <button class="icon-btn" title="打开文件夹" @click="openFolder">📂</button>
+        <button class="tool-icon-button" title="打开文件夹" aria-label="打开文件夹" @click="openFolder">
+          <FolderOpen :size="15" aria-hidden="true" />
+        </button>
         <button
-          :class="['icon-btn', { on: showHidden }]"
+          :class="['tool-icon-button', { on: showHidden }]"
           :title="showHidden ? '隐藏隐藏项' : '显示隐藏项'"
+          :aria-label="showHidden ? '隐藏隐藏项' : '显示隐藏项'"
           @click="showHidden = !showHidden"
-        >{{ showHidden ? '👁' : '🚫' }}</button>
-        <button class="icon-btn" title="刷新" @click="refresh">↻</button>
+        >
+          <component :is="showHidden ? Eye : EyeOff" :size="15" aria-hidden="true" />
+        </button>
+        <button class="tool-icon-button" title="刷新" aria-label="刷新" @click="refresh">
+          <RefreshCw :size="15" aria-hidden="true" />
+        </button>
       </div>
     </div>
 
     <!-- 树主体 -->
     <div class="tree-body">
-      <div v-if="!currentRoot" class="tree-hint">
-        请点击 📂 打开文件夹，或在设置中选择工作目录
+      <div v-if="!currentRoot" class="tree-hint tool-empty-state">
+        请点击打开文件夹，或在设置中选择工作目录
       </div>
-      <div v-else-if="loading" class="tree-hint">加载中...</div>
-      <div v-else-if="error" class="tree-hint tree-error">目录读取失败</div>
-      <div v-else-if="filteredRootItems.length === 0" class="tree-hint">
+      <div v-else-if="loading" class="tree-hint tool-empty-state">加载中...</div>
+      <div v-else-if="error" class="tree-hint tool-empty-state tree-error">目录读取失败</div>
+      <div v-else-if="filteredRootItems.length === 0" class="tree-hint tool-empty-state">
         此目录暂无可显示的内容
       </div>
       <template v-else>
@@ -42,6 +49,7 @@
 
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue'
+import { Eye, EyeOff, FolderOpen, RefreshCw } from 'lucide-vue-next'
 import TreeNode from './TreeNode.vue'
 import { readDir, filterTreeItems, chooseDirectory } from '../utils/fileHelper.js'
 
@@ -146,27 +154,6 @@ defineExpose({ refresh })
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-}
-
-.icon-btn {
-  min-width: 28px;
-  min-height: 28px;
-  background: var(--surface-subtle);
-  border: 1px solid var(--border-subtle);
-  color: var(--text-secondary);
-  cursor: pointer;
-  padding: 0;
-  font-size: 13px;
-  border-radius: var(--radius-sm);
-}
-
-.icon-btn:hover {
-  background: var(--surface-hover);
-  color: var(--accent);
-}
-
-.icon-btn.on {
-  color: var(--accent);
 }
 
 .tree-body {

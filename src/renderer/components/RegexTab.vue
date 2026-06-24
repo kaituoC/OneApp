@@ -21,15 +21,21 @@
           @click="flagState[f] = !flagState[f]"
         >{{ f }}</button>
       </div>
-      <button class="cheat-btn" @click="showCheatsheet = !showCheatsheet">📖 速查</button>
+      <button class="cheat-btn" @click="showCheatsheet = !showCheatsheet">
+        <BookOpen :size="15" aria-hidden="true" />
+        速查
+      </button>
     </div>
     <!-- ② 错误位 -->
-    <div v-if="error" class="pattern-error">⚠ {{ error }}</div>
+    <div v-if="error" class="pattern-error">
+      <CircleAlert :size="14" aria-hidden="true" />
+      {{ error }}
+    </div>
 
     <!-- ③ 左右双区 + 速查抽屉 -->
-    <div class="content">
-      <div class="editor-pane">
-        <div class="pane-header">
+    <div class="content tool-workspace">
+      <div class="editor-pane tool-panel">
+        <div class="pane-header tool-panel-header">
           <span>测试文本</span>
           <span :class="['char-count', { warn: nearLimit, over: overLimit }]">
             {{ text.length.toLocaleString() }} / {{ MAX_TEXT_LEN.toLocaleString() }}
@@ -42,8 +48,8 @@
         />
       </div>
 
-      <div class="preview-pane">
-        <div class="pane-header">匹配高亮</div>
+      <div class="preview-pane tool-panel">
+        <div class="pane-header tool-panel-header">匹配高亮</div>
         <pre class="preview" :style="{ fontSize: fontSize + 'px' }"><span
           v-for="(seg, i) in segments"
           :key="i"
@@ -89,13 +95,17 @@
       <div class="result-header">
         <span v-if="matching">匹配中…</span>
         <span v-else>匹配 {{ count }} 处<span v-if="renderTruncated">（仅显示前 {{ RENDER_LIMIT }} 条）</span></span>
-        <button v-if="count" class="copy-btn" @click="copyAll">复制全部</button>
+        <button v-if="count" class="copy-btn" @click="copyAll">
+          <Copy :size="13" aria-hidden="true" />
+          复制全部
+        </button>
       </div>
       <div class="result-rows">
         <div
           v-for="(m, i) in renderedMatches"
           :key="i"
           :class="['result-row', { active: i === activeMatch }]"
+          @click="selectMatch(i)"
           @mouseenter="activeMatch = i"
           @mouseleave="activeMatch = null"
         >
@@ -111,11 +121,13 @@
         </div>
       </div>
     </div>
+    <div v-if="copyMessage" :class="['tool-copy-toast', { error: copyMessage === '复制失败' }]">{{ copyMessage }}</div>
   </div>
 </template>
 
 <script setup>
 import { ref, reactive, computed, watch, onUnmounted } from 'vue'
+import { BookOpen, CircleAlert, Copy } from 'lucide-vue-next'
 import EditorWithLineNumbers from './EditorWithLineNumbers.vue'
 import { useRegexMatcher } from '../composables/useRegexMatcher.js'
 
@@ -173,6 +185,7 @@ const flagsString = computed(() => FLAGS.filter(f => flagState[f]).join(''))
 const patternInputRef = ref(null)
 const showCheatsheet = ref(false)
 const activeMatch = ref(null)
+const copyMessage = ref('')
 
 const { matches, count, truncated, error, matching, match } = useRegexMatcher()
 
@@ -243,9 +256,16 @@ async function copyAll() {
   }
   try {
     await navigator.clipboard.writeText(lines.join('\n'))
+    copyMessage.value = '已复制'
+    setTimeout(() => { copyMessage.value = '' }, 1500)
   } catch (_) {
-    // 剪贴板权限被拒绝时静默忽略
+    copyMessage.value = '复制失败'
+    setTimeout(() => { copyMessage.value = '' }, 1500)
   }
+}
+
+function selectMatch(i) {
+  activeMatch.value = i
 }
 
 // 实时匹配：debounce 250ms
@@ -321,6 +341,9 @@ onUnmounted(() => clearTimeout(debounceTimer))
   padding: 5px 10px;
 }
 .pattern-error {
+  display: flex;
+  align-items: center;
+  gap: 6px;
   padding: 4px 12px;
   font-size: 12px;
   color: var(--error);
@@ -340,23 +363,9 @@ onUnmounted(() => clearTimeout(debounceTimer))
   display: flex;
   flex-direction: column;
   min-width: 0;
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-md);
-  overflow: hidden;
 }
 .preview-pane {
   border-left: 1px solid var(--border-color);
-}
-.pane-header {
-  display: flex;
-  justify-content: space-between;
-  padding: 6px 12px;
-  font-size: 12px;
-  color: var(--text-secondary);
-  background: var(--surface-raised);
-  border-bottom: 1px solid var(--border-subtle);
-  font-weight: 700;
 }
 .char-count { font-family: monospace; }
 .char-count.warn { color: var(--accent); }
@@ -454,6 +463,7 @@ onUnmounted(() => clearTimeout(debounceTimer))
   font-family: monospace;
   font-size: 12px;
   border-bottom: 1px solid var(--border-subtle);
+  cursor: pointer;
 }
 .result-row.active { background: var(--accent-soft); }
 .ri { color: var(--text-secondary); }

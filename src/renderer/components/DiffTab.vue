@@ -1,13 +1,13 @@
 <template>
   <div class="diff-tab">
     <div class="toolbar tool-command-bar">
-      <button @click="compare" :disabled="!textA && !textB">对比</button>
+      <button class="primary" @click="compare" :disabled="!textA && !textB">对比</button>
       <button @click="loadFileA">加载文件A</button>
       <button @click="loadFileB">加载文件B</button>
       <button @click="swapTexts">交换</button>
       <button @click="clearAll">清空</button>
       <div class="toolbar-separator"></div>
-      <div class="mode-toggle">
+      <div class="mode-toggle tool-segmented">
         <button
           :class="{ active: viewMode === 'split' }"
           @click="viewMode = 'split'"
@@ -21,19 +21,26 @@
       </div>
     </div>
 
-    <div class="main-area">
+    <div v-if="showDiff" class="diff-summary">
+      <span class="tool-status-chip success">新增 +{{ stats.added }}</span>
+      <span class="tool-status-chip error">删除 -{{ stats.removed }}</span>
+      <span class="tool-status-chip warning">修改 ~{{ stats.modified }}</span>
+      <span class="summary-mode">{{ viewMode === 'split' ? '并排视图' : '统一视图' }}</span>
+    </div>
+
+    <div class="main-area tool-workspace">
       <!-- 输入区域 -->
       <div v-if="!showDiff" class="input-area">
-        <div class="panel">
-          <div class="panel-header">文本 A (原文)</div>
+        <div class="panel tool-panel">
+          <div class="panel-header tool-panel-header">文本 A (原文)</div>
           <EditorWithLineNumbers
             v-model="textA"
             :font-size="fontSize"
             placeholder="输入或加载文本 A..."
           />
         </div>
-        <div class="panel">
-          <div class="panel-header">文本 B (新文)</div>
+        <div class="panel tool-panel">
+          <div class="panel-header tool-panel-header">文本 B (新文)</div>
           <EditorWithLineNumbers
             v-model="textB"
             :font-size="fontSize"
@@ -44,8 +51,8 @@
 
       <!-- 并排对比模式 -->
       <div v-else-if="viewMode === 'split'" class="split-view">
-        <div class="diff-panel left" ref="leftPanel">
-          <div class="diff-panel-header">
+        <div class="diff-panel tool-panel left" ref="leftPanel">
+          <div class="diff-panel-header tool-panel-header">
             <span>原文</span>
             <span class="line-count">{{ textA.split('\n').filter(l=>l).length }} 行</span>
           </div>
@@ -61,8 +68,8 @@
             </div>
           </div>
         </div>
-        <div class="diff-panel right" ref="rightPanel">
-          <div class="diff-panel-header">
+        <div class="diff-panel tool-panel right" ref="rightPanel">
+          <div class="diff-panel-header tool-panel-header">
             <span>新文</span>
             <span class="line-count">{{ textB.split('\n').filter(l=>l).length }} 行</span>
           </div>
@@ -81,8 +88,8 @@
       </div>
 
       <!-- 统一差异模式 -->
-      <div v-else class="unified-view">
-        <div class="diff-header">
+      <div v-else class="unified-view tool-panel">
+        <div class="diff-header tool-panel-header">
           <span>差异结果</span>
           <span class="stats">
             +{{ stats.added }} -{{ stats.removed }} ~{{ stats.modified }}
@@ -222,32 +229,20 @@ watch([textA, textB], () => {
   margin: 0 8px;
 }
 
-.mode-toggle {
+.diff-summary {
   display: flex;
-  gap: 0;
-  border: 1px solid var(--border-color);
-  border-radius: 4px;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 8px 12px;
+  color: var(--text-muted);
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border-color);
 }
 
-.mode-toggle button {
-  border: none;
-  border-radius: 0;
-  padding: 4px 12px;
-  background: transparent;
-}
-
-.mode-toggle button:first-child {
-  border-radius: 3px 0 0 3px;
-}
-
-.mode-toggle button:last-child {
-  border-radius: 0 3px 3px 0;
-  border-left: 1px solid var(--border-color);
-}
-
-.mode-toggle button.active {
-  background: var(--accent);
-  color: white;
+.summary-mode {
+  color: var(--text-muted);
+  font-size: 12px;
 }
 
 .main-area {
@@ -270,19 +265,6 @@ watch([textA, textB], () => {
   display: flex;
   flex-direction: column;
   min-width: 0;
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-md);
-  overflow: hidden;
-}
-
-.panel-header {
-  padding: 6px 12px;
-  font-size: 12px;
-  color: var(--text-secondary);
-  background: var(--surface-raised);
-  border-bottom: 1px solid var(--border-subtle);
-  font-weight: 700;
 }
 
 /* 并排对比模式 */
@@ -299,25 +281,10 @@ watch([textA, textB], () => {
   flex-direction: column;
   flex-shrink: 0;
   flex-grow: 0;
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-md);
-  overflow: hidden;
 }
 
 .diff-panel + .diff-panel {
   border-left: 1px solid var(--border-color);
-}
-
-.diff-panel-header {
-  display: flex;
-  justify-content: space-between;
-  padding: 6px 12px;
-  font-size: 12px;
-  color: var(--text-secondary);
-  background: var(--surface-raised);
-  border-bottom: 1px solid var(--border-subtle);
-  font-weight: 700;
 }
 
 .line-count {
@@ -338,10 +305,6 @@ watch([textA, textB], () => {
   flex: 1;
   display: flex;
   flex-direction: column;
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-md);
-  overflow: hidden;
 }
 
 .unified-content {
@@ -350,15 +313,6 @@ watch([textA, textB], () => {
   font-family: var(--font-mono);
   font-size: 13px;
   background: var(--bg-primary);
-}
-
-.diff-header {
-  display: flex;
-  justify-content: space-between;
-  padding: 6px 12px;
-  font-size: 12px;
-  background: var(--surface-raised);
-  border-bottom: 1px solid var(--border-subtle);
 }
 
 .stats {

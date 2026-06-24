@@ -44,7 +44,10 @@
       <h3 class="section-title">最近文件</h3>
       <div class="recent-files">
         <span v-if="recentFiles.length === 0" class="empty-hint">无最近文件</span>
-        <span v-else v-for="f in recentFiles" :key="f" class="file-name">{{ f }}</span>
+        <span v-else v-for="item in recentFileItems" :key="item.path" class="file-name" :title="item.path">
+          <span class="file-title">{{ item.name }}</span>
+          <span class="file-path">{{ item.dir }}</span>
+        </span>
       </div>
       <button @click="$emit('clear-recent')" :disabled="recentFiles.length === 0">清除记录</button>
     </section>
@@ -73,7 +76,7 @@
         <p>构建于 {{ buildDate }}</p>
         <p class="github-link">
           <span class="link" @click="openGitHub">GitHub: kaituoC/OneApp</span>
-          — 如果觉得有用，欢迎 Star 支持 ⭐
+          - 如果觉得有用，欢迎 Star 支持
         </p>
         <button class="check-update" @click="checkUpdate">检查更新</button>
       </div>
@@ -82,6 +85,7 @@
 </template>
 
 <script setup>
+import { computed } from 'vue'
 import { chooseDirectory } from '../utils/fileHelper.js'
 import { IS_MAC } from '../utils/navigation.js'
 
@@ -92,13 +96,20 @@ const workDir = defineModel('workDir', { type: String, default: '' })
 const theme = defineModel('theme', { type: String, default: 'dark' })
 const fontSize = defineModel('fontSize', { type: Number, default: 14 })
 
-defineProps({
+const props = defineProps({
   recentFiles: { type: Array, default: () => [] }
 })
 
 defineEmits(['clear-recent'])
 
 const isMac = IS_MAC
+
+const recentFileItems = computed(() => props.recentFiles.map((path) => {
+  const parts = String(path).split('/')
+  const name = parts.pop() || path
+  const dir = parts.join('/') || '/'
+  return { path, name, dir }
+}))
 
 async function chooseDir() {
   const dir = await chooseDirectory()
@@ -201,13 +212,30 @@ function openGitHub() {
   margin-bottom: 8px;
 }
 .file-name {
-  font-size: 12px;
+  display: flex;
+  min-width: min(100%, 340px);
+  flex-direction: column;
+  gap: 2px;
   font-family: var(--font-mono);
   color: var(--text-secondary);
   background: var(--bg-tertiary);
-  padding: 4px 8px;
+  padding: 6px 8px;
   border-radius: var(--radius-sm);
   border: 1px solid var(--border-subtle);
+}
+.file-title {
+  color: var(--text-primary);
+  font-size: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.file-path {
+  color: var(--text-muted);
+  font-size: 11px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .empty-hint {
   font-size: 12px;

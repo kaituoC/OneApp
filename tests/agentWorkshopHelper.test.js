@@ -19,6 +19,8 @@ import {
   buildRound1Prompt,
   buildRound2Prompt,
   buildFinalPrompt,
+  buildMessageNavigationTargets,
+  agentsForDiscussionPhase,
   exportMarkdown
 } from '../src/renderer/utils/agentWorkshopHelper.js'
 
@@ -319,6 +321,58 @@ describe('buildFinalPrompt', () => {
     expect(p).toContain('R1内容')
     expect(p).toContain('R2内容')
     expect(p).toMatch(/最终|汇总|综合/)
+  })
+})
+
+describe('buildMessageNavigationTargets', () => {
+  it('按 phase + agentId 建立首条 agent/moderator 消息导航目标', () => {
+    const targets = buildMessageNavigationTargets([
+      { id: 'user-1', type: 'user', content: 'idea' },
+      { id: 'r1-codex-1', type: 'agent', phase: 'round1', agentId: 'codex', content: 'first' },
+      { id: 'r1-codex-2', type: 'agent', phase: 'round1', agentId: 'codex', content: 'second' },
+      { id: 'r1-system', type: 'system', phase: 'round1', agentId: 'claude', content: 'failed' },
+      { id: 'r2-claude', type: 'agent', phase: 'round2', agentId: 'claude', content: 'review' },
+      { id: 'final-codex', type: 'moderator', phase: 'final', agentId: 'codex', content: 'summary' },
+      { id: 'missing-agent', type: 'agent', phase: 'round2', content: 'no agent id' }
+    ])
+
+    expect(targets).toEqual({
+      'round1:codex': 'r1-codex-1',
+      'round2:claude': 'r2-claude',
+      'final:codex': 'final-codex'
+    })
+  })
+
+  it('空消息列表返回空目标映射', () => {
+    expect(buildMessageNavigationTargets([])).toEqual({})
+    expect(buildMessageNavigationTargets(null)).toEqual({})
+  })
+})
+
+describe('agentsForDiscussionPhase', () => {
+  it('查看历史记录时使用记录中的参与 agent 与主持 agent', () => {
+    const record = {
+      selectedAgents: ['claude'],
+      moderator: 'claude'
+    }
+    const config = {
+      selectedAgents: ['codex'],
+      moderator: 'codex'
+    }
+
+    expect(agentsForDiscussionPhase('round1', { record, config })).toEqual(['claude'])
+    expect(agentsForDiscussionPhase('round2', { record, config })).toEqual(['claude'])
+    expect(agentsForDiscussionPhase('final', { record, config })).toEqual(['claude'])
+  })
+
+  it('没有记录时使用当前配置', () => {
+    const config = {
+      selectedAgents: ['codex', 'claude'],
+      moderator: 'codex'
+    }
+
+    expect(agentsForDiscussionPhase('round1', { record: null, config })).toEqual(['codex', 'claude'])
+    expect(agentsForDiscussionPhase('final', { record: null, config })).toEqual(['codex'])
   })
 })
 

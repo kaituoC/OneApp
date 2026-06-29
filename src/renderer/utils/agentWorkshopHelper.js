@@ -260,6 +260,33 @@ export function buildFinalPrompt({ idea, repoContext, round1, round2 }) {
   ].join('\n')
 }
 
+// ───────────────────────── Timeline 导航 ─────────────────────────
+
+/**
+ * 从 timeline 消息推导可导航目标：key 为 `${phase}:${agentId}`，value 为首条消息 id。
+ * 仅 agent / moderator 输出可作为进度 chip 的定位目标，系统消息不参与导航。
+ */
+export function buildMessageNavigationTargets(messages) {
+  const targets = {}
+  for (const message of Array.isArray(messages) ? messages : []) {
+    if (!message?.id || !message.phase || !message.agentId) continue
+    if (message.type !== MESSAGE_TYPE.AGENT && message.type !== MESSAGE_TYPE.MODERATOR) continue
+    const key = `${message.phase}:${message.agentId}`
+    if (!targets[key]) targets[key] = message.id
+  }
+  return targets
+}
+
+/**
+ * 返回某个进度阶段应展示的 agent。查看已有记录时以记录快照为准；
+ * 尚未开始/无记录时以当前配置为准。
+ */
+export function agentsForDiscussionPhase(phase, { record, config }) {
+  const source = record || config || {}
+  if (phase === PHASES.FINAL) return source.moderator ? [source.moderator] : []
+  return Array.isArray(source.selectedAgents) ? source.selectedAgents : []
+}
+
 // ───────────────────────── Markdown 导出 ─────────────────────────
 
 function statusLabel(status) {

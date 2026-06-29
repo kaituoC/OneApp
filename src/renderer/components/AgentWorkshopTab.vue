@@ -61,9 +61,25 @@
         <div v-for="ph in phaseList" :key="ph.key" class="aw-phase">
           <div class="aw-phase-name">{{ ph.label }}</div>
           <div class="aw-phase-agents">
-            <span v-for="id in agentsForPhase(ph.key)" :key="id" class="aw-pill" :class="progress[ph.key + ':' + id] || 'pending'">
-              {{ AGENTS[id].name }}
-            </span>
+            <template v-for="id in agentsForPhase(ph.key)" :key="id">
+              <button
+                v-if="hasNavigationTarget(ph.key, id)"
+                type="button"
+                class="aw-pill aw-pill-nav"
+                :class="progressStatus(ph.key, id)"
+                :title="`跳转到${ph.label} · ${AGENTS[id].name}`"
+                @click="scrollToMessage(ph.key, id)"
+              >
+                {{ AGENTS[id].name }}
+              </button>
+              <span
+                v-else
+                class="aw-pill"
+                :class="progressStatus(ph.key, id)"
+              >
+                {{ AGENTS[id].name }}
+              </span>
+            </template>
           </div>
         </div>
         <button v-if="running" class="aw-btn" @click="stop">停止研讨</button>
@@ -99,7 +115,13 @@
       </div>
 
       <div v-else class="aw-timeline">
-        <article v-for="m in record.messages" :key="m.id" class="aw-msg" :class="m.type">
+        <article
+          v-for="m in record.messages"
+          :key="m.id"
+          :ref="(el) => setMessageRef(m.id, el)"
+          class="aw-msg"
+          :class="[m.type, { 'is-navigation-target': activeMessageId === m.id }]"
+        >
           <header class="aw-msg-head">
             <span>{{ msgLabel(m) }}</span>
             <button class="aw-link" @click="copy(m.content)">复制</button>
@@ -112,7 +134,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, watch, onUnmounted } from 'vue'
+import { ref, reactive, computed, watch, nextTick, onUnmounted } from 'vue'
 import { safeMarkdown } from '../utils/safeMarkdown.js'
 import {
   AGENTS,
@@ -123,7 +145,9 @@ import {
   defaultModerator,
   moderatorFallback,
   validateStart,
-  estimateCallCount
+  estimateCallCount,
+  buildMessageNavigationTargets,
+  agentsForDiscussionPhase
 } from '../utils/agentWorkshopHelper.js'
 
 const props = defineProps({
@@ -146,7 +170,10 @@ const activeRunId = ref(null) // 仅本会话真正启动的运行；恢复的�
 const repoGitState = ref(null) // 当前所选目录的 Git 探测结果，独立于历史记录
 const progress = reactive({})
 const initialized = ref(false)
+const activeMessageId = ref(null)
+const messageElements = new Map()
 let unsubscribe = null
+let highlightTimer = null
 
 const phaseList = [
   { key: 'round1', label: '第一轮 · 独立提案' },
@@ -210,7 +237,38 @@ const RECORD_BANNER_DEFAULT = { title: '研讨记录', copy: '可查看已有消
 
 const recordBanner = computed(() => RECORD_BANNERS[record.value?.status] || RECORD_BANNER_DEFAULT)
 
-const agentsForPhase = (phase) => (phase === 'final' ? (config.moderator ? [config.moderator] : []) : config.selectedAgents)
+const agentsForPhase = (phase) => agentsForDiscussionPhase(phase, { record: record.value, config })
+const messageNavigationTargets = computed(() => buildMessageNavigationTargets(record.value?.messages))
+const navKey = (phase, agentId) => `${phase}:${agentId}`
+const hasNavigationTarget = (phase, agentId) => !!messageNavigationTargets.value[navKey(phase, agentId)]
+const progressStatus = (phase, agentId) => progress[navKey(phase, agentId)] || (hasNavigationTarget(phase, agentId) ? 'succeeded' : 'pending')
+
+function clearActiveNavigation() {
+  activeMessageId.value = null
+  if (highlightTimer) {
+    clearTimeout(highlightTimer)
+    highlightTimer = null
+  }
+}
+
+function setMessageRef(messageId, el) {
+  if (!messageId) return
+  if (el) messageElements.set(messageId, el)
+  else messageElements.delete(messageId)
+}
+
+async function scrollToMessage(phase, agentId) {
+  const messageId = messageNavigationTargets.value[navKey(phase, agentId)]
+  if (!messageId) return
+  activeMessageId.value = messageId
+  if (highlightTimer) clearTimeout(highlightTimer)
+  await nextTick()
+  messageElements.get(messageId)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  highlightTimer = setTimeout(() => {
+    if (activeMessageId.value === messageId) activeMessageId.value = null
+    highlightTimer = null
+  }, 1600)
+}
 
 function applyDefaults(cfg) {
   const ready = readyAgents(availability.value)
@@ -278,6 +336,7 @@ function onEvent(ev) {
   if (ev.type === 'run-started') {
     record.value = ev.payload.record
     activeRunId.value = ev.payload.record.id
+    clearActiveNavigation()
     Object.keys(progress).forEach((k) => delete progress[k])
   } else if (!record.value || ev.runId !== record.value.id) {
     return
@@ -320,6 +379,7 @@ function stop() {
 function newDiscussion() {
   record.value = null
   idea.value = ''
+  clearActiveNavigation()
   Object.keys(progress).forEach((k) => delete progress[k])
 }
 
@@ -348,6 +408,8 @@ watch(() => props.isActive, (v) => {
 
 onUnmounted(() => {
   if (unsubscribe) unsubscribe()
+  clearActiveNavigation()
+  messageElements.clear()
 })
 </script>
 
@@ -477,11 +539,26 @@ onUnmounted(() => {
 }
 .aw-phase-agents { display: flex; gap: 4px; flex-wrap: wrap; }
 .aw-pill {
+  appearance: none;
   font-size: 11px;
   padding: 3px 8px;
   border-radius: 10px;
   background: var(--bg-primary);
   border: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+  line-height: 1.35;
+}
+.aw-pill-nav {
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+}
+.aw-pill-nav:hover,
+.aw-pill-nav:focus-visible {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  color: var(--accent);
+  outline: none;
+  box-shadow: 0 0 0 2px var(--accent-soft);
 }
 .aw-pill.running { border-color: var(--accent); color: var(--accent); }
 .aw-pill.succeeded { border-color: #2ea043; color: #2ea043; }
@@ -495,10 +572,16 @@ onUnmounted(() => {
   margin-bottom: 12px;
   background: var(--bg-secondary);
   box-shadow: 0 8px 22px rgba(0,0,0,0.08);
+  transition: background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
 }
 .aw-msg.user { border-left: 3px solid var(--accent); }
 .aw-msg.moderator { border-left: 3px solid #2ea043; }
 .aw-msg.system { border-left: 3px solid #e0a000; }
+.aw-msg.is-navigation-target {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  box-shadow: 0 0 0 2px var(--accent-soft), 0 10px 28px rgba(0,0,0,0.12);
+}
 .aw-msg-head {
   display: flex;
   justify-content: space-between;

@@ -1,10 +1,22 @@
 <template>
   <div class="json-tab">
     <div class="toolbar tool-command-bar">
-      <button class="primary" @click="doFormat">格式化</button>
-      <button @click="doMinify">压缩</button>
-      <button @click="doValidate">校验</button>
-      <button @click="doUnescape">去除转义</button>
+      <div class="mode-toggle tool-segmented" aria-label="数据格式">
+        <button :class="{ active: mode === 'json' }" @click="setMode('json')">JSON</button>
+        <button :class="{ active: mode === 'yaml' }" @click="setMode('yaml')">YAML</button>
+      </div>
+      <div class="toolbar-separator"></div>
+      <template v-if="mode === 'json'">
+        <button class="primary" @click="doFormat">格式化</button>
+        <button @click="doMinify">压缩</button>
+        <button @click="doValidate">校验</button>
+        <button @click="doUnescape">去除转义</button>
+        <button @click="doJsonToYaml">转 YAML</button>
+      </template>
+      <template v-else>
+        <button class="primary" @click="doYamlToJson">转 JSON</button>
+        <button @click="doValidateYaml">校验</button>
+      </template>
       <span class="toolbar-spacer"></span>
       <button @click="copyResult">复制结果</button>
       <button @click="clearAll">清空</button>
@@ -13,18 +25,18 @@
     <div class="content tool-workspace">
       <div class="panel tool-panel">
         <div class="panel-header tool-panel-header">
-          <span class="tool-panel-title">输入</span>
+          <span class="tool-panel-title">{{ inputTitle }}</span>
           <span class="tool-panel-meta">{{ input.length.toLocaleString() }} 字符</span>
         </div>
         <EditorWithLineNumbers
           v-model="input"
           :font-size="fontSize"
-          placeholder="在此粘贴 JSON 内容..."
+          :placeholder="inputPlaceholder"
         />
       </div>
       <div class="panel tool-panel">
         <div class="panel-header tool-panel-header">
-          <span class="tool-panel-title">输出</span>
+          <span class="tool-panel-title">{{ outputTitle }}</span>
           <span :class="['tool-status-chip', hasError ? 'error' : 'success']">
             {{ hasError ? '错误' : (output ? '就绪' : '待处理') }}
           </span>
@@ -39,15 +51,23 @@
     </div>
 
     <div class="status-bar" :class="{ 'status-error': hasError, empty: !statusMessage }">
-      {{ statusMessage || '等待输入 JSON 内容' }}
+      {{ statusMessage || emptyStatusText }}
     </div>
     <div v-if="copyMessage" class="tool-copy-toast">{{ copyMessage }}</div>
   </div>
 </template>
 
 <script setup>
-import { ref } from 'vue'
-import { formatJSON, minifyJSON, validateJSON, unescapeJSON } from '../utils/jsonHelper.js'
+import { computed, ref } from 'vue'
+import {
+  formatJSON,
+  minifyJSON,
+  validateJSON,
+  unescapeJSON,
+  jsonToYAML,
+  yamlToJSON,
+  validateYAML
+} from '../utils/jsonHelper.js'
 import EditorWithLineNumbers from './EditorWithLineNumbers.vue'
 import { useCopyToast } from '../composables/useCopyToast.js'
 
@@ -55,11 +75,28 @@ const props = defineProps({
   fontSize: { type: Number, default: 14 }
 })
 
+const mode = ref('json')
 const input = ref('')
 const output = ref('')
 const statusMessage = ref('')
 const hasError = ref(false)
 const { copyMessage, copyToClipboard } = useCopyToast()
+
+const inputTitle = computed(() => `${mode.value.toUpperCase()} 输入`)
+const outputTitle = computed(() => `${mode.value === 'json' ? 'JSON / YAML' : 'YAML / JSON'} 输出`)
+const inputPlaceholder = computed(() =>
+  mode.value === 'json' ? '在此粘贴 JSON 内容...' : '在此粘贴 YAML 内容...'
+)
+const emptyStatusText = computed(() =>
+  mode.value === 'json' ? '等待输入 JSON 内容' : '等待输入 YAML 内容'
+)
+
+function setMode(nextMode) {
+  mode.value = nextMode
+  output.value = ''
+  statusMessage.value = ''
+  hasError.value = false
+}
 
 function doFormat() {
   const result = formatJSON(input.value)
@@ -81,10 +118,25 @@ function doUnescape() {
   handleResult(result)
 }
 
-function handleResult(result) {
+function doJsonToYaml() {
+  const result = jsonToYAML(input.value)
+  handleResult(result)
+}
+
+function doYamlToJson() {
+  const result = yamlToJSON(input.value)
+  handleResult(result)
+}
+
+function doValidateYaml() {
+  const result = validateYAML(input.value)
+  handleResult(result)
+}
+
+function handleResult(result, successMessage = '处理成功') {
   if (result.success) {
     output.value = result.result || result.message
-    statusMessage.value = '处理成功'
+    statusMessage.value = result.message || successMessage
     hasError.value = false
   } else {
     output.value = result.displayMessage

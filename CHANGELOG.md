@@ -6,6 +6,21 @@
 
 ---
 
+## [1.12.0] - 2026-06-30
+
+### ✨ 新增
+- 将原「JSON 工具」升级为「JSON / YAML」，保留原 Ctrl/Cmd+2 入口和既有 JSON 格式化、压缩、校验、去除转义能力。
+- 新增 JSON → YAML 转换，输出易读的 block-style YAML。
+- 新增 YAML → JSON 转换和 YAML 校验，支持单文档 YAML，并对多文档输入给出明确错误提示。
+- YAML 转 JSON 时保留日期样式标量为字符串，同时继续将 boolean、number、null 转为自然 JSON 类型。
+
+### 📚 文档
+- 更新 README 功能说明和 ROADMAP 状态，标记 YAML ⇆ JSON 转换完成。
+
+### 🧪 测试
+- 新增 JSON / YAML helper 单测，覆盖转换、校验、多文档报错和日期字符串保留。
+- 完整通过 `npm test`、`npm run build`，并完成本地 UI smoke test，覆盖 JSON → YAML、YAML → JSON 和多文档报错。
+
 ## [1.11.0] - 2026-06-30
 
 ### ✨ 新增

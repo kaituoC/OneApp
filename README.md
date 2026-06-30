@@ -1,12 +1,12 @@
 # OneApp
 
-多功能开发工具桌面应用，集成统一编辑器（Markdown / HTML 自动识别）、JSON 工具、文本对比、时间转换、正则测试、编码工具合集和 Agent 研讨室。
+多功能开发工具桌面应用，集成统一编辑器（Markdown / HTML 自动识别）、JSON / YAML 工具、文本对比、时间转换、正则测试、编码工具合集和 Agent 研讨室。
 
 ## 界面预览
 
-| 统一编辑器 | JSON 工具 |
+| 统一编辑器 | JSON / YAML |
 |------------|-----------|
-| ![统一编辑器](docs/screenshots/editor.png) | ![JSON 工具](docs/screenshots/json.png) |
+| ![统一编辑器](docs/screenshots/editor.png) | ![JSON / YAML](docs/screenshots/json.png) |
 
 | 文本对比 | 时间工具 |
 |----------|----------|
@@ -25,11 +25,14 @@
 - **系统文件对话框**：可打开工作目录外的任意 `.md` / `.html` / `.htm` 文件
 - 编辑器行号显示，可分别隐藏文件列表、编辑器或预览区
 
-### JSON 工具
+### JSON / YAML
 - JSON 格式化（美化）
 - JSON 压缩（最小化）
 - JSON 验证（语法检查，定位错误行/列）
 - JSON 反转义处理
+- JSON → YAML 转换，输出易读的 block-style YAML
+- YAML → JSON 转换，输出格式化 JSON
+- YAML 单文档校验，多文档输入会明确提示暂不支持
 - 语法高亮显示
 
 ### 文本对比
@@ -197,6 +200,7 @@ npm run dist
 - Vue 3 (Composition API)
 - electron-vite 构建工具
 - marked (Markdown 解析)
+- yaml (YAML 解析与序列化)
 - diff-match-patch (文本对比)
 - CodeMirror 6 (JSON 编辑器)
 - js-md5 (MD5 计算，SHA 系列走原生 Web Crypto)

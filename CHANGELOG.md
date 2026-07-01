@@ -6,6 +6,21 @@
 
 ---
 
+## [1.17.0] - 2026-07-01
+
+### ✨ 新增
+- 数据工具新增 SQL 子工具，支持 SQL 格式化和压缩。
+- 数据工具新增 XML 子工具，支持 XML 格式化、压缩和明显结构错误提示。
+- 引入 `sql-formatter` 与 `fast-xml-parser`，用成熟轻量库支撑 SQL/XML 处理。
+
+### 📚 文档
+- 更新 README、ROADMAP、OpenSpec 和剩余功能队列，标记数据工具合集二期完成。
+- 新增 Data Tools SQL / XML Format OpenSpec，并同步数据工具与 workbench shell delta。
+
+### 🧪 测试
+- 新增 format helper 单测，覆盖 SQL/XML 格式化、压缩、空输入和 XML 结构错误。
+- 更新 navigation metadata 测试，锁定数据工具对 SQL / XML 的说明。
+
 ## [1.16.0] - 2026-07-01
 
 ### ✨ 新增

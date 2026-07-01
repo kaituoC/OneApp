@@ -5,6 +5,8 @@
         <button :class="{ active: mode === 'json' }" @click="setMode('json')">JSON</button>
         <button :class="{ active: mode === 'yaml' }" @click="setMode('yaml')">YAML</button>
         <button :class="{ active: mode === 'csv' }" @click="setMode('csv')">CSV</button>
+        <button :class="{ active: mode === 'sql' }" @click="setMode('sql')">SQL</button>
+        <button :class="{ active: mode === 'xml' }" @click="setMode('xml')">XML</button>
       </div>
       <div class="toolbar-separator"></div>
       <template v-if="mode === 'json'">
@@ -14,16 +16,22 @@
         <button @click="doUnescape">去除转义</button>
         <button @click="doJsonToYaml">转 YAML</button>
       </template>
-      <template v-else>
-        <template v-if="mode === 'yaml'">
+      <template v-else-if="mode === 'yaml'">
         <button class="primary" @click="doYamlToJson">转 JSON</button>
         <button @click="doValidateYaml">校验</button>
-        </template>
-        <template v-else>
-          <button class="primary" @click="doCsvToJson">CSV 转 JSON</button>
-          <button @click="doJsonToCsv">JSON 转 CSV</button>
-          <button @click="doPreviewCsv">表格预览</button>
-        </template>
+      </template>
+      <template v-else-if="mode === 'csv'">
+        <button class="primary" @click="doCsvToJson">CSV 转 JSON</button>
+        <button @click="doJsonToCsv">JSON 转 CSV</button>
+        <button @click="doPreviewCsv">表格预览</button>
+      </template>
+      <template v-else-if="mode === 'sql'">
+        <button class="primary" @click="doFormatSql">格式化</button>
+        <button @click="doMinifySql">压缩</button>
+      </template>
+      <template v-else>
+        <button class="primary" @click="doFormatXml">格式化</button>
+        <button @click="doMinifyXml">压缩</button>
       </template>
       <span class="toolbar-spacer"></span>
       <button @click="copyResult">复制结果</button>
@@ -96,6 +104,12 @@ import {
   jsonToCsv,
   previewCsvTable
 } from '../utils/csvHelper.js'
+import {
+  formatSQL,
+  minifySQL,
+  formatXML,
+  minifyXML
+} from '../utils/formatHelper.js'
 import EditorWithLineNumbers from './EditorWithLineNumbers.vue'
 import { useCopyToast } from '../composables/useCopyToast.js'
 
@@ -116,20 +130,25 @@ const outputTitle = computed(() => {
   if (tablePreview.value) return 'CSV 表格预览'
   if (mode.value === 'json') return 'JSON / YAML 输出'
   if (mode.value === 'yaml') return 'YAML / JSON 输出'
-  return 'CSV / JSON 输出'
+  if (mode.value === 'csv') return 'CSV / JSON 输出'
+  return `${mode.value.toUpperCase()} 输出`
 })
 const inputPlaceholder = computed(() =>
   ({
     json: '在此粘贴 JSON 内容...',
     yaml: '在此粘贴 YAML 内容...',
-    csv: '在此粘贴 CSV 内容，或粘贴 JSON 对象数组后转 CSV...'
+    csv: '在此粘贴 CSV 内容，或粘贴 JSON 对象数组后转 CSV...',
+    sql: '在此粘贴 SQL 内容...',
+    xml: '在此粘贴 XML 内容...'
   }[mode.value])
 )
 const emptyStatusText = computed(() =>
   ({
     json: '等待输入 JSON 内容',
     yaml: '等待输入 YAML 内容',
-    csv: '等待输入 CSV 或 JSON 对象数组'
+    csv: '等待输入 CSV 或 JSON 对象数组',
+    sql: '等待输入 SQL 内容',
+    xml: '等待输入 XML 内容'
   }[mode.value])
 )
 
@@ -199,6 +218,22 @@ function doPreviewCsv() {
     statusMessage.value = result.displayMessage
     hasError.value = true
   }
+}
+
+function doFormatSql() {
+  handleResult(formatSQL(input.value))
+}
+
+function doMinifySql() {
+  handleResult(minifySQL(input.value))
+}
+
+function doFormatXml() {
+  handleResult(formatXML(input.value))
+}
+
+function doMinifyXml() {
+  handleResult(minifyXML(input.value))
 }
 
 function handleResult(result, successMessage = '处理成功') {

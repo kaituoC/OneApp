@@ -1,10 +1,4 @@
-# data-tools-csv-json Specification
-
-## Purpose
-
-data-tools-csv-json 定义数据工具合集中的 CSV 能力：在现有 JSON / YAML / SQL / XML 子工具旁提供 CSV ⇄ JSON 转换和只读表格预览，覆盖常见 CSV 标准转义并保持轻量离线处理。
-
-## Requirements
+## MODIFIED Requirements
 
 ### Requirement: CSV 子工具
 

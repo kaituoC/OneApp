@@ -16,7 +16,9 @@
       <div class="toolbar tool-command-bar">
         <button class="primary" @click="runGenerate">生成</button>
         <span class="toolbar-spacer"></span>
-        <button @click="copyResult" :disabled="!output || hasError">复制结果</button>
+        <button v-if="tool === 'qr'" @click="downloadQrPng" :disabled="!qrImage || hasError">下载 PNG</button>
+        <button v-if="tool === 'qr'" @click="copyQrPng" :disabled="!qrImage || hasError">复制 PNG</button>
+        <button v-else @click="copyResult" :disabled="!output || hasError">复制结果</button>
         <button @click="clearOutput" :disabled="!output && !statusMessage">清空</button>
       </div>
 
@@ -49,7 +51,7 @@
             </div>
           </div>
 
-          <div v-else class="form-grid">
+          <div v-else-if="tool === 'lorem'" class="form-grid">
             <label class="field-row">
               <span>生成类型</span>
               <select v-model="loremOptions.mode">
@@ -64,6 +66,31 @@
             </label>
             <p class="field-hint">{{ loremHint }}</p>
           </div>
+
+          <div v-else class="form-grid">
+            <label class="field-stack">
+              <span>文本或 URL</span>
+              <textarea
+                v-model="qrOptions.text"
+                rows="5"
+                placeholder="输入要编码进二维码的文本或 URL"
+              ></textarea>
+            </label>
+            <label class="field-row">
+              <span>尺寸</span>
+              <input v-model.number="qrOptions.size" type="number" min="128" max="1024" step="32" />
+            </label>
+            <label class="field-row">
+              <span>纠错级别</span>
+              <select v-model="qrOptions.errorCorrectionLevel">
+                <option value="L">L</option>
+                <option value="M">M</option>
+                <option value="Q">Q</option>
+                <option value="H">H</option>
+              </select>
+            </label>
+            <p class="field-hint">尺寸范围 128-1024，纠错级别越高越耐遮挡但图案更密。</p>
+          </div>
         </div>
 
         <div class="panel tool-panel output-panel">
@@ -73,7 +100,11 @@
               {{ statusChip }}
             </span>
           </div>
+          <div v-if="qrImage && !hasError" class="qr-preview">
+            <img :src="qrImage" alt="二维码预览" />
+          </div>
           <EditorWithLineNumbers
+            v-else
             v-model="output"
             :font-size="fontSize"
             readonly
@@ -93,13 +124,14 @@
 
 <script setup>
 import { computed, reactive, ref } from 'vue'
-import { FileText, KeyRound, Shuffle } from 'lucide-vue-next'
+import { FileText, KeyRound, QrCode, Shuffle } from 'lucide-vue-next'
 import EditorWithLineNumbers from './EditorWithLineNumbers.vue'
 import { useCopyToast } from '../composables/useCopyToast.js'
 import {
   generateUuidV4,
   generatePassword,
-  generateLorem
+  generateLorem,
+  generateQrCode
 } from '../utils/generatorHelper.js'
 
 defineProps({
@@ -109,7 +141,8 @@ defineProps({
 const TOOLS = [
   { key: 'uuid', label: 'UUID', summary: 'v4 / 批量', icon: Shuffle },
   { key: 'password', label: '随机密码', summary: '长度 / 字符集', icon: KeyRound },
-  { key: 'lorem', label: 'Lorem', summary: '词 / 句 / 段', icon: FileText }
+  { key: 'lorem', label: 'Lorem', summary: '词 / 句 / 段', icon: FileText },
+  { key: 'qr', label: '二维码', summary: '文本 / PNG', icon: QrCode }
 ]
 
 const LOREM_LIMITS = {
@@ -132,7 +165,13 @@ const loremOptions = reactive({
   mode: 'paragraphs',
   count: 1
 })
+const qrOptions = reactive({
+  text: '',
+  size: 256,
+  errorCorrectionLevel: 'M'
+})
 const output = ref('')
+const qrImage = ref('')
 const statusMessage = ref('')
 const hasError = ref(false)
 const { copyMessage, copyToClipboard } = useCopyToast()
@@ -155,7 +194,7 @@ function setTool(nextTool) {
   clearOutput()
 }
 
-function runGenerate() {
+async function runGenerate() {
   if (tool.value === 'uuid') {
     handleResult(generateUuidV4({ count: uuidCount.value }))
     return
@@ -164,12 +203,18 @@ function runGenerate() {
     handleResult(generatePassword(passwordOptions))
     return
   }
+  if (tool.value === 'qr') {
+    handleResult(await generateQrCode(qrOptions))
+    return
+  }
   handleResult(generateLorem(loremOptions))
 }
 
 function handleResult(result) {
+  qrImage.value = ''
   if (result.success) {
     output.value = result.result
+    if (tool.value === 'qr') qrImage.value = result.dataUrl
     statusMessage.value = result.message
     hasError.value = false
     return
@@ -186,8 +231,32 @@ async function copyResult() {
   }
 }
 
+function downloadQrPng() {
+  if (!qrImage.value || hasError.value) return
+  const link = document.createElement('a')
+  link.href = qrImage.value
+  link.download = 'oneapp-qrcode.png'
+  link.click()
+  statusMessage.value = '已下载 PNG'
+}
+
+async function copyQrPng() {
+  if (!qrImage.value || hasError.value) return
+  try {
+    const response = await fetch(qrImage.value)
+    const blob = await response.blob()
+    await navigator.clipboard.write([
+      new ClipboardItem({ [blob.type]: blob })
+    ])
+    statusMessage.value = '已复制 PNG 到剪贴板'
+  } catch {
+    statusMessage.value = '复制 PNG 失败'
+  }
+}
+
 function clearOutput() {
   output.value = ''
+  qrImage.value = ''
   statusMessage.value = ''
   hasError.value = false
 }
@@ -288,7 +357,8 @@ function clearOutput() {
 }
 
 .field-row input,
-.field-row select {
+.field-row select,
+.field-stack textarea {
   min-width: 120px;
   padding: 7px 9px;
   color: var(--text-primary);
@@ -296,6 +366,22 @@ function clearOutput() {
   border: 1px solid var(--border-color);
   border-radius: var(--radius-sm);
   font: inherit;
+}
+
+.field-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+.field-stack textarea {
+  min-width: 0;
+  resize: vertical;
+  min-height: 112px;
+  font: inherit;
+  line-height: 1.5;
 }
 
 .checkbox-grid {
@@ -315,6 +401,25 @@ function clearOutput() {
   color: var(--text-muted);
   font-size: 12px;
   line-height: 1.5;
+}
+
+.qr-preview {
+  display: grid;
+  flex: 1;
+  min-height: 0;
+  place-items: center;
+  padding: 24px;
+  background: var(--bg-primary);
+}
+
+.qr-preview img {
+  width: min(100%, 420px);
+  max-height: 100%;
+  object-fit: contain;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  background: #fff;
+  padding: 12px;
 }
 
 .error-output .editor-textarea {

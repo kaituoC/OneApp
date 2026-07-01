@@ -94,8 +94,8 @@ export const NAV_GROUPS = [
       {
         key: 'generator',
         label: '生成器',
-        description: 'UUID / 密码 / Lorem',
-        summary: 'UUID / 密码',
+        description: 'UUID / 密码 / Lorem / 二维码',
+        summary: 'UUID / QR',
         shortcut: 0,
         icon: WandSparkles
       }

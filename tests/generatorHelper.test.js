@@ -2,7 +2,8 @@ import { describe, expect, it } from 'vitest'
 import {
   generateUuidV4,
   generatePassword,
-  generateLorem
+  generateLorem,
+  generateQrCode
 } from '../src/renderer/utils/generatorHelper.js'
 
 function sequenceRandom(start = 0) {
@@ -110,5 +111,39 @@ describe('generatorHelper lorem', () => {
 
     expect(result.success).toBe(false)
     expect(result.error).toContain('不支持')
+  })
+})
+
+describe('generatorHelper QR code', () => {
+  it('生成 PNG data URL 二维码', async () => {
+    const result = await generateQrCode({
+      text: 'https://example.com',
+      size: 192,
+      errorCorrectionLevel: 'Q'
+    })
+
+    expect(result.success).toBe(true)
+    expect(result.dataUrl).toMatch(/^data:image\/png;base64,/)
+    expect(result.size).toBe(192)
+    expect(result.errorCorrectionLevel).toBe('Q')
+  })
+
+  it('空输入返回错误', async () => {
+    const result = await generateQrCode({ text: '   ' })
+
+    expect(result.success).toBe(false)
+    expect(result.error).toContain('不能为空')
+  })
+
+  it('尺寸越界返回错误', async () => {
+    expect((await generateQrCode({ text: 'OneApp', size: 64 })).success).toBe(false)
+    expect((await generateQrCode({ text: 'OneApp', size: 2048 })).error).toContain('128-1024')
+  })
+
+  it('纠错级别无效返回错误', async () => {
+    const result = await generateQrCode({ text: 'OneApp', errorCorrectionLevel: 'Z' })
+
+    expect(result.success).toBe(false)
+    expect(result.error).toContain('纠错级别')
   })
 })

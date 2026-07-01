@@ -50,7 +50,7 @@
 - 生成器相关单测
 - UI smoke test 覆盖深色和浅色主题
 
-### 2. 检查更新与统一弹窗
+### 2. 检查更新与统一弹窗（已完成：v1.15.0）
 
 - 建议 change name：`app-update-check-dialogs`
 - 建议 branch name：`feature/app-update-check-dialogs`

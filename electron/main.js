@@ -4,6 +4,7 @@ import { fileURLToPath } from 'url'
 import fs from 'fs'
 import Store from 'electron-store'
 import { registerAgentWorkshopIpc } from './agentWorkshop/ipc.js'
+import { checkForUpdates, resolveMessageBoxIconPath } from './appDialogs.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -21,6 +22,39 @@ const store = new Store({
 })
 
 let mainWindow
+
+function getMessageBoxIcon() {
+  const iconPath = resolveMessageBoxIconPath({
+    dirname: __dirname,
+    existsSync: fs.existsSync
+  })
+  return iconPath ? nativeImage.createFromPath(iconPath) : undefined
+}
+
+function normalizeMessageBoxOptions(options = {}) {
+  const dialogOptions = {
+    type: options.type || 'info',
+    title: options.title || 'OneApp',
+    message: options.message || '',
+    detail: options.detail || '',
+    buttons: Array.isArray(options.buttons) && options.buttons.length > 0 ? options.buttons : ['确定'],
+    defaultId: Number.isInteger(options.defaultId) ? options.defaultId : 0,
+    cancelId: Number.isInteger(options.cancelId) ? options.cancelId : undefined,
+    noLink: options.noLink !== false
+  }
+
+  if (typeof options.checkboxLabel === 'string' && options.checkboxLabel) {
+    dialogOptions.checkboxLabel = options.checkboxLabel
+    dialogOptions.checkboxChecked = Boolean(options.checkboxChecked)
+  }
+
+  const icon = getMessageBoxIcon()
+  if (icon && !icon.isEmpty()) {
+    dialogOptions.icon = icon
+  }
+
+  return dialogOptions
+}
 
 function createWindow() {
   // 开发模式: __dirname = out/main/, assets 在 electron/assets/
@@ -126,6 +160,15 @@ ipcMain.handle('show-directory-dialog', async () => {
     properties: ['openDirectory']
   })
   return result
+})
+
+ipcMain.handle('show-message-box', async (event, options) => {
+  const win = BrowserWindow.fromWebContents(event.sender) || mainWindow
+  return dialog.showMessageBox(win, normalizeMessageBoxOptions(options))
+})
+
+ipcMain.handle('check-for-updates', async (event, currentVersion) => {
+  return checkForUpdates({ currentVersion })
 })
 
 // Store IPC

@@ -7,8 +7,9 @@
 OneApp 是一个基于 Electron + Vue 3 的桌面开发工具应用，集成：
 
 - 统一编辑器：按文件后缀自动切换 Markdown / HTML / 纯文本模式，支持文件树、预览、保存和导出
-- JSON 工具：格式化、压缩、校验、反转义
+- JSON / YAML 工具：JSON 格式化、压缩、校验、反转义，JSON ⇄ YAML 转换与 YAML 单文档校验
 - 文本对比：并排 / 统一 diff，滚动同步与差异统计
+- 文本处理：统计、大小写/命名风格转换、按行排序、按行去重
 - 时间工具：当前时间、时间戳互转、多格式输出
 - 正则测试器：`/pattern/flags` 输入、Web Worker 实时匹配、捕获组高亮、速查抽屉
 - 编码工具合集：Base64、URL、JWT、Hash、进制、Unicode
@@ -204,20 +205,22 @@ Windows 暂不支持 Agent Workshop 的本地 CLI 检测与进程组管理，渲
 - `fileHelper.js`：文件相关 IPC 封装与路径校验
 - `regexHelper.js`：正则编译和匹配，返回捕获组、位置、截断信息
 - `encodeHelper.js`：Base64、URL、JWT、Hash、进制、Unicode 纯逻辑
+- `textHelper.js`：文本统计、大小写/命名风格转换、按行排序、按行去重纯逻辑
 - `agentWorkshopHelper.js`：Agent Workshop 进程无关逻辑、配置校验、prompt 构造、Markdown 导出
 - `safeMarkdown.js`：`marked` + `DOMPurify` 安全渲染，供 Agent Workshop 时间线 `v-html` 使用
 
 ### 主要组件
 
-- `App.vue`：根组件，管理 active tab、主题、字号、最近文件和快捷键（Ctrl/Cmd+1-8、Ctrl/Cmd+Tab）。
+- `App.vue`：根组件，管理 active tab、主题、字号、最近文件和快捷键（Ctrl/Cmd+1-9、Ctrl/Cmd+Tab）。
 - `Header.vue`：当前主导航组件；若执行 workbench UI refresh，可能会演进为左侧导航 / 应用壳。
 - `StatusBar.vue`：底部状态栏，必须覆盖全部一级工具名称。
 - `EditorTab.vue`：统一编辑器，使用 `useEditorFile`，按 mode 渲染 Markdown / HTML / 纯文本工作流。
 - `EditorWithLineNumbers.vue`：带同步行号的复用 textarea。
 - `FileTree.vue` / `TreeNode.vue`：懒加载目录树。
 - `MarkdownPreview.vue` / `HtmlPreview.vue`：Markdown 与 HTML 预览。
-- `JsonTab.vue`：JSON 输入输出双栏工具。
+- `JsonTab.vue`：JSON / YAML 输入输出双栏工具。
 - `DiffTab.vue`：文本对比工具。
+- `TextTab.vue`：文本处理工具，左侧子工具导航，支持统计、转换、排序和去重。
 - `RegexTab.vue`：正则测试器，匹配由 `useRegexMatcher` 和 `workers/regex.worker.js` 执行。
 - `EncodeTab.vue`：编码工具合集，左侧子工具导航。
 - `TimeTab.vue`：时间与时间戳转换。

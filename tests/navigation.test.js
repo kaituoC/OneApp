@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { NAV_ITEMS, getNavigationTooltip } from '../src/renderer/utils/navigation.js'
+import { NAV_ITEMS, TAB_KEYS, getNavigationTooltip } from '../src/renderer/utils/navigation.js'
 
 describe('navigation metadata', () => {
   it('每个导航项都有适合侧栏展示的短说明', () => {
@@ -15,5 +15,23 @@ describe('navigation metadata', () => {
     expect(getNavigationTooltip(editor, 'Cmd')).toContain('编辑器')
     expect(getNavigationTooltip(editor, 'Cmd')).toContain('Markdown / HTML / 纯文本')
     expect(getNavigationTooltip(editor, 'Cmd')).toContain('Cmd+1')
+  })
+
+  it('文本处理加入数字快捷键顺序', () => {
+    expect(TAB_KEYS).toEqual([
+      'editor',
+      'json',
+      'diff',
+      'text',
+      'time',
+      'regex',
+      'encode',
+      'agent',
+      'settings'
+    ])
+
+    const text = NAV_ITEMS.find((item) => item.key === 'text')
+    expect(text.label).toBe('文本处理')
+    expect(getNavigationTooltip(text, 'Cmd')).toContain('Cmd+4')
   })
 })

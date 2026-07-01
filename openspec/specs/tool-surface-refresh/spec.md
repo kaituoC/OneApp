@@ -2,14 +2,14 @@
 
 ## Purpose
 
-tool-surface-refresh 定义 OneApp 各一级工具页面在 workbench UI refresh 后的共享 surface、响应式布局和状态反馈规则，确保 Editor、JSON、Diff、Regex、Encode、Time、Agent Workshop 与 Settings 在视觉层级、输入输出结构和窄宽度行为上保持一致，同时不改变既有工具语义。
+tool-surface-refresh 定义 OneApp 各一级工具页面在 workbench UI refresh 后的共享 surface、响应式布局和状态反馈规则，确保 Editor、JSON、Diff、Text Processing、Regex、Encode、Time、Agent Workshop 与 Settings 在视觉层级、输入输出结构和窄宽度行为上保持一致，同时不改变既有工具语义。
 ## Requirements
 ### Requirement: 共享 tool surface pattern
 
 所有一级工具 SHALL 使用共享的 visual pattern 呈现 command bar、panel、form control、status message 和 empty state，同时保留现有行为。
 
 #### Scenario: Tool command bar 保持一致
-- **WHEN** 用户查看编辑器、JSON、Diff、Regex、Encode、Time、Agent Workshop 或 Settings
+- **WHEN** 用户查看编辑器、JSON、Diff、Text Processing、Regex、Encode、Time、Agent Workshop 或 Settings
 - **THEN** command control 根据工具场景使用一致的 command bar 或 section action 样式
 
 #### Scenario: Panel 层级保持一致
@@ -50,7 +50,7 @@ Editor surface SHALL 保留 file tree、editor panel 和 preview panel workflow�
 
 ### Requirement: 数据与文本工具使用清晰的 input/output layout
 
-JSON、Diff、Regex 和 Encode 工具 SHALL 使用清晰 label 和一致 status feedback 呈现 input、output、preview 和 result 区域。
+JSON、Diff、Text Processing、Regex 和 Encode 工具 SHALL 使用清晰 label 和一致 status feedback 呈现 input、output、preview 和 result 区域。
 
 #### Scenario: JSON 输入和输出清晰分离
 - **WHEN** JSON 工具处于激活状态
@@ -88,6 +88,18 @@ JSON、Diff、Regex 和 Encode 工具 SHALL 使用清晰 label 和一致 status 
 - **WHEN** Agent Workshop 的左侧配置栏与 timeline 区域在窄宽度下冲突
 - **THEN** 配置区可收起、堆叠到顶部或切换为 compact 模式，timeline 和 idea input 不被压到不可用宽度
 
+### Requirement: Text processing tool surface
+
+Text Processing SHALL follow the shared tool surface pattern used by other first-level tools.
+
+#### Scenario: Text processing uses shared surface
+- **WHEN** the Text Processing tool is active
+- **THEN** the system displays a command area, input panel, output or statistics panel, status feedback, and copy feedback using the shared tool surface styles
+
+#### Scenario: Text processing adapts to narrow width
+- **WHEN** the Text Processing tool does not have enough horizontal space for two comfortable panels
+- **THEN** the input and output panels stack vertically while remaining readable and operable
+
 ### Requirement: Time 和 Settings 使用结构化表单
 
 Time 和 Settings SHALL 使用结构化 dashboard 或 settings layout，而不是普通堆叠控件。
@@ -102,7 +114,7 @@ Time 和 Settings SHALL 使用结构化 dashboard 或 settings layout，而不�
 
 #### Scenario: Settings 快捷键说明准确
 - **WHEN** Settings 工具显示键盘快捷键帮助
-- **THEN** 它说明数字导航覆盖 1 到 8 个工具
+- **THEN** 它说明数字导航覆盖 1 到 9 个工具
 
 ### Requirement: Agent Workshop 视觉状态
 
@@ -125,7 +137,7 @@ Agent Workshop SHALL 使用面向 workflow 的 surface，让 setup、ready state
 所有一级工具 SHALL 复用一组实际被模板引用的 tool surface primitives，用于 command bar、panel、panel header、segmented control、icon button、status chip、empty state 和 copy feedback；未被使用的共享样式不得保留为死代码。
 
 #### Scenario: 工具页使用一致 primitives
-- **WHEN** 用户查看 Editor、JSON、Diff、Regex、Encode、Time、Agent Workshop 或 Settings
+- **WHEN** 用户查看 Editor、JSON、Diff、Text Processing、Regex、Encode、Time、Agent Workshop 或 Settings
 - **THEN** 页面中的主要 command、panel、status、empty state 和 copy feedback 使用一致的视觉 token、间距、边框、focus style 与语义状态
 
 #### Scenario: 无死 CSS primitives
@@ -142,7 +154,7 @@ Agent Workshop SHALL 使用面向 workflow 的 surface，让 setup、ready state
 
 #### Scenario: Wide 宽度保留高效并排
 - **WHEN** 主工作区宽度充足
-- **THEN** JSON、Diff、Regex、Encode 和 Agent Workshop 可保持并排或多栏布局，以支持快速比较和编辑
+- **THEN** JSON、Diff、Text Processing、Regex、Encode 和 Agent Workshop 可保持并排或多栏布局，以支持快速比较和编辑
 
 #### Scenario: Medium 宽度收起次级区域
 - **WHEN** DevTools 或窗口尺寸导致横向空间减少
@@ -186,7 +198,7 @@ Encode 工具 SHALL 将 Base64、URL、JWT、Hash、进制和 Unicode 子工具�
 
 ### Requirement: 工具结果与反馈 polish
 
-JSON、Diff、Regex、Time 和 Settings SHALL 在现有功能语义不变的前提下，强化空态、结果态、错误态、复制反馈和主次操作层级。
+JSON、Diff、Text Processing、Regex、Time 和 Settings SHALL 在现有功能语义不变的前提下，强化空态、结果态、错误态、复制反馈和主次操作层级。
 
 #### Scenario: JSON 空态和错误态清晰
 - **WHEN** JSON 输入为空、处理成功或处理失败
@@ -223,4 +235,3 @@ Agent Workshop SHALL 优化 setup、ready、running、finished、failed、cancel
 #### Scenario: 不改变底层 workflow
 - **WHEN** 用户启动、停止、导出或查看 Agent Workshop discussion
 - **THEN** 底层 orchestration、runner、IPC、只读模式、message persistence 和 event subscription 行为与 polish 前一致
-

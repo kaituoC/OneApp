@@ -5,7 +5,9 @@ import {
   timestampToDate,
   dateToTimestamp,
   getCurrentTimestamp,
-  getCurrentFormattedDate
+  getCurrentFormattedDate,
+  explainCronExpression,
+  parseCronExpression
 } from '../src/renderer/utils/timeHelper.js'
 
 describe('timeHelper', () => {
@@ -162,6 +164,69 @@ describe('timeHelper', () => {
     it('should return current date with custom format', () => {
       const result = getCurrentFormattedDate('yyyyMMdd')
       expect(result).toMatch(/^\d{8}$/)
+    })
+  })
+
+  describe('parseCronExpression', () => {
+    it('should parse a standard 5-field cron expression', () => {
+      const result = parseCronExpression('*/15 9-18 * * 1-5')
+
+      expect(result.success).toBe(true)
+      expect(result.fields.minute.has(0)).toBe(true)
+      expect(result.fields.minute.has(15)).toBe(true)
+      expect(result.fields.hour.has(9)).toBe(true)
+      expect(result.fields.dayOfWeek.has(5)).toBe(true)
+    })
+
+    it('should reject invalid field count', () => {
+      const result = parseCronExpression('* * * * * *')
+
+      expect(result.success).toBe(false)
+      expect(result.displayMessage).toContain('5 个字段')
+    })
+
+    it('should reject out-of-range values', () => {
+      const result = parseCronExpression('60 * * * *')
+
+      expect(result.success).toBe(false)
+      expect(result.displayMessage).toContain('分钟字段')
+    })
+
+    it('should reject invalid range order', () => {
+      const result = parseCronExpression('* 18-9 * * *')
+
+      expect(result.success).toBe(false)
+      expect(result.displayMessage).toContain('起点不能大于终点')
+    })
+  })
+
+  describe('explainCronExpression', () => {
+    it('should explain cron and return next 5 local run times', () => {
+      const base = new Date(2026, 0, 1, 8, 0, 0)
+      const result = explainCronExpression('0 9 * * 1-5', base)
+
+      expect(result.success).toBe(true)
+      expect(result.description).toContain('分钟为 0')
+      expect(result.formattedRuns).toHaveLength(5)
+      expect(result.formattedRuns[0]).toBe('2026-01-01 09:00:00')
+    })
+
+    it('should support step syntax for future times', () => {
+      const base = new Date(2026, 0, 1, 8, 0, 0)
+      const result = explainCronExpression('*/30 8 * * *', base)
+
+      expect(result.success).toBe(true)
+      expect(result.formattedRuns.slice(0, 2)).toEqual([
+        '2026-01-01 08:30:00',
+        '2026-01-02 08:00:00'
+      ])
+    })
+
+    it('should reject impossible day of month values', () => {
+      const result = explainCronExpression('0 0 32 * *')
+
+      expect(result.success).toBe(false)
+      expect(result.displayMessage).toContain('日期字段')
     })
   })
 })

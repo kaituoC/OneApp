@@ -47,6 +47,9 @@ describe('navigation metadata', () => {
     expect(text.label).toBe('文本处理')
     expect(getNavigationTooltip(text, 'Cmd')).toContain('Cmd+4')
 
+    const time = NAV_ITEMS.find((item) => item.key === 'time')
+    expect(time.description).toContain('Cron')
+
     const generator = NAV_ITEMS.find((item) => item.key === 'generator')
     expect(generator.label).toBe('生成器')
     expect(getNavigationTooltip(generator, 'Cmd')).toContain('Cmd+0')

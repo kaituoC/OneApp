@@ -74,6 +74,10 @@ Workbench shell SHALL 围绕当前工具提供一致的 context 和 status surfa
 - **WHEN** Agent Workshop 或任意其他一级工具处于激活状态
 - **THEN** status area 显示该工具的人类可读 label，并且不会显示空值或 undefined
 
+#### Scenario: 时间工具摘要包含 Cron 能力
+- **WHEN** 用户查看时间工具导航说明或上下文摘要
+- **THEN** 系统可体现时间工具除日期与时间戳转换外，还包含 Cron 表达式解释能力
+
 ### Requirement: Icon-assisted interaction model
 
 应用 SHALL 使用单一 icon library 提升导航和紧凑 command control 的可扫描性。

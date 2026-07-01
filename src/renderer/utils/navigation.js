@@ -42,8 +42,8 @@ export const NAV_GROUPS = [
       {
         key: 'time',
         label: '时间工具',
-        description: '日期与时间戳转换',
-        summary: '日期 / Timestamp',
+        description: '日期、时间戳与 Cron',
+        summary: '时间 / Cron',
         shortcut: 5,
         icon: Clock3
       },

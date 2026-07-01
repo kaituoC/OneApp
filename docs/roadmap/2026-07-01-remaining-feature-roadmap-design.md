@@ -180,7 +180,7 @@
 - JSONPath helper 单测
 - 数据工具 UI smoke test
 
-### 6. 时间工具增强一期：Cron 表达式解释器
+### 6. 时间工具增强一期：Cron 表达式解释器（已完成：v1.19.0）
 
 - 建议 change name：`cron-expression-helper`
 - 建议 branch name：`feature/cron-expression-helper`

@@ -97,6 +97,35 @@
       </div>
     </div>
 
+    <div class="convert-section tool-panel">
+      <div class="section-header tool-panel-header">Cron 表达式解释</div>
+      <div class="convert-content">
+        <div class="convert-row">
+          <span class="row-label">表达式</span>
+          <input
+            v-model="cronInput"
+            type="text"
+            placeholder="分钟 小时 日 月 星期，例如 */15 9-18 * * 1-5"
+            class="convert-input cron-input"
+          />
+          <button @click="explainCron">解释</button>
+        </div>
+        <div class="convert-row cron-result-row">
+          <span class="row-label">解释</span>
+          <span :class="['convert-result', { 'cron-error': cronHasError }]">
+            {{ cronDescription || '--' }}
+          </span>
+        </div>
+        <div class="convert-row cron-result-row">
+          <span class="row-label">未来 5 次</span>
+          <ol v-if="cronRuns.length" class="cron-run-list">
+            <li v-for="run in cronRuns" :key="run">{{ run }}</li>
+          </ol>
+          <span v-else class="convert-result">--</span>
+        </div>
+      </div>
+    </div>
+
     <!-- 复制成功提示 -->
     <div v-if="copyMessage" :class="['tool-copy-toast', { error: copyMessage === '复制失败' }]">{{ copyMessage }}</div>
   </div>
@@ -111,7 +140,8 @@ import {
   timestampToDate,
   dateToTimestamp,
   getCurrentTimestamp,
-  getCurrentFormattedDate
+  getCurrentFormattedDate,
+  explainCronExpression
 } from '../utils/timeHelper.js'
 
 const props = defineProps({
@@ -200,6 +230,24 @@ function copySecondTs() {
 
 function copyMsTs() {
   copyToClipboard(dateToTsResultMs.value)
+}
+
+const cronInput = ref('*/15 9-18 * * 1-5')
+const cronDescription = ref('')
+const cronRuns = ref([])
+const cronHasError = ref(false)
+
+function explainCron() {
+  const result = explainCronExpression(cronInput.value)
+  if (result.success) {
+    cronDescription.value = result.description
+    cronRuns.value = result.formattedRuns
+    cronHasError.value = false
+  } else {
+    cronDescription.value = result.displayMessage
+    cronRuns.value = []
+    cronHasError.value = true
+  }
 }
 
 // 启动定时器
@@ -330,6 +378,32 @@ onUnmounted(() => {
 .convert-input:focus {
   outline: none;
   border-color: var(--accent);
+}
+
+.cron-input {
+  font-family: var(--font-mono);
+}
+
+.cron-result-row {
+  align-items: flex-start;
+}
+
+.cron-error {
+  color: var(--error);
+}
+
+.cron-run-list {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 8px 10px 8px 28px;
+  flex: 1;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  background: var(--bg-tertiary);
+  font-family: var(--font-mono);
+  font-size: 13px;
 }
 
 .inline-radio {

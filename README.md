@@ -1,6 +1,6 @@
 # OneApp
 
-多功能开发工具桌面应用，集成统一编辑器（Markdown / HTML 自动识别）、数据工具（JSON / YAML / CSV）、文本对比、文本处理、生成器、时间转换、正则测试、编码工具合集、Agent 研讨室和应用级更新检查。
+多功能开发工具桌面应用，集成统一编辑器（Markdown / HTML 自动识别）、数据工具（JSON / YAML / CSV / SQL / XML）、文本对比、文本处理、生成器、时间转换、正则测试、编码工具合集、Agent 研讨室和应用级更新检查。
 
 ## 界面预览
 
@@ -36,6 +36,8 @@
 - CSV → JSON 转换，按表头输出对象数组
 - JSON → CSV 转换，支持对象数组字段并集
 - CSV 表格预览，只读展示二维表并支持横向滚动
+- SQL 格式化与压缩
+- XML 格式化、压缩与明显结构错误提示
 - 语法高亮显示
 
 ### 文本对比
@@ -223,6 +225,8 @@ npm run dist
 - marked (Markdown 解析)
 - yaml (YAML 解析与序列化)
 - papaparse (CSV 解析与序列化)
+- sql-formatter (SQL 格式化)
+- fast-xml-parser (XML 验证/解析)
 - diff-match-patch (文本对比)
 - CodeMirror 6 (JSON 编辑器)
 - js-md5 (MD5 计算，SHA 系列走原生 Web Crypto)

@@ -34,8 +34,8 @@ export const NAV_GROUPS = [
       {
         key: 'json',
         label: '数据工具',
-        description: 'JSON / YAML / CSV',
-        summary: 'JSON / CSV',
+        description: 'JSON / CSV / SQL / XML',
+        summary: 'JSON / SQL',
         shortcut: 2,
         icon: Braces
       },

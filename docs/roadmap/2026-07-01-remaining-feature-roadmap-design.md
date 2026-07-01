@@ -119,7 +119,7 @@
 - CSV helper 新增单测
 - 数据工具 UI smoke test
 
-### 4. 数据工具合集二期：SQL / XML 格式化
+### 4. 数据工具合集二期：SQL / XML 格式化（已完成：v1.17.0）
 
 - 建议 change name：`data-tools-sql-xml-format`
 - 建议 branch name：`feature/data-tools-sql-xml-format`

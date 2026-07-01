@@ -126,6 +126,42 @@
       </div>
     </div>
 
+    <div class="convert-section tool-panel">
+      <div class="section-header tool-panel-header">多时区对照</div>
+      <div class="convert-content">
+        <div class="convert-row">
+          <span class="row-label">添加城市</span>
+          <select v-model="timezoneToAdd" class="format-select">
+            <option value="" disabled>选择城市</option>
+            <option v-for="preset in availableTimezones" :key="preset.id" :value="preset.id">
+              {{ preset.label }} · {{ preset.timeZone }}
+            </option>
+          </select>
+          <button @click="addTimezone" :disabled="!timezoneToAdd">添加</button>
+        </div>
+        <table class="timezone-table">
+          <thead>
+            <tr>
+              <th>城市</th>
+              <th>日期</th>
+              <th>时间</th>
+              <th>差异</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="row in timezoneRows" :key="row.id">
+              <td>{{ row.label }}</td>
+              <td>{{ row.date }}</td>
+              <td>{{ row.time }}</td>
+              <td>{{ row.relation }}</td>
+              <td><button class="copy-btn small" @click="removeTimezone(row.id)" :disabled="row.id === 'local'">移除</button></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
     <!-- 复制成功提示 -->
     <div v-if="copyMessage" :class="['tool-copy-toast', { error: copyMessage === '复制失败' }]">{{ copyMessage }}</div>
   </div>
@@ -141,7 +177,9 @@ import {
   dateToTimestamp,
   getCurrentTimestamp,
   getCurrentFormattedDate,
-  explainCronExpression
+  explainCronExpression,
+  buildTimezoneComparison,
+  getAvailableTimezonePresets
 } from '../utils/timeHelper.js'
 
 const props = defineProps({
@@ -236,6 +274,10 @@ const cronInput = ref('*/15 9-18 * * 1-5')
 const cronDescription = ref('')
 const cronRuns = ref([])
 const cronHasError = ref(false)
+const selectedTimezoneIds = ref(['local', 'new-york', 'london', 'tokyo'])
+const timezoneToAdd = ref('')
+const timezoneRows = computed(() => buildTimezoneComparison(selectedTimezoneIds.value, liveTime.value).rows || [])
+const availableTimezones = computed(() => getAvailableTimezonePresets(selectedTimezoneIds.value))
 
 function explainCron() {
   const result = explainCronExpression(cronInput.value)
@@ -248,6 +290,16 @@ function explainCron() {
     cronRuns.value = []
     cronHasError.value = true
   }
+}
+
+function addTimezone() {
+  if (!timezoneToAdd.value) return
+  selectedTimezoneIds.value = [...selectedTimezoneIds.value, timezoneToAdd.value]
+  timezoneToAdd.value = ''
+}
+
+function removeTimezone(id) {
+  selectedTimezoneIds.value = selectedTimezoneIds.value.filter((item) => item !== id || item === 'local')
 }
 
 // 启动定时器
@@ -404,6 +456,32 @@ onUnmounted(() => {
   background: var(--bg-tertiary);
   font-family: var(--font-mono);
   font-size: 13px;
+}
+
+.timezone-table {
+  width: 100%;
+  border-collapse: collapse;
+  overflow: hidden;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+}
+
+.timezone-table th,
+.timezone-table td {
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--border-subtle);
+  text-align: left;
+}
+
+.timezone-table th {
+  color: var(--text-secondary);
+  background: var(--bg-tertiary);
+  font-size: 12px;
+}
+
+.timezone-table td {
+  color: var(--text-primary);
 }
 
 .inline-radio {

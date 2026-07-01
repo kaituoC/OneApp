@@ -7,7 +7,10 @@ import {
   getCurrentTimestamp,
   getCurrentFormattedDate,
   explainCronExpression,
-  parseCronExpression
+  parseCronExpression,
+  buildTimezoneComparison,
+  getAvailableTimezonePresets,
+  formatTimezoneTime
 } from '../src/renderer/utils/timeHelper.js'
 
 describe('timeHelper', () => {
@@ -227,6 +230,40 @@ describe('timeHelper', () => {
 
       expect(result.success).toBe(false)
       expect(result.displayMessage).toContain('日期字段')
+    })
+  })
+
+  describe('timezone comparison', () => {
+    it('builds timezone rows for selected presets', () => {
+      const result = buildTimezoneComparison(['new-york', 'tokyo'], new Date(2026, 0, 1, 12, 0, 0).getTime())
+
+      expect(result.success).toBe(true)
+      expect(result.rows).toHaveLength(2)
+      expect(result.rows[0].label).toBe('纽约')
+      expect(result.rows[0].time).toMatch(/^\d{2}:\d{2}:\d{2}$/)
+      expect(result.rows[0].relation).toBeTruthy()
+    })
+
+    it('filters addable timezone presets', () => {
+      const result = getAvailableTimezonePresets(['local', 'tokyo'])
+
+      expect(result.some((item) => item.id === 'local')).toBe(false)
+      expect(result.some((item) => item.id === 'london')).toBe(true)
+    })
+
+    it('returns relation labels for neighboring dates', () => {
+      const base = new Date(2026, 0, 1, 23, 30, 0).getTime()
+      const result = formatTimezoneTime({ id: 'tokyo', label: '东京', timeZone: 'Asia/Tokyo' }, base)
+
+      expect(result.success).toBe(true)
+      expect(['今天', '明天']).toContain(result.row.relation)
+    })
+
+    it('returns error for invalid timezone', () => {
+      const result = formatTimezoneTime({ id: 'bad', label: 'Bad', timeZone: 'Not/AZone' })
+
+      expect(result.success).toBe(false)
+      expect(result.error).toContain('时区格式化失败')
     })
   })
 })

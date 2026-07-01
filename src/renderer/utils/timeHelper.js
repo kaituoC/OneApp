@@ -118,6 +118,15 @@ const CRON_FIELDS = [
   { key: 'dayOfWeek', label: '星期', min: 0, max: 7 }
 ]
 
+export const TIMEZONE_PRESETS = [
+  { id: 'local', label: '本地', timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC' },
+  { id: 'new-york', label: '纽约', timeZone: 'America/New_York' },
+  { id: 'london', label: '伦敦', timeZone: 'Europe/London' },
+  { id: 'tokyo', label: '东京', timeZone: 'Asia/Tokyo' },
+  { id: 'shanghai', label: '上海', timeZone: 'Asia/Shanghai' },
+  { id: 'sydney', label: '悉尼', timeZone: 'Australia/Sydney' }
+]
+
 export function explainCronExpression(expression, baseDate = new Date()) {
   const parsed = parseCronExpression(expression)
   if (!parsed.success) return parsed
@@ -278,4 +287,77 @@ function cronError(message) {
     error: message,
     displayMessage: `✗ Cron 解析错误：${message}`
   }
+}
+
+export function buildTimezoneComparison(selectedIds, timestamp = Date.now()) {
+  const selected = Array.from(new Set(selectedIds || []))
+  const rows = []
+
+  for (const id of selected) {
+    const preset = TIMEZONE_PRESETS.find((item) => item.id === id)
+    if (!preset) continue
+    const result = formatTimezoneTime(preset, timestamp)
+    if (!result.success) return result
+    rows.push(result.row)
+  }
+
+  return { success: true, rows }
+}
+
+export function getAvailableTimezonePresets(selectedIds) {
+  const selected = new Set(selectedIds || [])
+  return TIMEZONE_PRESETS.filter((preset) => !selected.has(preset.id))
+}
+
+export function formatTimezoneTime(preset, timestamp = Date.now()) {
+  try {
+    const parts = getTimezoneParts(timestamp, preset.timeZone)
+    return {
+      success: true,
+      row: {
+        ...preset,
+        date: `${parts.year}-${parts.month}-${parts.day}`,
+        time: `${parts.hour}:${parts.minute}:${parts.second}`,
+        relation: getDateRelation(parts, timestamp)
+      }
+    }
+  } catch (error) {
+    return {
+      success: false,
+      error: `时区格式化失败：${error.message || String(error)}`
+    }
+  }
+}
+
+function getTimezoneParts(timestamp, timeZone) {
+  const formatter = new Intl.DateTimeFormat('en-CA', {
+    timeZone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false
+  })
+  const parts = Object.fromEntries(formatter.formatToParts(new Date(timestamp)).map((part) => [part.type, part.value]))
+  return {
+    year: parts.year,
+    month: parts.month,
+    day: parts.day,
+    hour: parts.hour === '24' ? '00' : parts.hour,
+    minute: parts.minute,
+    second: parts.second
+  }
+}
+
+function getDateRelation(targetParts, timestamp) {
+  const local = new Date(timestamp)
+  const localUtc = Date.UTC(local.getFullYear(), local.getMonth(), local.getDate())
+  const targetUtc = Date.UTC(Number(targetParts.year), Number(targetParts.month) - 1, Number(targetParts.day))
+  const diffDays = Math.round((targetUtc - localUtc) / 86400000)
+  if (diffDays === -1) return '昨天'
+  if (diffDays === 0) return '今天'
+  if (diffDays === 1) return '明天'
+  return diffDays > 1 ? `+${diffDays} 天` : `${diffDays} 天`
 }

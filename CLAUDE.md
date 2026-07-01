@@ -4,7 +4,7 @@
 
 ## 项目概述
 
-OneApp 是一个基于 Electron + Vue 3 的桌面应用程序，提供开发者工具：统一编辑器（按文件后缀自动切换 Markdown / HTML / 纯文本模式）、数据工具（JSON / YAML / CSV / SQL / XML / JSONPath）、文本差异对比、文本处理、生成器（UUID / 随机密码 / Lorem / 二维码）、时间与 Cron、正则测试、编码工具合集（Base64 / URL / JWT / Hash / 进制 / Unicode）、Agent 研讨室（多个本地 AI agent 在只读模式下研讨本地仓库并汇总实现方案）和设置页 GitHub Release 更新检查。编辑器侧边栏提供懒加载目录树，可像文件管理器一样浏览目录并打开文件。
+OneApp 是一个基于 Electron + Vue 3 的桌面应用程序，提供开发者工具：统一编辑器（按文件后缀自动切换 Markdown / HTML / 纯文本模式）、数据工具（JSON / YAML / CSV / SQL / XML / JSONPath）、文本差异对比、文本处理、生成器（UUID / 随机密码 / Lorem / 二维码）、时间、Cron 与多时区、正则测试、编码工具合集（Base64 / URL / JWT / Hash / 进制 / Unicode）、Agent 研讨室（多个本地 AI agent 在只读模式下研讨本地仓库并汇总实现方案）和设置页 GitHub Release 更新检查。编辑器侧边栏提供懒加载目录树，可像文件管理器一样浏览目录并打开文件。
 
 ## 命令
 
@@ -162,7 +162,7 @@ ipcMain.handle('read-file', async (event, filePath) => { ... })
 - **formatHelper.js**：SQL / XML 格式化、压缩和 XML 结构错误归一化，基于 sql-formatter 与 fast-xml-parser
 - **jsonPathHelper.js**：JSONPath 查询、匹配路径和值摘要归一化，基于 jsonpath-plus
 - **diffHelper.js**：diffTextUnified（git 风格）、diffTextSplit（并排对比）、diffStats — 使用 diff-match-patch 库
-- **timeHelper.js**：formatDate、parseDate、timestampToDate、dateToTimestamp、Cron 解析与未来执行时间计算
+- **timeHelper.js**：formatDate、parseDate、timestampToDate、dateToTimestamp、Cron 解析与未来执行时间计算、多时区对照
 - **fileHelper.js**：IPC 封装，包含路径校验
 - **regexHelper.js**：runRegex — 编译正则并执行匹配，返回 `{ success, matches/error }`，含捕获组位置/命名、命中计数与海量匹配截断；被 Web Worker 引用且可独立单元测试
 - **encodeHelper.js**：编码工具合集纯逻辑——base64Encode/Decode（TextEncoder 处理 UTF-8）、urlEncode/Decode、decodeJWT（三段拆分 + exp/iat/nbf 转可读时间，不验签）、hashAll（MD5 via js-md5 + SHA-1/256/512 via crypto.subtle，异步）、convertBase（BigInt 四进制联动）、unicodeEscape/Unescape（`\u` / `\u{}` / HTML 实体三格式），均返回 `{ success, result/error }`

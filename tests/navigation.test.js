@@ -49,6 +49,7 @@ describe('navigation metadata', () => {
 
     const time = NAV_ITEMS.find((item) => item.key === 'time')
     expect(time.description).toContain('Cron')
+    expect(time.description).toContain('多时区')
 
     const generator = NAV_ITEMS.find((item) => item.key === 'generator')
     expect(generator.label).toBe('生成器')

@@ -241,7 +241,7 @@
 - 二维码 helper 单测
 - 生成工具 UI smoke test
 
-### 8. 时间工具增强二期：多时区对照表
+### 8. 时间工具增强二期：多时区对照表（已完成：v1.21.0）
 
 - 建议 change name：`timezone-board`
 - 建议 branch name：`feature/timezone-board`

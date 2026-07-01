@@ -11,7 +11,7 @@ OneApp 是一个基于 Electron + Vue 3 的桌面开发工具应用，集成：
 - 文本对比：并排 / 统一 diff，滚动同步与差异统计
 - 文本处理：统计、大小写/命名风格转换、按行排序、按行去重
 - 生成器：UUID v4 单个/批量生成、随机密码、Lorem 占位文本
-- 时间工具：当前时间、时间戳互转、多格式输出
+- 时间工具：当前时间、时间戳互转、多格式输出、标准 5 位 Cron 表达式解释
 - 正则测试器：`/pattern/flags` 输入、Web Worker 实时匹配、捕获组高亮、速查抽屉
 - 编码工具合集：Base64、URL、JWT、Hash、进制、Unicode
 - Agent 研讨室：多个本地 AI agent 以只读方式研讨本地仓库、交叉评审并输出实现方案
@@ -210,7 +210,7 @@ Windows 暂不支持 Agent Workshop 的本地 CLI 检测与进程组管理，渲
 - `formatHelper.js`：SQL / XML 格式化、压缩和 XML 结构错误归一化
 - `jsonPathHelper.js`：JSONPath 查询、匹配路径和值摘要归一化
 - `diffHelper.js`：统一 diff、并排 diff、差异统计
-- `timeHelper.js`：日期格式化、解析、时间戳互转
+- `timeHelper.js`：日期格式化、解析、时间戳互转、Cron 解析与未来时间计算
 - `fileHelper.js`：文件相关 IPC 封装与路径校验
 - `regexHelper.js`：正则编译和匹配，返回捕获组、位置、截断信息
 - `encodeHelper.js`：Base64、URL、JWT、Hash、进制、Unicode 纯逻辑
@@ -234,7 +234,7 @@ Windows 暂不支持 Agent Workshop 的本地 CLI 检测与进程组管理，渲
 - `RegexTab.vue`：正则测试器，匹配由 `useRegexMatcher` 和 `workers/regex.worker.js` 执行。
 - `EncodeTab.vue`：编码工具合集，左侧子工具导航。
 - `GeneratorTab.vue`：生成器合集，左侧子工具导航，支持 UUID、随机密码和 Lorem。
-- `TimeTab.vue`：时间与时间戳转换。
+- `TimeTab.vue`：时间、时间戳转换与 Cron 表达式解释。
 - `AgentWorkshopTab.vue`：Agent 研讨室，订阅主进程事件流并渲染配置、进度和 Markdown 时间线。
 - `SettingsTab.vue`：工作目录、主题、字号、最近文件、快捷键、关于信息和 GitHub Release 更新检查。
 

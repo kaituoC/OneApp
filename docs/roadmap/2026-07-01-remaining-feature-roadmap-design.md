@@ -150,7 +150,7 @@
 - SQL / XML helper 单测
 - 数据工具 UI smoke test
 
-### 5. JSON 工具增强：JSONPath 查询
+### 5. JSON 工具增强：JSONPath 查询（已完成：v1.18.0）
 
 - 建议 change name：`jsonpath-query`
 - 建议 branch name：`feature/jsonpath-query`

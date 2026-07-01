@@ -15,6 +15,7 @@
         <button @click="doValidate">校验</button>
         <button @click="doUnescape">去除转义</button>
         <button @click="doJsonToYaml">转 YAML</button>
+        <button @click="doJsonPathQuery">JSONPath 查询</button>
       </template>
       <template v-else-if="mode === 'yaml'">
         <button class="primary" @click="doYamlToJson">转 JSON</button>
@@ -36,6 +37,16 @@
       <span class="toolbar-spacer"></span>
       <button @click="copyResult">复制结果</button>
       <button @click="clearAll">清空</button>
+    </div>
+    <div v-if="mode === 'json'" class="jsonpath-bar">
+      <label for="jsonpath-expression">JSONPath</label>
+      <input
+        id="jsonpath-expression"
+        v-model="jsonPathExpression"
+        type="text"
+        spellcheck="false"
+        placeholder="$.items[0].name 或 $..id"
+      />
     </div>
 
     <div class="content tool-workspace">
@@ -70,6 +81,25 @@
               </tr>
             </tbody>
           </table>
+        </div>
+        <div v-else-if="jsonPathMatches.length" class="jsonpath-result-layout">
+          <div class="jsonpath-result-list" aria-label="JSONPath 查询结果">
+            <div
+              v-for="(match, matchIndex) in jsonPathMatches"
+              :key="`${match.path}-${matchIndex}`"
+              class="jsonpath-result-item"
+            >
+              <span class="jsonpath-result-index">{{ matchIndex + 1 }}</span>
+              <span class="jsonpath-result-path">{{ match.path }}</span>
+              <span class="jsonpath-result-summary">{{ match.summary }}</span>
+            </div>
+          </div>
+          <EditorWithLineNumbers
+            v-model="output"
+            :font-size="fontSize"
+            readonly
+            :class="{ 'error-output': hasError }"
+          />
         </div>
         <EditorWithLineNumbers
           v-else
@@ -110,6 +140,7 @@ import {
   formatXML,
   minifyXML
 } from '../utils/formatHelper.js'
+import { queryJSONPath } from '../utils/jsonPathHelper.js'
 import EditorWithLineNumbers from './EditorWithLineNumbers.vue'
 import { useCopyToast } from '../composables/useCopyToast.js'
 
@@ -120,6 +151,8 @@ const props = defineProps({
 const mode = ref('json')
 const input = ref('')
 const output = ref('')
+const jsonPathExpression = ref('$')
+const jsonPathMatches = ref([])
 const statusMessage = ref('')
 const hasError = ref(false)
 const tablePreview = ref(null)
@@ -155,6 +188,7 @@ const emptyStatusText = computed(() =>
 function setMode(nextMode) {
   mode.value = nextMode
   output.value = ''
+  jsonPathMatches.value = []
   statusMessage.value = ''
   hasError.value = false
   tablePreview.value = null
@@ -183,6 +217,12 @@ function doUnescape() {
 function doJsonToYaml() {
   const result = jsonToYAML(input.value)
   handleResult(result)
+}
+
+function doJsonPathQuery() {
+  const result = queryJSONPath(input.value, jsonPathExpression.value)
+  handleResult(result)
+  jsonPathMatches.value = result.success ? result.matches || [] : []
 }
 
 function doYamlToJson() {
@@ -238,6 +278,7 @@ function doMinifyXml() {
 
 function handleResult(result, successMessage = '处理成功') {
   tablePreview.value = null
+  jsonPathMatches.value = []
   if (result.success) {
     output.value = result.result || result.message
     statusMessage.value = result.message || successMessage
@@ -258,6 +299,8 @@ async function copyResult() {
 function clearAll() {
   input.value = ''
   output.value = ''
+  jsonPathExpression.value = '$'
+  jsonPathMatches.value = []
   statusMessage.value = ''
   hasError.value = false
   tablePreview.value = null
@@ -272,6 +315,36 @@ function clearAll() {
 }
 .toolbar-spacer {
   flex: 1;
+}
+.jsonpath-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border-color);
+  background: var(--bg-secondary);
+}
+.jsonpath-bar label {
+  flex: 0 0 auto;
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+}
+.jsonpath-bar input {
+  flex: 1;
+  min-width: 0;
+  padding: 7px 9px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  background: var(--bg-primary);
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+.jsonpath-bar input:focus {
+  border-color: var(--accent);
+  outline: none;
+  box-shadow: var(--focus-ring);
 }
 .content {
   flex: 1;
@@ -294,6 +367,51 @@ function clearAll() {
   overflow: auto;
   border-radius: var(--radius-sm);
   background: var(--bg-primary);
+}
+.jsonpath-result-layout {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  flex-direction: column;
+  background: var(--bg-primary);
+}
+.jsonpath-result-list {
+  flex: 0 0 auto;
+  max-height: 136px;
+  overflow: auto;
+  border-bottom: 1px solid var(--border-subtle);
+  background: var(--bg-secondary);
+}
+.jsonpath-result-item {
+  display: grid;
+  grid-template-columns: 32px minmax(160px, 1fr) minmax(120px, 1fr);
+  gap: 8px;
+  align-items: center;
+  padding: 7px 10px;
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+.jsonpath-result-item:last-child {
+  border-bottom: none;
+}
+.jsonpath-result-index {
+  color: var(--text-muted);
+  text-align: right;
+}
+.jsonpath-result-path,
+.jsonpath-result-summary {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.jsonpath-result-path {
+  color: var(--accent);
+}
+.jsonpath-result-summary {
+  color: var(--text-primary);
 }
 .csv-preview-table {
   width: max-content;

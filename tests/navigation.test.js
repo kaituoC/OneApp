@@ -39,6 +39,7 @@ describe('navigation metadata', () => {
 
     const data = NAV_ITEMS.find((item) => item.key === 'json')
     expect(data.label).toBe('数据工具')
+    expect(data.description).toContain('JSONPath')
     expect(data.description).toContain('SQL / XML')
     expect(getNavigationTooltip(data, 'Cmd')).toContain('Cmd+2')
 

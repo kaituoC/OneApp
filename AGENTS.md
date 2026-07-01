@@ -7,7 +7,7 @@
 OneApp 是一个基于 Electron + Vue 3 的桌面开发工具应用，集成：
 
 - 统一编辑器：按文件后缀自动切换 Markdown / HTML / 纯文本模式，支持文件树、预览、保存和导出
-- 数据工具：JSON 格式化、压缩、校验、反转义，JSON ⇄ YAML 转换与 YAML 单文档校验，CSV ⇄ JSON 转换与 CSV 表格预览，SQL / XML 格式化与压缩
+- 数据工具：JSON 格式化、压缩、校验、反转义、JSONPath 查询，JSON ⇄ YAML 转换与 YAML 单文档校验，CSV ⇄ JSON 转换与 CSV 表格预览，SQL / XML 格式化与压缩
 - 文本对比：并排 / 统一 diff，滚动同步与差异统计
 - 文本处理：统计、大小写/命名风格转换、按行排序、按行去重
 - 生成器：UUID v4 单个/批量生成、随机密码、Lorem 占位文本
@@ -208,6 +208,7 @@ Windows 暂不支持 Agent Workshop 的本地 CLI 检测与进程组管理，渲
 - `jsonHelper.js`：JSON 格式化、压缩、校验、反转义
 - `csvHelper.js`：CSV ⇄ JSON 转换、CSV 表格预览和 CSV 错误归一化
 - `formatHelper.js`：SQL / XML 格式化、压缩和 XML 结构错误归一化
+- `jsonPathHelper.js`：JSONPath 查询、匹配路径和值摘要归一化
 - `diffHelper.js`：统一 diff、并排 diff、差异统计
 - `timeHelper.js`：日期格式化、解析、时间戳互转
 - `fileHelper.js`：文件相关 IPC 封装与路径校验
@@ -227,7 +228,7 @@ Windows 暂不支持 Agent Workshop 的本地 CLI 检测与进程组管理，渲
 - `EditorWithLineNumbers.vue`：带同步行号的复用 textarea。
 - `FileTree.vue` / `TreeNode.vue`：懒加载目录树。
 - `MarkdownPreview.vue` / `HtmlPreview.vue`：Markdown 与 HTML 预览。
-- `JsonTab.vue`：数据工具合集，提供 JSON / YAML / CSV / SQL / XML 子工具和 CSV 表格预览。
+- `JsonTab.vue`：数据工具合集，提供 JSON / YAML / CSV / SQL / XML 子工具、JSONPath 查询和 CSV 表格预览。
 - `DiffTab.vue`：文本对比工具。
 - `TextTab.vue`：文本处理工具，左侧子工具导航，支持统计、转换、排序和去重。
 - `RegexTab.vue`：正则测试器，匹配由 `useRegexMatcher` 和 `workers/regex.worker.js` 执行。

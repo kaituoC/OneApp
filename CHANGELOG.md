@@ -6,6 +6,21 @@
 
 ---
 
+## [1.18.0] - 2026-07-01
+
+### ✨ 新增
+- 数据工具 JSON 子工具新增 JSONPath 查询输入与查询动作。
+- JSONPath 查询结果展示匹配数量、每条结果路径和值摘要，并输出完整匹配结果 JSON。
+- 引入 `jsonpath-plus`，支持常见 JSONPath 表达式执行。
+
+### 📚 文档
+- 更新 README、ROADMAP、OpenSpec 和剩余功能队列，标记 JSONPath 查询完成。
+- 新增 JSONPath Query OpenSpec，并同步 JSON/YAML 数据工具规格。
+
+### 🧪 测试
+- 新增 JSONPath helper 单测，覆盖单结果、多结果、无匹配、无效 JSON 和无效表达式。
+- 更新 navigation metadata 测试，锁定数据工具对 JSONPath 的说明。
+
 ## [1.17.0] - 2026-07-01
 
 ### ✨ 新增

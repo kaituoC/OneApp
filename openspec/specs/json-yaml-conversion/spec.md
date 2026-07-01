@@ -2,21 +2,25 @@
 
 ## Purpose
 
-JSON / YAML 工具在既有 JSON 工具基础上增加 YAML 单文档校验与 JSON/YAML 双向转换能力，保留原有入口、快捷键、JSON 操作和输入输出双栏体验。
+数据工具在既有 JSON 工具基础上提供 JSON / YAML 子工具能力，包括 YAML 单文档校验与 JSON/YAML 双向转换，并保留原有 tab key、快捷键、JSON 操作和输入输出双栏体验。
 
 ## Requirements
 
 ### Requirement: JSON YAML tool entry
 
-OneApp SHALL upgrade the existing JSON tool into a JSON / YAML tool while preserving the existing tab key, shortcut position, and JSON operations.
+OneApp SHALL upgrade the existing JSON / YAML tool entry into a Data Tools entry while preserving the existing tab key, shortcut position, and JSON / YAML operations as sub-tools.
 
-#### Scenario: Existing JSON entry becomes JSON YAML
+#### Scenario: Existing JSON entry becomes Data Tools
 - **WHEN** the user views the main navigation
-- **THEN** the existing JSON tool entry is labeled as a JSON / YAML tool and remains reachable from the same shortcut position
+- **THEN** the existing JSON tool entry is labeled as a Data Tools tool and remains reachable from the same shortcut position
 
 #### Scenario: Existing JSON operations remain available
-- **WHEN** the user selects JSON mode
+- **WHEN** the user selects JSON mode inside Data Tools
 - **THEN** the system provides JSON formatting, minifying, validation, unescaping, and JSON to YAML conversion actions
+
+#### Scenario: Existing YAML operations remain available
+- **WHEN** the user selects YAML mode inside Data Tools
+- **THEN** the system provides YAML validation and YAML to JSON conversion actions
 
 ### Requirement: JSON to YAML conversion
 

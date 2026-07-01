@@ -83,7 +83,7 @@
 - 设置页更新检查 UI smoke test
 - Agent 研讨室开始前成本确认 smoke test
 
-### 3. 数据工具合集一期：CSV / JSON / 表格预览
+### 3. 数据工具合集一期：CSV / JSON / 表格预览（已完成：v1.16.0）
 
 - 建议 change name：`data-tools-csv-json`
 - 建议 branch name：`feature/data-tools-csv-json`

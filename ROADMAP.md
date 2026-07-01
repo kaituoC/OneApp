@@ -40,7 +40,7 @@ OneApp 的功能开发规划（backlog）。本文件只记录**待开发**的�
   - 检查更新方案：点击按钮后进入 loading 状态，请求 `kaituoC/OneApp` 最新 GitHub Release，比较当前 `__APP_VERSION__` 与最新 `tag_name`；无新版时提示「已是最新版本」，有新版时展示版本号、发布日期、更新说明摘要，并提供「前往下载 / 打开 Release 页面」入口。
   - 弹窗方案：新增主进程侧统一消息弹窗 IPC，由 `dialog.showMessageBox` 显示信息、确认等消息，并默认注入 `electron/assets/icon.png`（生产环境使用打包后的 `assets/icon.png`）；替换设置页 `alert`，并同步迁移 Agent 研讨室成本提示等 renderer 原生 `confirm` 弹窗。
   - 不做范围：暂不接入 `electron-updater`，不自动下载、不自动安装、不提示重启更新；完整自动更新待应用签名与 Release metadata 发布链路就绪后，另起独立需求评估。
-- [ ] **数据工具合集一期：CSV ⇆ JSON / 表格预览** —— 将现有 JSON / YAML 入口升级为「数据工具」合集，内部保留 JSON / YAML 子工具，并新增 CSV 子工具。
+- [x] **数据工具合集一期：CSV ⇆ JSON / 表格预览** —— 将现有 JSON / YAML 入口升级为「数据工具」合集，内部保留 JSON / YAML 子工具，并新增 CSV 子工具。（v1.16.0 已完成）
   - CSV → JSON：输出对象数组，每行对象以表头作为 key。
   - JSON → CSV：支持对象数组，字段来自所有对象 key 的并集。
   - 表格预览：只读展示解析后的二维表，支持横向滚动。

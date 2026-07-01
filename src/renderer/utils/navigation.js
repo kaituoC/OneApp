@@ -33,9 +33,9 @@ export const NAV_GROUPS = [
     items: [
       {
         key: 'json',
-        label: 'JSON / YAML',
-        description: '格式化、校验、YAML 转换',
-        summary: 'JSON / YAML',
+        label: '数据工具',
+        description: 'JSON / YAML / CSV',
+        summary: 'JSON / CSV',
         shortcut: 2,
         icon: Braces
       },

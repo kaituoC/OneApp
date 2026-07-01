@@ -4,7 +4,7 @@
 
 ## 项目概述
 
-OneApp 是一个基于 Electron + Vue 3 的桌面应用程序，提供开发者工具：统一编辑器（按文件后缀自动切换 Markdown / HTML 模式）、JSON 格式化、文本差异对比、时间转换、正则测试、编码工具合集（Base64 / URL / JWT / Hash / 进制 / Unicode）和 Agent 研讨室（多个本地 AI agent 在只读模式下研讨本地仓库并汇总实现方案）。编辑器侧边栏提供懒加载目录树，可像文件管理器一样浏览目录并打开文件。
+OneApp 是一个基于 Electron + Vue 3 的桌面应用程序，提供开发者工具：统一编辑器（按文件后缀自动切换 Markdown / HTML / 纯文本模式）、JSON / YAML 工具、文本差异对比、文本处理、时间转换、正则测试、编码工具合集（Base64 / URL / JWT / Hash / 进制 / Unicode）和 Agent 研讨室（多个本地 AI agent 在只读模式下研讨本地仓库并汇总实现方案）。编辑器侧边栏提供懒加载目录树，可像文件管理器一样浏览目录并打开文件。
 
 ## 命令
 
@@ -155,12 +155,13 @@ ipcMain.handle('read-file', async (event, filePath) => { ... })
 ### 工具模块
 
 `src/renderer/utils/` 中的核心工具函数为纯 JavaScript，可单元测试：
-- **jsonHelper.js**：formatJSON、minifyJSON、validateJSON、unescapeJSON — 均返回 `{ success, result/error }`，包含行/列错误位置
+- **jsonHelper.js**：formatJSON、minifyJSON、validateJSON、unescapeJSON、jsonToYAML、yamlToJSON、validateYAML — 均返回 `{ success, result/error }`，包含行/列错误位置
 - **diffHelper.js**：diffTextUnified（git 风格）、diffTextSplit（并排对比）、diffStats — 使用 diff-match-patch 库
 - **timeHelper.js**：formatDate、parseDate、timestampToDate、dateToTimestamp — 纯日期/时间戳转换
 - **fileHelper.js**：IPC 封装，包含路径校验
 - **regexHelper.js**：runRegex — 编译正则并执行匹配，返回 `{ success, matches/error }`，含捕获组位置/命名、命中计数与海量匹配截断；被 Web Worker 引用且可独立单元测试
 - **encodeHelper.js**：编码工具合集纯逻辑——base64Encode/Decode（TextEncoder 处理 UTF-8）、urlEncode/Decode、decodeJWT（三段拆分 + exp/iat/nbf 转可读时间，不验签）、hashAll（MD5 via js-md5 + SHA-1/256/512 via crypto.subtle，异步）、convertBase（BigInt 四进制联动）、unicodeEscape/Unescape（`\u` / `\u{}` / HTML 实体三格式），均返回 `{ success, result/error }`
+- **textHelper.js**：文本处理纯逻辑——getTextStats（字符/字数/行数/非空行/UTF-8 字节）、convertTextCase（大小写与命名风格转换）、sortLines、dedupeLines，供 TextTab 与单测复用
 - **agentWorkshopHelper.js**：Agent 研讨室与进程无关的纯逻辑——常量/状态枚举、就绪态与配置派生（readyAgents、三态 agentCardState、moderator 默认与回退、validateStart、主进程侧 validateStartParams）、调用次数估算（2n+1）、三阶段 prompt 构造（含只读/plan-only/不反问约束）、minimal 仓库上下文、研讨记录 Markdown 导出；渲染进程与主进程双向 import、可单测
 - **safeMarkdown.js**：`marked` 解析 + `DOMPurify` 消毒的安全 Markdown 渲染（剥离 `<script>`/`on*`/`javascript:`，外链补 `target=_blank`+`rel=noopener`），供 Agent 研讨室时间线 `v-html` 使用；测试在 jsdom 环境下运行
 
@@ -175,12 +176,13 @@ electron-vite 构建三个独立的 bundle：
 
 ### 核心组件
 
-- **App.vue**：根组件，管理标签页状态（8 个）、主题、字号、最近文件和键盘快捷键（Ctrl+1-8、Ctrl+Tab）
+- **App.vue**：根组件，管理标签页状态（9 个）、主题、字号、最近文件和键盘快捷键（Ctrl+1-9、Ctrl+Tab）
 - **EditorWithLineNumbers.vue**：可复用的 textarea，带同步行号列
 - **EditorTab.vue**：统一编辑器标签，按文件后缀驱动 `mode`（markdown / html），多态预览（`MarkdownPreview` / `HtmlPreview`）、上下文工具栏（markdown 模式额外含导出 HTML/PDF、语法介绍）、滚动同步（markdown 双向 / html 单向），使用 `useEditorFile` composable
 - **composables/useEditorFile.js**：编辑器共用逻辑——打开/新建/保存/快捷键，后缀→mode 派生，Ctrl+S/N 成对绑定/解绑
 - **FileTree.vue / TreeNode.vue**：可复用的懒加载目录树，被 EditorTab 使用，通过 `editableExtensions` prop 按 mode 过滤显示文件类型
 - **DiffTab.vue**：并排/统一差异视图，带滚动同步，使用 diff-match-patch 库
+- **TextTab.vue**：文本处理工具，左侧子工具导航切换统计、大小写/命名风格转换、排序和去重，纯逻辑在 `textHelper.js`
 - **RegexTab.vue**：正则测试器，结构化 `/pattern/flags` 输入、实时匹配、编辑/高亮预览双区、捕获组多色、匹配结果列表（与预览双向 hover 联动）、右侧速查抽屉；匹配经 `useRegexMatcher` 在 Web Worker 中执行
 - **composables/useRegexMatcher.js**：封装正则匹配 Worker 的生命周期——发起匹配、超时（1.5s）`terminate` 兜底、重建待命 Worker、组件卸载释放，杜绝灾难性回溯冻结 UI
 - **workers/regex.worker.js**：子线程内调用 `regexHelper.runRegex` 执行匹配，postMessage 回传位置数组

@@ -6,6 +6,23 @@
 
 ---
 
+## [1.13.0] - 2026-07-01
+
+### ✨ 新增
+- 新增「文本处理」一级工具，位于「文本调试」分组中「文本对比」之后、「正则」之前。
+- 文本处理支持统计字符数、字数、行数、非空行数和 UTF-8 字节数。
+- 新增大小写与命名风格转换：大写、小写、首字母大写、camelCase、PascalCase、snake_case、kebab-case。
+- 新增按行 A-Z / Z-A 排序，以及保留首次出现顺序的按行去重，并展示去重摘要。
+- 数字快捷键扩展到 Ctrl/Cmd+1~9，文本处理为 Ctrl/Cmd+4，后续工具顺延。
+
+### 📚 文档
+- 更新 README 功能说明、快捷键范围和 ROADMAP 状态。
+- 新增 Text Processing OpenSpec，并同步 workbench shell 与 tool surface delta。
+
+### 🧪 测试
+- 新增文本处理 helper 单测，覆盖统计、大小写转换、排序和去重。
+- 更新 navigation metadata 测试，锁定新增工具后的快捷键顺序。
+
 ## [1.12.0] - 2026-06-30
 
 ### ✨ 新增

@@ -35,6 +35,10 @@
           :work-dir="workDir"
           :font-size="editorFontSize"
         />
+        <TextTab
+          v-show="activeTab === 'text'"
+          :font-size="editorFontSize"
+        />
         <TimeTab
           v-show="activeTab === 'time'"
           :font-size="editorFontSize"
@@ -73,6 +77,7 @@ import Header from './components/Header.vue'
 import EditorTab from './components/EditorTab.vue'
 import JsonTab from './components/JsonTab.vue'
 import DiffTab from './components/DiffTab.vue'
+import TextTab from './components/TextTab.vue'
 import TimeTab from './components/TimeTab.vue'
 import RegexTab from './components/RegexTab.vue'
 import EncodeTab from './components/EncodeTab.vue'

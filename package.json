@@ -1,7 +1,7 @@
 {
   "type": "module",
   "name": "oneapp",
-  "version": "1.19.0",
+  "version": "1.20.0",
   "description": "OneApp - 多功能开发工具",
   "author": "kaituoC <changktforever@gmail.com>",
   "repository": {
@@ -37,6 +37,7 @@
     "marked": "^12.0.0",
     "papaparse": "^5.5.4",
     "postcss": "^8.5.10",
+    "qrcode": "^1.5.4",
     "sql-formatter": "^15.8.2",
     "vue": "^3.4.21",
     "yaml": "^2.9.0"

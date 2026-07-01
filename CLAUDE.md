@@ -4,7 +4,7 @@
 
 ## 项目概述
 
-OneApp 是一个基于 Electron + Vue 3 的桌面应用程序，提供开发者工具：统一编辑器（按文件后缀自动切换 Markdown / HTML / 纯文本模式）、数据工具（JSON / YAML / CSV / SQL / XML / JSONPath）、文本差异对比、文本处理、生成器（UUID / 随机密码 / Lorem）、时间与 Cron、正则测试、编码工具合集（Base64 / URL / JWT / Hash / 进制 / Unicode）、Agent 研讨室（多个本地 AI agent 在只读模式下研讨本地仓库并汇总实现方案）和设置页 GitHub Release 更新检查。编辑器侧边栏提供懒加载目录树，可像文件管理器一样浏览目录并打开文件。
+OneApp 是一个基于 Electron + Vue 3 的桌面应用程序，提供开发者工具：统一编辑器（按文件后缀自动切换 Markdown / HTML / 纯文本模式）、数据工具（JSON / YAML / CSV / SQL / XML / JSONPath）、文本差异对比、文本处理、生成器（UUID / 随机密码 / Lorem / 二维码）、时间与 Cron、正则测试、编码工具合集（Base64 / URL / JWT / Hash / 进制 / Unicode）、Agent 研讨室（多个本地 AI agent 在只读模式下研讨本地仓库并汇总实现方案）和设置页 GitHub Release 更新检查。编辑器侧边栏提供懒加载目录树，可像文件管理器一样浏览目录并打开文件。
 
 ## 命令
 
@@ -190,7 +190,7 @@ electron-vite 构建三个独立的 bundle：
 - **FileTree.vue / TreeNode.vue**：可复用的懒加载目录树，被 EditorTab 使用，通过 `editableExtensions` prop 按 mode 过滤显示文件类型
 - **DiffTab.vue**：并排/统一差异视图，带滚动同步，使用 diff-match-patch 库
 - **TextTab.vue**：文本处理工具，左侧子工具导航切换统计、大小写/命名风格转换、排序和去重，纯逻辑在 `textHelper.js`
-- **GeneratorTab.vue**：生成器合集，左侧子工具导航切换 UUID、随机密码和 Lorem，纯逻辑在 `generatorHelper.js`
+- **GeneratorTab.vue**：生成器合集，左侧子工具导航切换 UUID、随机密码、Lorem 和二维码，纯逻辑在 `generatorHelper.js`
 - **RegexTab.vue**：正则测试器，结构化 `/pattern/flags` 输入、实时匹配、编辑/高亮预览双区、捕获组多色、匹配结果列表（与预览双向 hover 联动）、右侧速查抽屉；匹配经 `useRegexMatcher` 在 Web Worker 中执行
 - **composables/useRegexMatcher.js**：封装正则匹配 Worker 的生命周期——发起匹配、超时（1.5s）`terminate` 兜底、重建待命 Worker、组件卸载释放，杜绝灾难性回溯冻结 UI
 - **workers/regex.worker.js**：子线程内调用 `regexHelper.runRegex` 执行匹配，postMessage 回传位置数组

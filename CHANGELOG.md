@@ -6,6 +6,21 @@
 
 ---
 
+## [1.20.0] - 2026-07-01
+
+### ✨ 新增
+- 生成器新增二维码子工具，可将文本或 URL 生成 PNG 二维码预览。
+- 二维码支持尺寸和纠错级别设置，并提供下载 PNG 与复制 PNG 动作。
+- 引入 `qrcode`，在渲染进程本地离线生成二维码 data URL。
+
+### 📚 文档
+- 更新 README、ROADMAP、OpenSpec 和剩余功能队列，标记二维码生成完成。
+- 新增 QR Code Generator OpenSpec，并同步生成器与 workbench shell 规格。
+
+### 🧪 测试
+- 扩展 generator helper 单测，覆盖二维码生成、空输入、尺寸越界和纠错级别错误。
+- 更新 navigation metadata 测试，锁定生成器对二维码能力的说明。
+
 ## [1.19.0] - 2026-07-01
 
 ### ✨ 新增

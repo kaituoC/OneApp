@@ -20,7 +20,7 @@ workbench-shell 定义 OneApp 刷新后的应用壳结构：通过分组左侧 n
 
 #### Scenario: 生成器是生成工具入口
 - **WHEN** 用户查看主导航
-- **THEN** Generator 作为生成工具分组下的入口显示，而不是塞入数据处理或文本调试分组
+- **THEN** Generator 作为生成工具分组下的入口显示，并在说明中体现 UUID、密码、Lorem 和二维码能力
 
 #### Scenario: 选择导航入口
 - **WHEN** 用户选择任意主导航入口

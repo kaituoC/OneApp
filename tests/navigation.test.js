@@ -52,6 +52,7 @@ describe('navigation metadata', () => {
 
     const generator = NAV_ITEMS.find((item) => item.key === 'generator')
     expect(generator.label).toBe('生成器')
+    expect(generator.description).toContain('二维码')
     expect(getNavigationTooltip(generator, 'Cmd')).toContain('Cmd+0')
     expect(getShortcutSortValue(generator.shortcut)).toBe(10)
   })

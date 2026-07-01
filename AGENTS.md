@@ -10,7 +10,7 @@ OneApp 是一个基于 Electron + Vue 3 的桌面开发工具应用，集成：
 - 数据工具：JSON 格式化、压缩、校验、反转义、JSONPath 查询，JSON ⇄ YAML 转换与 YAML 单文档校验，CSV ⇄ JSON 转换与 CSV 表格预览，SQL / XML 格式化与压缩
 - 文本对比：并排 / 统一 diff，滚动同步与差异统计
 - 文本处理：统计、大小写/命名风格转换、按行排序、按行去重
-- 生成器：UUID v4 单个/批量生成、随机密码、Lorem 占位文本
+- 生成器：UUID v4 单个/批量生成、随机密码、Lorem 占位文本、二维码 PNG 生成
 - 时间工具：当前时间、时间戳互转、多格式输出、标准 5 位 Cron 表达式解释
 - 正则测试器：`/pattern/flags` 输入、Web Worker 实时匹配、捕获组高亮、速查抽屉
 - 编码工具合集：Base64、URL、JWT、Hash、进制、Unicode
@@ -233,7 +233,7 @@ Windows 暂不支持 Agent Workshop 的本地 CLI 检测与进程组管理，渲
 - `TextTab.vue`：文本处理工具，左侧子工具导航，支持统计、转换、排序和去重。
 - `RegexTab.vue`：正则测试器，匹配由 `useRegexMatcher` 和 `workers/regex.worker.js` 执行。
 - `EncodeTab.vue`：编码工具合集，左侧子工具导航。
-- `GeneratorTab.vue`：生成器合集，左侧子工具导航，支持 UUID、随机密码和 Lorem。
+- `GeneratorTab.vue`：生成器合集，左侧子工具导航，支持 UUID、随机密码、Lorem 和二维码。
 - `TimeTab.vue`：时间、时间戳转换与 Cron 表达式解释。
 - `AgentWorkshopTab.vue`：Agent 研讨室，订阅主进程事件流并渲染配置、进度和 Markdown 时间线。
 - `SettingsTab.vue`：工作目录、主题、字号、最近文件、快捷键、关于信息和 GitHub Release 更新检查。

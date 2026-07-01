@@ -210,7 +210,7 @@
 - Cron helper 单测
 - 时间工具 UI smoke test
 
-### 7. 生成器增强：二维码生成
+### 7. 生成器增强：二维码生成（已完成：v1.20.0）
 
 - 建议 change name：`qr-code-generator`
 - 建议 branch name：`feature/qr-code-generator`

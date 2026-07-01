@@ -1,5 +1,10 @@
+import QRCode from 'qrcode'
+
 const UUID_BATCH_LIMIT = 1000
 const PASSWORD_MAX_LENGTH = 128
+const QR_MIN_SIZE = 128
+const QR_MAX_SIZE = 1024
+const QR_ERROR_LEVELS = new Set(['L', 'M', 'Q', 'H'])
 const LOREM_LIMITS = {
   words: 1000,
   sentences: 200,
@@ -163,4 +168,36 @@ export function generateLorem(options = {}) {
     }).join(' ')
   })
   return success(paragraphs.join('\n\n'), `已生成 ${count.toLocaleString()} 个段落`)
+}
+
+export async function generateQrCode(options = {}) {
+  const text = String(options.text || '').trim()
+  if (!text) return failure('二维码内容不能为空')
+
+  const size = normalizeInteger(options.size, 256)
+  if (size < QR_MIN_SIZE || size > QR_MAX_SIZE) {
+    return failure(`二维码尺寸需在 ${QR_MIN_SIZE}-${QR_MAX_SIZE} 之间`)
+  }
+
+  const errorCorrectionLevel = String(options.errorCorrectionLevel || 'M').toUpperCase()
+  if (!QR_ERROR_LEVELS.has(errorCorrectionLevel)) {
+    return failure('纠错级别必须是 L、M、Q 或 H')
+  }
+
+  try {
+    const dataUrl = await QRCode.toDataURL(text, {
+      errorCorrectionLevel,
+      margin: 2,
+      width: size,
+      type: 'image/png'
+    })
+    return success(dataUrl, `已生成 ${size}x${size} 二维码`, {
+      dataUrl,
+      text,
+      size,
+      errorCorrectionLevel
+    })
+  } catch (error) {
+    return failure(`二维码生成失败：${error.message || String(error)}`)
+  }
 }

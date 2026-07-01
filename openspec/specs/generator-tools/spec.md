@@ -2,7 +2,7 @@
 
 ## Purpose
 
-generator-tools 定义 OneApp 生成器合集：在“生成工具”分组下提供 UUID v4、随机密码和 Lorem 占位文本等本地离线生成能力，并使用共享 tool surface 呈现配置、输出和复制反馈。
+generator-tools 定义 OneApp 生成器合集：在“生成工具”分组下提供 UUID v4、随机密码、Lorem 占位文本和二维码等本地离线生成能力，并使用共享 tool surface 呈现配置、输出和复制反馈。
 
 ## Requirements
 
@@ -15,7 +15,7 @@ OneApp SHALL provide a Generator tool entry under a dedicated generation group f
 
 #### Scenario: 进入生成器
 - **WHEN** 用户选择“生成器”入口
-- **THEN** 主内容区显示 UUID、随机密码和 Lorem 子工具
+- **THEN** 主内容区显示 UUID、随机密码、Lorem 和二维码子工具
 
 ### Requirement: UUID v4 生成
 Generator Tools SHALL generate RFC 4122 compatible UUID v4 values locally, supporting single and batch output.
@@ -74,7 +74,7 @@ Generator Tools SHALL allow users to copy generated output using the shared copy
 - **THEN** 系统不复制空内容，并保持可理解的空态或状态提示
 
 ### Requirement: 本地离线生成
-Generator Tools SHALL generate UUID, password, and Lorem outputs entirely in the renderer without network requests.
+Generator Tools SHALL generate UUID, password, Lorem, and QR code outputs entirely in the renderer without network requests.
 
 #### Scenario: 生成时不访问网络
 - **WHEN** 用户使用任意生成器子工具

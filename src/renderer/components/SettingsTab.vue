@@ -63,7 +63,7 @@
           <tr><td>{{ isMac ? 'Cmd' : 'Ctrl' }}+R / F5</td><td>刷新页面</td></tr>
           <tr><td>{{ isMac ? 'Cmd' : 'Ctrl' }}+Tab</td><td>切换下一个标签</td></tr>
           <tr><td>{{ isMac ? 'Cmd' : 'Ctrl' }}+Shift+Tab</td><td>切换上一个标签</td></tr>
-          <tr><td>{{ isMac ? 'Cmd' : 'Ctrl' }}+1~8</td><td>切换到指定工具</td></tr>
+          <tr><td>{{ isMac ? 'Cmd' : 'Ctrl' }}+1~9 / 0</td><td>切换到指定工具</td></tr>
           <tr><td>{{ isMac ? 'Cmd+Option+I' : 'Ctrl+Shift+I' }} / F12</td><td>打开/关闭调试工具</td></tr>
         </tbody>
       </table>

@@ -4,7 +4,7 @@
 
 ## 项目概述
 
-OneApp 是一个基于 Electron + Vue 3 的桌面应用程序，提供开发者工具：统一编辑器（按文件后缀自动切换 Markdown / HTML / 纯文本模式）、JSON / YAML 工具、文本差异对比、文本处理、时间转换、正则测试、编码工具合集（Base64 / URL / JWT / Hash / 进制 / Unicode）和 Agent 研讨室（多个本地 AI agent 在只读模式下研讨本地仓库并汇总实现方案）。编辑器侧边栏提供懒加载目录树，可像文件管理器一样浏览目录并打开文件。
+OneApp 是一个基于 Electron + Vue 3 的桌面应用程序，提供开发者工具：统一编辑器（按文件后缀自动切换 Markdown / HTML / 纯文本模式）、JSON / YAML 工具、文本差异对比、文本处理、生成器（UUID / 随机密码 / Lorem）、时间转换、正则测试、编码工具合集（Base64 / URL / JWT / Hash / 进制 / Unicode）和 Agent 研讨室（多个本地 AI agent 在只读模式下研讨本地仓库并汇总实现方案）。编辑器侧边栏提供懒加载目录树，可像文件管理器一样浏览目录并打开文件。
 
 ## 命令
 
@@ -47,7 +47,7 @@ npm test -- tests/jsonHelper.test.js  # 运行单个测试文件
 
 ### 需求开发全流程
 
-每个需求一条分支。完整流程是**规格驱动开发（SDD），由 OpenSpec 工具全程串起**；工程顺序为：explore → 建分支 → propose → apply → archive。按改动大小**分级**执行：新功能/较大需求走完整流程，小修复/文档类走简化流程。标 **⚠️** 的步骤是**确认卡点，必须停下来征得用户同意后才能继续**；外发动作（push / 创建 PR / 合并 PR / 打 tag / 发布）一律不自作主张。
+每个需求一条分支。完整流程是**规格驱动开发（SDD），由 OpenSpec 工具全程串起**；工程顺序为：explore → 建分支 → propose → apply → archive。按改动大小**分级**执行：新功能/较大需求走完整流程，小修复/文档类走简化流程。非自动推进模式下，外发动作（push / 创建 PR / 合并 PR / 打 tag / 发布）仍需用户明确请求；自动推进模式下，最终验证通过后可直接执行本地提交、push、创建 PR、合并 PR、打 tag 和发布 Release，但执行每个外发动作时必须明确告知用户。
 
 **完整流程（新功能 / 较大需求）：**
 
@@ -61,17 +61,17 @@ npm test -- tests/jsonHelper.test.js  # 运行单个测试文件
 8. **文档收尾** — 同步 README / CLAUDE.md / AGENTS.md 等项目文档；不要在这里重复维护发布版本记录
 9. **版本与 CHANGELOG** — 所有改动就绪后，根据语义化版本升级 `package.json` 版本号，并更新 CHANGELOG
 10. **最终验证** — 版本、CHANGELOG、归档和文档都就绪后，再跑一次 `npm test` + `npm run build`
-11. **提交** — 仅在用户明确要求时提交；按主题分组 commit（feat / fix / test / docs / chore），message 末尾按规范署名
-12. **Push + PR ⚠️** — 用户确认后 `git push` 并 `gh pr create`；**不擅自合并 PR**
-13. **Release ⚠️（仅发版时）** — PR 合并后，以下步骤作为**完整的发布序列**一次性执行，⚠️ 仅需用户在本步骤启动前一次性确认，步骤内部无需再次询问：
+11. **提交** — 按主题分组 commit（feat / fix / test / docs / chore），message 末尾按规范署名；自动推进模式下最终验证通过后可直接本地提交，执行前需告知用户
+12. **Push + PR + 合并** — 自动推进模式下最终验证通过后可直接 `git push`、`gh pr create` 并合并 PR；非自动推进模式下需用户明确请求。每个外发动作执行前需告知用户
+13. **Release（仅发版时）** — PR 合并后，以下步骤作为**完整的发布序列**一次性执行；自动推进模式下无需再次确认，但执行打 tag、推送 tag、等待 CI、补传 Intel 包等动作前需告知用户：
     1. 确认 `package.json` 版本号与 CHANGELOG 就绪；正式打 tag 前可用 `workflow_dispatch` 手动触发验证 CI 三平台构建（仅 build、不创建 Release）。
     2. 打 `vX.Y.Z` tag 并 `git push origin vX.Y.Z` → GitHub Actions（`.github/workflows/release.yml`）自动构建 **mac arm64 / Windows / Linux** 三平台并创建 GitHub Release（notes 取自 CHANGELOG 对应版本段）。tag 与 package.json 版本不一致时 CI 会失败。
     3. **mac Intel(x64) 包补传（必做，无需额外确认）**：先用 `uname -m` 自检当前机器架构（x86_64 = Intel，arm64 = Apple Silicon）；若为 Intel，在 CI 跑包期间并行执行 `npm run dist:mac` 本地打包，CI 完成/Release 创建后立即执行 `gh release upload vX.Y.Z dist/OneApp-X.Y.Z-mac-x64.dmg dist/OneApp-X.Y.Z-mac-x64.zip` 补传。架构判断由 Claude 自行完成，不询问用户。
     - **不再**本地手动 `npm run dist` 全量打包 + `gh release create`（发布由 CI 负责，本地仅补 Intel 包）。
 
-**简化流程（小修复 / 文档类）：** 跳过探索、提案、归档；保留：建分支 → 实现 → 自测/校验 → 文档（按需）→ 版本与 CHANGELOG（仅影响功能或发布时）→ 最终验证 → 提交 → Push + PR ⚠️。
+**简化流程（小修复 / 文档类）：** 跳过探索、提案、归档；保留：建分支 → 实现 → 自测/校验 → 文档（按需）→ 版本与 CHANGELOG（仅影响功能或发布时）→ 最终验证 → 提交 → Push + PR。
 
-**确认卡点（⚠️）汇总：** `git push` / 创建 PR、打 tag / 启动发布序列（第 13 步整体）之前必须先征得用户同意；版本号升级不是独立确认卡点，在 push 前自动完成；发布序列内部的子步骤（补传 Intel 包、等待 CI）不再单独确认；任何情况下都不擅自合并 PR。
+**确认卡点汇总：** 自动推进模式下，本地提交、`git push`、创建 PR、合并 PR、打 tag 和发布 Release 不再需要人工确认，但必须在执行动作时明确告知用户，并且必须建立在最终验证通过的基础上；非自动推进模式下，这些外发动作仍需用户明确请求。版本号升级不是独立确认卡点，在 push 前自动完成。
 
 ### 自动推进模式
 
@@ -84,7 +84,7 @@ npm test -- tests/jsonHelper.test.js  # 运行单个测试文件
 - 预计流程类型：完整流程或简化流程
 - 验收标准与必须执行的验证命令
 - 版本影响预估：不升版本、patch、minor 或 major
-- 是否允许本地自动提交；若未明确允许，则本地 commit 仍需用户单独确认
+- 自动推进将包含本地提交、push、PR、合并和发布 Release；执行这些动作前 agent 必须明确告知用户
 
 自动推进模式下，agent 可以在无需再次询问的情况下执行本地动作：
 
@@ -96,7 +96,9 @@ npm test -- tests/jsonHelper.test.js  # 运行单个测试文件
 - 执行 `/opsx:archive`，同步主 specs 并归档 change
 - 更新项目文档、版本号和 `CHANGELOG.md`
 - 在所有收尾完成后执行最终验证
-- 仅在用户已授权本地自动提交时创建本地 commit
+- 最终验证通过后创建本地 commit
+- 告知用户后执行 `git push`、创建 PR、合并 PR
+- 发版需求在 PR 合并后，告知用户并执行 tag、推送 tag、等待 CI Release 和必要的 mac Intel(x64) 包补传
 
 自动推进模式下，遇到以下情况必须暂停并请求用户介入：
 
@@ -108,11 +110,11 @@ npm test -- tests/jsonHelper.test.js  # 运行单个测试文件
 - 需要升 major version，或版本影响和 explore 阶段预估不一致
 - 需要新增/变更 CI、发布流程、权限、安全边界或外部服务配置
 - 需要访问敏感凭证、付费资源、外部账号或用户本机隐私数据
-- 需要执行 `git push`、创建 PR、合并 PR、打 tag、发布 Release、删除分支、丢弃改动或其他外发/破坏性动作
+- 需要删除分支、丢弃改动、覆盖远端历史、强推、改写 tag 或执行其他破坏性动作
 
 自动推进的停止条件：
 
-- 成功：本地实现、归档、版本/CHANGELOG、最终验证完成；如已授权本地提交，则 commit 完成，然后等待用户确认 push/PR。
+- 成功：本地实现、归档、版本/CHANGELOG、最终验证、commit、push、PR、合并和 Release（如需发版）全部完成。
 - 受阻：出现必须用户介入的情况；agent 汇报当前状态、已完成事项、阻塞原因和可选方案。
 - 失败：验证无法通过或方案不可行；agent 保留现场，不回滚用户或未知来源改动，并给出下一步建议。
 
@@ -176,13 +178,14 @@ electron-vite 构建三个独立的 bundle：
 
 ### 核心组件
 
-- **App.vue**：根组件，管理标签页状态（9 个）、主题、字号、最近文件和键盘快捷键（Ctrl+1-9、Ctrl+Tab）
+- **App.vue**：根组件，管理标签页状态、主题、字号、最近文件和键盘快捷键（Ctrl+1-9/0、Ctrl+Tab）
 - **EditorWithLineNumbers.vue**：可复用的 textarea，带同步行号列
 - **EditorTab.vue**：统一编辑器标签，按文件后缀驱动 `mode`（markdown / html），多态预览（`MarkdownPreview` / `HtmlPreview`）、上下文工具栏（markdown 模式额外含导出 HTML/PDF、语法介绍）、滚动同步（markdown 双向 / html 单向），使用 `useEditorFile` composable
 - **composables/useEditorFile.js**：编辑器共用逻辑——打开/新建/保存/快捷键，后缀→mode 派生，Ctrl+S/N 成对绑定/解绑
 - **FileTree.vue / TreeNode.vue**：可复用的懒加载目录树，被 EditorTab 使用，通过 `editableExtensions` prop 按 mode 过滤显示文件类型
 - **DiffTab.vue**：并排/统一差异视图，带滚动同步，使用 diff-match-patch 库
 - **TextTab.vue**：文本处理工具，左侧子工具导航切换统计、大小写/命名风格转换、排序和去重，纯逻辑在 `textHelper.js`
+- **GeneratorTab.vue**：生成器合集，左侧子工具导航切换 UUID、随机密码和 Lorem，纯逻辑在 `generatorHelper.js`
 - **RegexTab.vue**：正则测试器，结构化 `/pattern/flags` 输入、实时匹配、编辑/高亮预览双区、捕获组多色、匹配结果列表（与预览双向 hover 联动）、右侧速查抽屉；匹配经 `useRegexMatcher` 在 Web Worker 中执行
 - **composables/useRegexMatcher.js**：封装正则匹配 Worker 的生命周期——发起匹配、超时（1.5s）`terminate` 兜底、重建待命 Worker、组件卸载释放，杜绝灾难性回溯冻结 UI
 - **workers/regex.worker.js**：子线程内调用 `regexHelper.runRegex` 执行匹配，postMessage 回传位置数组

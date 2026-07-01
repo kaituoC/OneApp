@@ -51,6 +51,10 @@
           v-show="activeTab === 'encode'"
           :font-size="editorFontSize"
         />
+        <GeneratorTab
+          v-show="activeTab === 'generator'"
+          :font-size="editorFontSize"
+        />
         <AgentWorkshopTab
           v-show="activeTab === 'agent'"
           :is-active="activeTab === 'agent'"
@@ -81,6 +85,7 @@ import TextTab from './components/TextTab.vue'
 import TimeTab from './components/TimeTab.vue'
 import RegexTab from './components/RegexTab.vue'
 import EncodeTab from './components/EncodeTab.vue'
+import GeneratorTab from './components/GeneratorTab.vue'
 import AgentWorkshopTab from './components/AgentWorkshopTab.vue'
 import SettingsTab from './components/SettingsTab.vue'
 import StatusBar from './components/StatusBar.vue'
@@ -144,9 +149,11 @@ function onFileOpen(filePath) {
 function onKeydown(e) {
   const primary = e.ctrlKey || e.metaKey
   const num = Number(e.key)
-  if (primary && num >= 1 && num <= TAB_KEYS.length) {
+  if (primary && ((num >= 1 && num <= 9) || e.key === '0')) {
+    const index = e.key === '0' ? 9 : num - 1
+    if (!TAB_KEYS[index]) return
     e.preventDefault()
-    activeTab.value = TAB_KEYS[num - 1]
+    activeTab.value = TAB_KEYS[index]
   }
   if (primary && e.key === 'Tab') {
     e.preventDefault()

@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { NAV_ITEMS, TAB_KEYS, getNavigationTooltip } from '../src/renderer/utils/navigation.js'
+import {
+  NAV_GROUPS,
+  NAV_ITEMS,
+  TAB_KEYS,
+  getNavigationTooltip,
+  getShortcutSortValue
+} from '../src/renderer/utils/navigation.js'
 
 describe('navigation metadata', () => {
   it('每个导航项都有适合侧栏展示的短说明', () => {
@@ -17,7 +23,7 @@ describe('navigation metadata', () => {
     expect(getNavigationTooltip(editor, 'Cmd')).toContain('Cmd+1')
   })
 
-  it('文本处理加入数字快捷键顺序', () => {
+  it('数字快捷键顺序保留 1-9 并将 0 作为第 10 个入口', () => {
     expect(TAB_KEYS).toEqual([
       'editor',
       'json',
@@ -27,11 +33,24 @@ describe('navigation metadata', () => {
       'regex',
       'encode',
       'agent',
-      'settings'
+      'settings',
+      'generator'
     ])
 
     const text = NAV_ITEMS.find((item) => item.key === 'text')
     expect(text.label).toBe('文本处理')
     expect(getNavigationTooltip(text, 'Cmd')).toContain('Cmd+4')
+
+    const generator = NAV_ITEMS.find((item) => item.key === 'generator')
+    expect(generator.label).toBe('生成器')
+    expect(getNavigationTooltip(generator, 'Cmd')).toContain('Cmd+0')
+    expect(getShortcutSortValue(generator.shortcut)).toBe(10)
+  })
+
+  it('生成器位于生成工具分组', () => {
+    const group = NAV_GROUPS.find((item) => item.key === 'generate')
+
+    expect(group.label).toBe('生成工具')
+    expect(group.items.map((item) => item.key)).toEqual(['generator'])
   })
 })

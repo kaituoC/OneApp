@@ -8,7 +8,8 @@ import {
   Pilcrow,
   Regex,
   Settings,
-  SquareCode
+  SquareCode,
+  WandSparkles
 } from 'lucide-vue-next'
 
 export const NAV_GROUPS = [
@@ -87,6 +88,20 @@ export const NAV_GROUPS = [
     ]
   },
   {
+    key: 'generate',
+    label: '生成工具',
+    items: [
+      {
+        key: 'generator',
+        label: '生成器',
+        description: 'UUID / 密码 / Lorem',
+        summary: 'UUID / 密码',
+        shortcut: 0,
+        icon: WandSparkles
+      }
+    ]
+  },
+  {
     key: 'ai',
     label: 'AI',
     items: [
@@ -119,9 +134,13 @@ export const NAV_GROUPS = [
 
 export const NAV_ITEMS = NAV_GROUPS.flatMap((group) => group.items)
 
+export function getShortcutSortValue(shortcut) {
+  return shortcut === 0 ? 10 : shortcut
+}
+
 export const TAB_KEYS = NAV_ITEMS
   .slice()
-  .sort((a, b) => a.shortcut - b.shortcut)
+  .sort((a, b) => getShortcutSortValue(a.shortcut) - getShortcutSortValue(b.shortcut))
   .map((item) => item.key)
 
 export const TAB_BY_KEY = Object.fromEntries(NAV_ITEMS.map((item) => [item.key, item]))

@@ -353,8 +353,16 @@ async function start() {
   if (running.value || starting.value) return
   if (!startValidation.value.ok) return
   if (!config.costNoticeAccepted) {
-    const ok = window.confirm('研讨将真实调用本地 Codex / ClaudeCode CLI，可能消耗对应服务用量。是否继续？')
-    if (!ok) return
+    const res = await window.electronAPI.showMessageBox({
+      type: 'warning',
+      title: '确认开始研讨',
+      message: '研讨将调用本地 AI agent',
+      detail: '研讨将真实调用本地 Codex / ClaudeCode CLI，可能消耗对应服务用量。是否继续？',
+      buttons: ['继续', '取消'],
+      defaultId: 0,
+      cancelId: 1
+    })
+    if (res?.response !== 0) return
     config.costNoticeAccepted = true
     persist()
   }

@@ -15,6 +15,7 @@ OneApp 是一个基于 Electron + Vue 3 的桌面开发工具应用，集成：
 - 正则测试器：`/pattern/flags` 输入、Web Worker 实时匹配、捕获组高亮、速查抽屉
 - 编码工具合集：Base64、URL、JWT、Hash、进制、Unicode
 - Agent 研讨室：多个本地 AI agent 以只读方式研讨本地仓库、交叉评审并输出实现方案
+- 设置与更新：设置页可检查 GitHub Releases 最新版本，应用级消息统一通过带 OneApp 图标的系统弹窗展示
 
 ## 常用命令
 
@@ -196,6 +197,8 @@ Agent 研讨室额外使用事件型 IPC：主进程通过 `webContents.send('ag
 - `orchestrator.js`：三阶段研讨流程状态机，依赖注入，便于单测
 - `ipc.js`：IPC handlers 与事件发射，由 `main.js` 注册
 
+`electron/appDialogs.js`：应用级消息弹窗图标路径解析、GitHub latest Release 检查与更新结果归一化支撑逻辑；`main.js` 通过 IPC 暴露给 preload。
+
 Windows 暂不支持 Agent Workshop 的本地 CLI 检测与进程组管理，渲染层通过 `AgentWorkshopTab.vue` 显示「暂不支持」。
 
 ### 渲染工具函数
@@ -209,6 +212,7 @@ Windows 暂不支持 Agent Workshop 的本地 CLI 检测与进程组管理，渲
 - `regexHelper.js`：正则编译和匹配，返回捕获组、位置、截断信息
 - `encodeHelper.js`：Base64、URL、JWT、Hash、进制、Unicode 纯逻辑
 - `textHelper.js`：文本统计、大小写/命名风格转换、按行排序、按行去重纯逻辑
+- `updateHelper.js`：语义化版本解析/比较、GitHub Release 响应归一化和更新说明摘要
 - `agentWorkshopHelper.js`：Agent Workshop 进程无关逻辑、配置校验、prompt 构造、Markdown 导出
 - `safeMarkdown.js`：`marked` + `DOMPurify` 安全渲染，供 Agent Workshop 时间线 `v-html` 使用
 
@@ -229,7 +233,7 @@ Windows 暂不支持 Agent Workshop 的本地 CLI 检测与进程组管理，渲
 - `GeneratorTab.vue`：生成器合集，左侧子工具导航，支持 UUID、随机密码和 Lorem。
 - `TimeTab.vue`：时间与时间戳转换。
 - `AgentWorkshopTab.vue`：Agent 研讨室，订阅主进程事件流并渲染配置、进度和 Markdown 时间线。
-- `SettingsTab.vue`：工作目录、主题、字号、最近文件、快捷键和关于信息。
+- `SettingsTab.vue`：工作目录、主题、字号、最近文件、快捷键、关于信息和 GitHub Release 更新检查。
 
 ## 构建系统
 

@@ -78,14 +78,16 @@
           <span class="link" @click="openGitHub">GitHub: kaituoC/OneApp</span>
           - 如果觉得有用，欢迎 Star 支持
         </p>
-        <button class="check-update" @click="checkUpdate">检查更新</button>
+        <button class="check-update" @click="checkUpdate" :disabled="checkingUpdate">
+          {{ checkingUpdate ? '检查中...' : '检查更新' }}
+        </button>
       </div>
     </section>
   </div>
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { chooseDirectory } from '../utils/fileHelper.js'
 import { IS_MAC } from '../utils/navigation.js'
 
@@ -103,6 +105,7 @@ const props = defineProps({
 defineEmits(['clear-recent'])
 
 const isMac = IS_MAC
+const checkingUpdate = ref(false)
 
 const recentFileItems = computed(() => props.recentFiles.map((path) => {
   const parts = String(path).split(/[\\/]/)
@@ -116,8 +119,64 @@ async function chooseDir() {
   if (dir) workDir.value = dir
 }
 
-function checkUpdate() {
-  alert(`当前版本 v${version}，已是最新版本`)
+function formatReleaseDate(value) {
+  if (!value) return '未知'
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return '未知'
+  return date.toLocaleDateString('zh-CN', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  })
+}
+
+async function checkUpdate() {
+  if (checkingUpdate.value) return
+
+  checkingUpdate.value = true
+  try {
+    const result = await window.electronAPI.checkForUpdates(version)
+    if (!result?.success) {
+      await window.electronAPI.showMessageBox({
+        type: 'error',
+        title: '检查更新失败',
+        message: '检查更新失败',
+        detail: result?.error || '暂时无法获取最新版本信息，请稍后再试。'
+      })
+      return
+    }
+
+    if (!result.updateAvailable) {
+      await window.electronAPI.showMessageBox({
+        type: 'info',
+        title: '检查更新',
+        message: '已是最新版本',
+        detail: `当前版本 v${result.currentVersion} 已是最新版本。`
+      })
+      return
+    }
+
+    const response = await window.electronAPI.showMessageBox({
+      type: 'info',
+      title: '发现新版本',
+      message: `发现新版本 v${result.latestVersion}`,
+      detail: [
+        `当前版本：v${result.currentVersion}`,
+        `发布日期：${formatReleaseDate(result.publishedAt)}`,
+        '',
+        result.notesSummary
+      ].join('\n'),
+      buttons: ['前往下载', '稍后'],
+      defaultId: 0,
+      cancelId: 1
+    })
+
+    if (response?.response === 0 && result.releaseUrl) {
+      window.electronAPI.openExternal(result.releaseUrl)
+    }
+  } finally {
+    checkingUpdate.value = false
+  }
 }
 
 function openGitHub() {

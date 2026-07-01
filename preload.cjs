@@ -13,6 +13,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getHomeDir: () => process.env.HOME || process.env.USERPROFILE,
   exportPDF: (htmlContent, defaultPath) => ipcRenderer.invoke('export-pdf', htmlContent, defaultPath),
   openExternal: (url) => shell.openExternal(url),
+  showMessageBox: (options) => ipcRenderer.invoke('show-message-box', options),
+  checkForUpdates: (currentVersion) => ipcRenderer.invoke('check-for-updates', currentVersion),
   toggleDevTools: () => ipcRenderer.invoke('toggle-devtools'),
 
   // Agent 研讨室：窄接口，不暴露通用命令执行

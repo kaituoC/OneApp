@@ -8,7 +8,7 @@
 
 ### Requirement: JSON YAML tool entry
 
-OneApp SHALL upgrade the existing JSON / YAML tool entry into a Data Tools entry while preserving the existing tab key, shortcut position, and JSON / YAML operations as sub-tools.
+OneApp SHALL upgrade the existing JSON / YAML tool entry into a Data Tools entry while preserving the existing tab key, shortcut position, JSON / YAML operations, and JSONPath query access as JSON-related sub-tool capabilities.
 
 #### Scenario: Existing JSON entry becomes Data Tools
 - **WHEN** the user views the main navigation
@@ -16,7 +16,7 @@ OneApp SHALL upgrade the existing JSON / YAML tool entry into a Data Tools entry
 
 #### Scenario: Existing JSON operations remain available
 - **WHEN** the user selects JSON mode inside Data Tools
-- **THEN** the system provides JSON formatting, minifying, validation, unescaping, and JSON to YAML conversion actions
+- **THEN** the system provides JSON formatting, minifying, validation, unescaping, JSON to YAML conversion, and JSONPath query actions
 
 #### Scenario: Existing YAML operations remain available
 - **WHEN** the user selects YAML mode inside Data Tools

@@ -1,6 +1,6 @@
 # OneApp
 
-多功能开发工具桌面应用，集成统一编辑器（Markdown / HTML 自动识别）、数据工具（JSON / YAML / CSV / SQL / XML）、文本对比、文本处理、生成器、时间转换、正则测试、编码工具合集、Agent 研讨室和应用级更新检查。
+多功能开发工具桌面应用，集成统一编辑器（Markdown / HTML 自动识别）、数据工具（JSON / YAML / CSV / SQL / XML / JSONPath）、文本对比、文本处理、生成器、时间转换、正则测试、编码工具合集、Agent 研讨室和应用级更新检查。
 
 ## 界面预览
 
@@ -30,6 +30,7 @@
 - JSON 压缩（最小化）
 - JSON 验证（语法检查，定位错误行/列）
 - JSON 反转义处理
+- JSONPath 查询，展示匹配数量、结果路径和值摘要，并输出完整匹配结果 JSON
 - JSON → YAML 转换，输出易读的 block-style YAML
 - YAML → JSON 转换，输出格式化 JSON
 - YAML 单文档校验，多文档输入会明确提示暂不支持

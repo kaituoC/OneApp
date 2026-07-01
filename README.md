@@ -1,12 +1,12 @@
 # OneApp
 
-多功能开发工具桌面应用，集成统一编辑器（Markdown / HTML 自动识别）、JSON / YAML 工具、文本对比、文本处理、生成器、时间转换、正则测试、编码工具合集、Agent 研讨室和应用级更新检查。
+多功能开发工具桌面应用，集成统一编辑器（Markdown / HTML 自动识别）、数据工具（JSON / YAML / CSV）、文本对比、文本处理、生成器、时间转换、正则测试、编码工具合集、Agent 研讨室和应用级更新检查。
 
 ## 界面预览
 
-| 统一编辑器 | JSON / YAML |
+| 统一编辑器 | 数据工具 |
 |------------|-----------|
-| ![统一编辑器](docs/screenshots/editor.png) | ![JSON / YAML](docs/screenshots/json.png) |
+| ![统一编辑器](docs/screenshots/editor.png) | ![数据工具](docs/screenshots/json.png) |
 
 | 文本对比 | 时间工具 |
 |----------|----------|
@@ -25,7 +25,7 @@
 - **系统文件对话框**：可打开工作目录外的任意 `.md` / `.html` / `.htm` 文件
 - 编辑器行号显示，可分别隐藏文件列表、编辑器或预览区
 
-### JSON / YAML
+### 数据工具
 - JSON 格式化（美化）
 - JSON 压缩（最小化）
 - JSON 验证（语法检查，定位错误行/列）
@@ -33,6 +33,9 @@
 - JSON → YAML 转换，输出易读的 block-style YAML
 - YAML → JSON 转换，输出格式化 JSON
 - YAML 单文档校验，多文档输入会明确提示暂不支持
+- CSV → JSON 转换，按表头输出对象数组
+- JSON → CSV 转换，支持对象数组字段并集
+- CSV 表格预览，只读展示二维表并支持横向滚动
 - 语法高亮显示
 
 ### 文本对比
@@ -219,6 +222,7 @@ npm run dist
 - electron-vite 构建工具
 - marked (Markdown 解析)
 - yaml (YAML 解析与序列化)
+- papaparse (CSV 解析与序列化)
 - diff-match-patch (文本对比)
 - CodeMirror 6 (JSON 编辑器)
 - js-md5 (MD5 计算，SHA 系列走原生 Web Crypto)

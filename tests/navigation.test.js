@@ -37,6 +37,10 @@ describe('navigation metadata', () => {
       'generator'
     ])
 
+    const data = NAV_ITEMS.find((item) => item.key === 'json')
+    expect(data.label).toBe('数据工具')
+    expect(getNavigationTooltip(data, 'Cmd')).toContain('Cmd+2')
+
     const text = NAV_ITEMS.find((item) => item.key === 'text')
     expect(text.label).toBe('文本处理')
     expect(getNavigationTooltip(text, 'Cmd')).toContain('Cmd+4')

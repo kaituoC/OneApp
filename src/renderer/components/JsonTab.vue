@@ -4,6 +4,7 @@
       <div class="mode-toggle tool-segmented" aria-label="数据格式">
         <button :class="{ active: mode === 'json' }" @click="setMode('json')">JSON</button>
         <button :class="{ active: mode === 'yaml' }" @click="setMode('yaml')">YAML</button>
+        <button :class="{ active: mode === 'csv' }" @click="setMode('csv')">CSV</button>
       </div>
       <div class="toolbar-separator"></div>
       <template v-if="mode === 'json'">
@@ -14,8 +15,15 @@
         <button @click="doJsonToYaml">转 YAML</button>
       </template>
       <template v-else>
+        <template v-if="mode === 'yaml'">
         <button class="primary" @click="doYamlToJson">转 JSON</button>
         <button @click="doValidateYaml">校验</button>
+        </template>
+        <template v-else>
+          <button class="primary" @click="doCsvToJson">CSV 转 JSON</button>
+          <button @click="doJsonToCsv">JSON 转 CSV</button>
+          <button @click="doPreviewCsv">表格预览</button>
+        </template>
       </template>
       <span class="toolbar-spacer"></span>
       <button @click="copyResult">复制结果</button>
@@ -41,7 +49,22 @@
             {{ hasError ? '错误' : (output ? '就绪' : '待处理') }}
           </span>
         </div>
+        <div v-if="tablePreview" class="csv-preview-wrap">
+          <table class="csv-preview-table">
+            <thead>
+              <tr>
+                <th v-for="(header, headerIndex) in tablePreview.headers" :key="headerIndex">{{ header }}</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="(row, rowIndex) in tablePreview.rows" :key="rowIndex">
+                <td v-for="(cell, cellIndex) in row" :key="`${rowIndex}-${cellIndex}`">{{ cell }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
         <EditorWithLineNumbers
+          v-else
           v-model="output"
           :font-size="fontSize"
           readonly
@@ -68,6 +91,11 @@ import {
   yamlToJSON,
   validateYAML
 } from '../utils/jsonHelper.js'
+import {
+  csvToJson,
+  jsonToCsv,
+  previewCsvTable
+} from '../utils/csvHelper.js'
 import EditorWithLineNumbers from './EditorWithLineNumbers.vue'
 import { useCopyToast } from '../composables/useCopyToast.js'
 
@@ -80,15 +108,29 @@ const input = ref('')
 const output = ref('')
 const statusMessage = ref('')
 const hasError = ref(false)
+const tablePreview = ref(null)
 const { copyMessage, copyToClipboard } = useCopyToast()
 
 const inputTitle = computed(() => `${mode.value.toUpperCase()} 输入`)
-const outputTitle = computed(() => `${mode.value === 'json' ? 'JSON / YAML' : 'YAML / JSON'} 输出`)
+const outputTitle = computed(() => {
+  if (tablePreview.value) return 'CSV 表格预览'
+  if (mode.value === 'json') return 'JSON / YAML 输出'
+  if (mode.value === 'yaml') return 'YAML / JSON 输出'
+  return 'CSV / JSON 输出'
+})
 const inputPlaceholder = computed(() =>
-  mode.value === 'json' ? '在此粘贴 JSON 内容...' : '在此粘贴 YAML 内容...'
+  ({
+    json: '在此粘贴 JSON 内容...',
+    yaml: '在此粘贴 YAML 内容...',
+    csv: '在此粘贴 CSV 内容，或粘贴 JSON 对象数组后转 CSV...'
+  }[mode.value])
 )
 const emptyStatusText = computed(() =>
-  mode.value === 'json' ? '等待输入 JSON 内容' : '等待输入 YAML 内容'
+  ({
+    json: '等待输入 JSON 内容',
+    yaml: '等待输入 YAML 内容',
+    csv: '等待输入 CSV 或 JSON 对象数组'
+  }[mode.value])
 )
 
 function setMode(nextMode) {
@@ -96,6 +138,7 @@ function setMode(nextMode) {
   output.value = ''
   statusMessage.value = ''
   hasError.value = false
+  tablePreview.value = null
 }
 
 function doFormat() {
@@ -133,7 +176,33 @@ function doValidateYaml() {
   handleResult(result)
 }
 
+function doCsvToJson() {
+  const result = csvToJson(input.value)
+  handleResult(result)
+}
+
+function doJsonToCsv() {
+  const result = jsonToCsv(input.value)
+  handleResult(result)
+}
+
+function doPreviewCsv() {
+  const result = previewCsvTable(input.value)
+  if (result.success) {
+    tablePreview.value = result.table
+    output.value = ''
+    statusMessage.value = result.message
+    hasError.value = false
+  } else {
+    tablePreview.value = null
+    output.value = result.displayMessage
+    statusMessage.value = result.displayMessage
+    hasError.value = true
+  }
+}
+
 function handleResult(result, successMessage = '处理成功') {
+  tablePreview.value = null
   if (result.success) {
     output.value = result.result || result.message
     statusMessage.value = result.message || successMessage
@@ -156,6 +225,7 @@ function clearAll() {
   output.value = ''
   statusMessage.value = ''
   hasError.value = false
+  tablePreview.value = null
 }
 </script>
 
@@ -183,6 +253,35 @@ function clearAll() {
 }
 .error-output .editor-textarea {
   color: var(--error) !important;
+}
+.csv-preview-wrap {
+  flex: 1;
+  overflow: auto;
+  border-radius: var(--radius-sm);
+  background: var(--bg-primary);
+}
+.csv-preview-table {
+  width: max-content;
+  min-width: 100%;
+  border-collapse: collapse;
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+.csv-preview-table th,
+.csv-preview-table td {
+  max-width: 280px;
+  padding: 7px 9px;
+  border: 1px solid var(--border-subtle);
+  text-align: left;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.csv-preview-table th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  color: var(--text-primary);
+  background: var(--bg-tertiary);
 }
 .status-bar {
   padding: 6px 12px;

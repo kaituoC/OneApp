@@ -6,6 +6,21 @@
 
 ---
 
+## [1.16.0] - 2026-07-01
+
+### ✨ 新增
+- 将原「JSON / YAML」入口升级为「数据工具」，保留 Ctrl/Cmd+2 和既有 JSON / YAML 能力。
+- 数据工具新增 CSV 子工具，支持 CSV → JSON、JSON → CSV 和只读表格预览。
+- CSV 解析支持双引号包裹、字段内逗号、字段内换行和双引号转义。
+
+### 📚 文档
+- 更新 README、ROADMAP、OpenSpec 和剩余功能队列，标记数据工具合集一期完成。
+- 新增 Data Tools CSV / JSON OpenSpec，并同步 workbench shell 与 JSON/YAML delta。
+
+### 🧪 测试
+- 新增 csv helper 单测，覆盖标准转义、双向转换、表格预览和错误输入。
+- 更新 navigation metadata 测试，锁定「数据工具」导航文案与 Ctrl/Cmd+2 位置。
+
 ## [1.15.0] - 2026-07-01
 
 ### ✨ 新增

@@ -4,7 +4,7 @@
 
 ## 项目概述
 
-OneApp 是一个基于 Electron + Vue 3 的桌面应用程序，提供开发者工具：统一编辑器（按文件后缀自动切换 Markdown / HTML / 纯文本模式）、JSON / YAML 工具、文本差异对比、文本处理、生成器（UUID / 随机密码 / Lorem）、时间转换、正则测试、编码工具合集（Base64 / URL / JWT / Hash / 进制 / Unicode）、Agent 研讨室（多个本地 AI agent 在只读模式下研讨本地仓库并汇总实现方案）和设置页 GitHub Release 更新检查。编辑器侧边栏提供懒加载目录树，可像文件管理器一样浏览目录并打开文件。
+OneApp 是一个基于 Electron + Vue 3 的桌面应用程序，提供开发者工具：统一编辑器（按文件后缀自动切换 Markdown / HTML / 纯文本模式）、数据工具（JSON / YAML / CSV）、文本差异对比、文本处理、生成器（UUID / 随机密码 / Lorem）、时间转换、正则测试、编码工具合集（Base64 / URL / JWT / Hash / 进制 / Unicode）、Agent 研讨室（多个本地 AI agent 在只读模式下研讨本地仓库并汇总实现方案）和设置页 GitHub Release 更新检查。编辑器侧边栏提供懒加载目录树，可像文件管理器一样浏览目录并打开文件。
 
 ## 命令
 
@@ -158,6 +158,7 @@ ipcMain.handle('read-file', async (event, filePath) => { ... })
 
 `src/renderer/utils/` 中的核心工具函数为纯 JavaScript，可单元测试：
 - **jsonHelper.js**：formatJSON、minifyJSON、validateJSON、unescapeJSON、jsonToYAML、yamlToJSON、validateYAML — 均返回 `{ success, result/error }`，包含行/列错误位置
+- **csvHelper.js**：CSV ⇄ JSON 转换、CSV 表格预览和 CSV 错误归一化，基于 PapaParse，返回 `{ success, result/table/error }`
 - **diffHelper.js**：diffTextUnified（git 风格）、diffTextSplit（并排对比）、diffStats — 使用 diff-match-patch 库
 - **timeHelper.js**：formatDate、parseDate、timestampToDate、dateToTimestamp — 纯日期/时间戳转换
 - **fileHelper.js**：IPC 封装，包含路径校验
@@ -182,6 +183,7 @@ electron-vite 构建三个独立的 bundle：
 - **App.vue**：根组件，管理标签页状态、主题、字号、最近文件和键盘快捷键（Ctrl+1-9/0、Ctrl+Tab）
 - **EditorWithLineNumbers.vue**：可复用的 textarea，带同步行号列
 - **EditorTab.vue**：统一编辑器标签，按文件后缀驱动 `mode`（markdown / html），多态预览（`MarkdownPreview` / `HtmlPreview`）、上下文工具栏（markdown 模式额外含导出 HTML/PDF、语法介绍）、滚动同步（markdown 双向 / html 单向），使用 `useEditorFile` composable
+- **JsonTab.vue**：数据工具合集，提供 JSON / YAML / CSV 子工具；CSV 子工具支持 CSV ⇄ JSON 与只读表格预览
 - **composables/useEditorFile.js**：编辑器共用逻辑——打开/新建/保存/快捷键，后缀→mode 派生，Ctrl+S/N 成对绑定/解绑
 - **FileTree.vue / TreeNode.vue**：可复用的懒加载目录树，被 EditorTab 使用，通过 `editableExtensions` prop 按 mode 过滤显示文件类型
 - **DiffTab.vue**：并排/统一差异视图，带滚动同步，使用 diff-match-patch 库

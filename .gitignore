@@ -19,6 +19,3 @@ coverage/
 
 # 开发配置（国内镜像，国际用户自行配置）
 .npmrc
-
-# 设计文档（superpowers skill 中间产物）
-docs/superpowers/

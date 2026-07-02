@@ -1,16 +1,6 @@
 <template>
   <div class="generator-tab">
-    <nav class="tool-menu" aria-label="生成器工具">
-      <button
-        v-for="item in TOOLS"
-        :key="item.key"
-        :class="['menu-item', { active: tool === item.key }]"
-        @click="setTool(item.key)"
-      >
-        <component :is="item.icon" :size="15" aria-hidden="true" />
-        <span>{{ item.label }}</span>
-      </button>
-    </nav>
+    <ToolMenu :items="TOOLS" :active="tool" label="生成器工具" @select="setTool" />
 
     <section class="work-area tool-workspace" :style="{ fontSize: fontSize + 'px' }">
       <div class="toolbar tool-command-bar">
@@ -126,7 +116,9 @@
 import { computed, reactive, ref } from 'vue'
 import { FileText, KeyRound, QrCode, Shuffle } from 'lucide-vue-next'
 import EditorWithLineNumbers from './EditorWithLineNumbers.vue'
+import ToolMenu from './ToolMenu.vue'
 import { useCopyToast } from '../composables/useCopyToast.js'
+import { useToolResult } from '../composables/useToolResult.js'
 import {
   generateUuidV4,
   generatePassword,
@@ -170,10 +162,8 @@ const qrOptions = reactive({
   size: 256,
   errorCorrectionLevel: 'M'
 })
-const output = ref('')
 const qrImage = ref('')
-const statusMessage = ref('')
-const hasError = ref(false)
+const { output, statusMessage, hasError, reset, setSuccess, setError } = useToolResult()
 const { copyMessage, copyToClipboard } = useCopyToast()
 
 const activeTool = computed(() => TOOLS.find((item) => item.key === tool.value) || TOOLS[0])
@@ -213,15 +203,11 @@ async function runGenerate() {
 function handleResult(result) {
   qrImage.value = ''
   if (result.success) {
-    output.value = result.result
+    setSuccess(result.result, result.message)
     if (tool.value === 'qr') qrImage.value = result.dataUrl
-    statusMessage.value = result.message
-    hasError.value = false
     return
   }
-  output.value = result.error
-  statusMessage.value = result.error
-  hasError.value = true
+  setError(result.error)
 }
 
 async function copyResult() {
@@ -255,10 +241,8 @@ async function copyQrPng() {
 }
 
 function clearOutput() {
-  output.value = ''
+  reset()
   qrImage.value = ''
-  statusMessage.value = ''
-  hasError.value = false
 }
 </script>
 
@@ -267,41 +251,6 @@ function clearOutput() {
   display: flex;
   height: 100%;
   background: var(--bg-primary);
-}
-
-.tool-menu {
-  display: flex;
-  flex-direction: column;
-  width: 150px;
-  flex-shrink: 0;
-  border-right: 1px solid var(--border-color);
-  background: var(--bg-secondary);
-  padding: 12px 8px;
-  gap: 4px;
-}
-
-.menu-item {
-  justify-content: flex-start;
-  gap: 8px;
-  padding: 9px 10px;
-  color: var(--text-secondary);
-  text-align: left;
-  background: transparent;
-  border: 1px solid transparent;
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-  font-size: 13px;
-}
-
-.menu-item:hover {
-  color: var(--text-primary);
-  background: var(--surface-hover);
-}
-
-.menu-item.active {
-  color: var(--text-primary);
-  border-color: var(--accent-border);
-  background: var(--accent-soft);
 }
 
 .work-area {
@@ -446,20 +395,6 @@ function clearOutput() {
 @media (max-width: 900px) {
   .generator-tab {
     flex-direction: column;
-  }
-
-  .tool-menu {
-    width: auto;
-    flex-direction: row;
-    overflow-x: auto;
-    border-right: none;
-    border-bottom: 1px solid var(--border-color);
-    padding: 8px;
-  }
-
-  .menu-item {
-    flex: 0 0 auto;
-    white-space: nowrap;
   }
 }
 

@@ -59,6 +59,19 @@ export async function runDiscussion(opts) {
     return res
   }
   const checkGit = async (phase) => (gitCheck ? await gitCheck(phase) : { ok: true })
+  // 收集某一轮的成功子集：成功项入 AGENT 消息并返回 { agentId, agentName, text }，失败项（非取消）入 SYSTEM 消息
+  const collectPhase = (results, phase, failLabel) => {
+    const succeeded = []
+    for (const { agentId, res } of results) {
+      if (res.ok) {
+        push({ type: MESSAGE_TYPE.AGENT, agentId, agentName: nameOf(agentId), phase, content: res.text, truncated: res.truncated })
+        succeeded.push({ agentId, agentName: nameOf(agentId), text: res.text })
+      } else if (!res.canceled) {
+        push({ type: MESSAGE_TYPE.SYSTEM, phase, content: `${nameOf(agentId)}（${agentId}）${failLabel}：${res.error || '未知错误'}` })
+      }
+    }
+    return succeeded
+  }
 
   // 用户想法入时间线
   push({ type: MESSAGE_TYPE.USER, content: idea })
@@ -69,15 +82,7 @@ export async function runDiscussion(opts) {
   const r1 = await Promise.all(
     selectedAgents.map(async (agentId) => ({ agentId, res: await runInvoke(agentId, PHASES.ROUND1, round1Prompt) }))
   )
-  const s1 = []
-  for (const { agentId, res } of r1) {
-    if (res.ok) {
-      push({ type: MESSAGE_TYPE.AGENT, agentId, agentName: nameOf(agentId), phase: PHASES.ROUND1, content: res.text, truncated: res.truncated })
-      s1.push({ agentId, agentName: nameOf(agentId), text: res.text })
-    } else if (!res.canceled) {
-      push({ type: MESSAGE_TYPE.SYSTEM, phase: PHASES.ROUND1, content: `${nameOf(agentId)}（${agentId}）第一轮失败：${res.error || '未知错误'}` })
-    }
-  }
+  const s1 = collectPhase(r1, PHASES.ROUND1, '第一轮失败')
   phases[PHASES.ROUND1] = { total: selectedAgents.length, succeeded: s1.map((x) => x.agentId) }
 
   // 取消优先于「全失败」判定：停止研讨会让本轮调用都以 canceled 失败返回，
@@ -99,15 +104,7 @@ export async function runDiscussion(opts) {
       return { agentId, res: await runInvoke(agentId, PHASES.ROUND2, prompt) }
     })
   )
-  const s2 = []
-  for (const { agentId, res } of r2) {
-    if (res.ok) {
-      push({ type: MESSAGE_TYPE.AGENT, agentId, agentName: nameOf(agentId), phase: PHASES.ROUND2, content: res.text, truncated: res.truncated })
-      s2.push({ agentId, agentName: nameOf(agentId), text: res.text })
-    } else if (!res.canceled) {
-      push({ type: MESSAGE_TYPE.SYSTEM, phase: PHASES.ROUND2, content: `${nameOf(agentId)}（${agentId}）交叉评审失败：${res.error || '未知错误'}` })
-    }
-  }
+  const s2 = collectPhase(r2, PHASES.ROUND2, '交叉评审失败')
   phases[PHASES.ROUND2] = { total: s1.length, succeeded: s2.map((x) => x.agentId) }
 
   if (canceled() || r2.some(({ res }) => res.canceled)) return cancelOut()

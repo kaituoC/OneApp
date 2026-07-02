@@ -143,19 +143,18 @@ import {
 import { queryJSONPath } from '../utils/jsonPathHelper.js'
 import EditorWithLineNumbers from './EditorWithLineNumbers.vue'
 import { useCopyToast } from '../composables/useCopyToast.js'
+import { useToolResult } from '../composables/useToolResult.js'
 
-const props = defineProps({
+defineProps({
   fontSize: { type: Number, default: 14 }
 })
 
 const mode = ref('json')
 const input = ref('')
-const output = ref('')
 const jsonPathExpression = ref('$')
 const jsonPathMatches = ref([])
-const statusMessage = ref('')
-const hasError = ref(false)
 const tablePreview = ref(null)
+const { output, statusMessage, hasError, reset, setSuccess, setError } = useToolResult()
 const { copyMessage, copyToClipboard } = useCopyToast()
 
 const inputTitle = computed(() => `${mode.value.toUpperCase()} 输入`)
@@ -187,10 +186,8 @@ const emptyStatusText = computed(() =>
 
 function setMode(nextMode) {
   mode.value = nextMode
-  output.value = ''
+  reset()
   jsonPathMatches.value = []
-  statusMessage.value = ''
-  hasError.value = false
   tablePreview.value = null
 }
 
@@ -249,14 +246,10 @@ function doPreviewCsv() {
   const result = previewCsvTable(input.value)
   if (result.success) {
     tablePreview.value = result.table
-    output.value = ''
-    statusMessage.value = result.message
-    hasError.value = false
+    setSuccess('', result.message)
   } else {
     tablePreview.value = null
-    output.value = result.displayMessage
-    statusMessage.value = result.displayMessage
-    hasError.value = true
+    setError(result.displayMessage)
   }
 }
 
@@ -280,13 +273,9 @@ function handleResult(result, successMessage = '处理成功') {
   tablePreview.value = null
   jsonPathMatches.value = []
   if (result.success) {
-    output.value = result.result || result.message
-    statusMessage.value = result.message || successMessage
-    hasError.value = false
+    setSuccess(result.result || result.message, result.message || successMessage)
   } else {
-    output.value = result.displayMessage
-    statusMessage.value = result.displayMessage
-    hasError.value = true
+    setError(result.displayMessage)
   }
 }
 
@@ -298,11 +287,9 @@ async function copyResult() {
 
 function clearAll() {
   input.value = ''
-  output.value = ''
+  reset()
   jsonPathExpression.value = '$'
   jsonPathMatches.value = []
-  statusMessage.value = ''
-  hasError.value = false
   tablePreview.value = null
 }
 </script>

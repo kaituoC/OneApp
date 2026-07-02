@@ -119,7 +119,7 @@ const CRON_FIELDS = [
 ]
 
 export const TIMEZONE_PRESETS = [
-  { id: 'local', label: '本地', timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC' },
+  { id: 'local', label: '本地', timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC', pinned: true },
   { id: 'new-york', label: '纽约', timeZone: 'America/New_York' },
   { id: 'london', label: '伦敦', timeZone: 'Europe/London' },
   { id: 'tokyo', label: '东京', timeZone: 'Asia/Tokyo' },
@@ -315,7 +315,9 @@ export function formatTimezoneTime(preset, timestamp = Date.now()) {
     return {
       success: true,
       row: {
-        ...preset,
+        id: preset.id,
+        label: preset.label,
+        pinned: preset.pinned === true,
         date: `${parts.year}-${parts.month}-${parts.day}`,
         time: `${parts.hour}:${parts.minute}:${parts.second}`,
         relation: getDateRelation(parts, timestamp)
@@ -329,18 +331,28 @@ export function formatTimezoneTime(preset, timestamp = Date.now()) {
   }
 }
 
+const timezoneFormatterCache = new Map()
+
+function getTimezoneFormatter(timeZone) {
+  let formatter = timezoneFormatterCache.get(timeZone)
+  if (!formatter) {
+    formatter = new Intl.DateTimeFormat('en-CA', {
+      timeZone,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false
+    })
+    timezoneFormatterCache.set(timeZone, formatter)
+  }
+  return formatter
+}
+
 function getTimezoneParts(timestamp, timeZone) {
-  const formatter = new Intl.DateTimeFormat('en-CA', {
-    timeZone,
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-    hour12: false
-  })
-  const parts = Object.fromEntries(formatter.formatToParts(new Date(timestamp)).map((part) => [part.type, part.value]))
+  const parts = Object.fromEntries(getTimezoneFormatter(timeZone).formatToParts(timestamp).map((part) => [part.type, part.value]))
   return {
     year: parts.year,
     month: parts.month,

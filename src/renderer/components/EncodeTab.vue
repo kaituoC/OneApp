@@ -1,17 +1,7 @@
 <template>
   <div class="encode-tab">
     <!-- 左侧菜单 -->
-    <nav class="tool-menu">
-      <button
-        v-for="t in TOOLS"
-        :key="t.key"
-        :class="['menu-item', { active: tool === t.key }]"
-        @click="tool = t.key"
-      >
-        <component :is="t.icon" :size="15" aria-hidden="true" />
-        <span>{{ t.label }}</span>
-      </button>
-    </nav>
+    <ToolMenu :items="TOOLS" :active="tool" @select="tool = $event" />
 
     <!-- 右侧工作区 -->
     <section class="work-area tool-workspace" :style="{ fontSize: fontSize + 'px' }">
@@ -178,6 +168,7 @@
 <script setup>
 import { ref, reactive, computed, watch } from 'vue'
 import { ArrowLeftRight, Binary, Copy, FileCode2, Hash, KeyRound, Languages, Link } from 'lucide-vue-next'
+import ToolMenu from './ToolMenu.vue'
 import { useCopyToast } from '../composables/useCopyToast.js'
 import {
   base64Encode,
@@ -316,37 +307,6 @@ function onBaseInput(key, e) {
   display: flex;
   height: 100%;
   background: var(--bg-primary);
-}
-.tool-menu {
-  display: flex;
-  flex-direction: column;
-  width: 150px;
-  flex-shrink: 0;
-  border-right: 1px solid var(--border-color);
-  background: var(--bg-secondary);
-  padding: 12px 8px;
-  gap: 4px;
-}
-.menu-item {
-  background: transparent;
-  border: 1px solid transparent;
-  color: var(--text-secondary);
-  text-align: left;
-  justify-content: flex-start;
-  gap: 8px;
-  padding: 9px 10px;
-  cursor: pointer;
-  font-size: 13px;
-  border-radius: var(--radius-sm);
-}
-.menu-item:hover {
-  color: var(--text-primary);
-  background: var(--surface-hover);
-}
-.menu-item.active {
-  color: var(--text-primary);
-  border-color: var(--accent-border);
-  background: var(--accent-soft);
 }
 .work-area {
   flex: 1;
@@ -541,20 +501,6 @@ function onBaseInput(key, e) {
 @media (max-width: 900px) {
   .encode-tab {
     flex-direction: column;
-  }
-
-  .tool-menu {
-    width: auto;
-    flex-direction: row;
-    overflow-x: auto;
-    border-right: none;
-    border-bottom: 1px solid var(--border-color);
-    padding: 8px;
-  }
-
-  .menu-item {
-    flex: 0 0 auto;
-    white-space: nowrap;
   }
 }
 

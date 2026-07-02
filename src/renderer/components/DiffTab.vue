@@ -51,7 +51,7 @@
 
       <!-- 并排对比模式 -->
       <div v-else-if="viewMode === 'split'" class="split-view">
-        <div class="diff-panel tool-panel left" ref="leftPanel">
+        <div class="diff-panel tool-panel left">
           <div class="diff-panel-header tool-panel-header">
             <span>原文</span>
             <span class="line-count">{{ textA.split('\n').filter(l=>l).length }} 行</span>
@@ -63,12 +63,12 @@
               :class="['diff-line', item.left.type]"
             >
               <span class="line-num">{{ item.left.lineNum || '' }}</span>
-              <span class="line-prefix">{{ leftPrefix(item.left.type) }}</span>
+              <span class="line-prefix">{{ linePrefix(item.left.type) }}</span>
               <span class="line-text">{{ item.left.text || ' ' }}</span>
             </div>
           </div>
         </div>
-        <div class="diff-panel tool-panel right" ref="rightPanel">
+        <div class="diff-panel tool-panel right">
           <div class="diff-panel-header tool-panel-header">
             <span>新文</span>
             <span class="line-count">{{ textB.split('\n').filter(l=>l).length }} 行</span>
@@ -80,7 +80,7 @@
               :class="['diff-line', item.right.type]"
             >
               <span class="line-num">{{ item.right.lineNum || '' }}</span>
-              <span class="line-prefix">{{ rightPrefix(item.right.type) }}</span>
+              <span class="line-prefix">{{ linePrefix(item.right.type) }}</span>
               <span class="line-text">{{ item.right.text || ' ' }}</span>
             </div>
           </div>
@@ -112,7 +112,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue'
+import { ref, watch } from 'vue'
 import { diffTextUnified, diffTextSplit, diffStats } from '../utils/diffHelper.js'
 import { readFile, openFile } from '../utils/fileHelper.js'
 import EditorWithLineNumbers from './EditorWithLineNumbers.vue'
@@ -131,8 +131,6 @@ const diffSplitResult = ref([])
 const diffUnifiedResult = ref([])
 const stats = ref({ added: 0, removed: 0, modified: 0 })
 
-const leftPanel = ref(null)
-const rightPanel = ref(null)
 const leftContent = ref(null)
 const rightContent = ref(null)
 let syncing = false
@@ -172,16 +170,6 @@ function clearAll() {
   diffSplitResult.value = []
   diffUnifiedResult.value = []
   stats.value = { added: 0, removed: 0, modified: 0 }
-}
-
-function leftPrefix(type) {
-  if (type === 'remove') return '-'
-  return ' '
-}
-
-function rightPrefix(type) {
-  if (type === 'add') return '+'
-  return ' '
 }
 
 function linePrefix(type) {

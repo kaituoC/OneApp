@@ -15,16 +15,6 @@ export const AGENT_IDS = ['codex', 'claude']
 /** 固定研讨流程的三个阶段 */
 export const PHASES = { ROUND1: 'round1', ROUND2: 'round2', FINAL: 'final' }
 
-/** 单次 agent 调用的状态 */
-export const INVOCATION_STATUS = {
-  PENDING: 'pending',
-  RUNNING: 'running',
-  SUCCEEDED: 'succeeded',
-  FAILED: 'failed',
-  TIMEOUT: 'timeout',
-  CANCELED: 'canceled'
-}
-
 /** 整场研讨的状态 */
 export const RUN_STATUS = {
   RUNNING: 'running',
@@ -240,8 +230,9 @@ export function buildRound2Prompt({ idea, repoContext, ownProposal, otherProposa
 
 /** 终轮：主持 agent 综合各轮，产出最终方案 */
 export function buildFinalPrompt({ idea, repoContext, round1, round2 }) {
-  const r1 = (round1 || []).map((o) => `### ${o.agentName}\n${truncateForDownstream(o.text || '')}`)
-  const r2 = (round2 || []).map((o) => `### ${o.agentName}\n${truncateForDownstream(o.text || '')}`)
+  const section = (arr) => (arr || []).map((o) => `### ${o.agentName}\n${truncateForDownstream(o.text || '')}`)
+  const r1 = section(round1)
+  const r2 = section(round2)
   return [
     '你是本次研讨的主持人，请综合前面各轮内容，产出一份最终的实现方案（Markdown）。',
     '',

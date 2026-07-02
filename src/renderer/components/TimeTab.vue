@@ -155,7 +155,7 @@
               <td>{{ row.date }}</td>
               <td>{{ row.time }}</td>
               <td>{{ row.relation }}</td>
-              <td><button class="copy-btn small" @click="removeTimezone(row.id)" :disabled="row.id === 'local'">移除</button></td>
+              <td><button class="copy-btn small" @click="removeTimezone(row)" :disabled="row.pinned">移除</button></td>
             </tr>
           </tbody>
         </table>
@@ -172,7 +172,6 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useCopyToast } from '../composables/useCopyToast.js'
 import {
   formatDate,
-  parseDate,
   timestampToDate,
   dateToTimestamp,
   getCurrentTimestamp,
@@ -182,7 +181,7 @@ import {
   getAvailableTimezonePresets
 } from '../utils/timeHelper.js'
 
-const props = defineProps({
+defineProps({
   fontSize: { type: Number, default: 14 }
 })
 
@@ -298,8 +297,9 @@ function addTimezone() {
   timezoneToAdd.value = ''
 }
 
-function removeTimezone(id) {
-  selectedTimezoneIds.value = selectedTimezoneIds.value.filter((item) => item !== id || item === 'local')
+function removeTimezone(row) {
+  if (row.pinned) return
+  selectedTimezoneIds.value = selectedTimezoneIds.value.filter((item) => item !== row.id)
 }
 
 // 启动定时器

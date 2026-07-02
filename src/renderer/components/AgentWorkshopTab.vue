@@ -126,7 +126,7 @@
             <span>{{ msgLabel(m) }}</span>
             <button class="aw-link" @click="copy(m.content)">复制</button>
           </header>
-          <div class="aw-msg-body" v-html="renderMd(m.content)"></div>
+          <div class="aw-msg-body" v-html="renderMd(m)"></div>
         </article>
       </div>
     </main>
@@ -291,7 +291,7 @@ async function init() {
     await detect(cfg)
   }
   const last = await api.getLastRun()
-  if (last) record.value = last
+  if (last) { record.value = last; mdCache.clear() }
   unsubscribe = api.onEvent(onEvent)
 }
 
@@ -336,6 +336,7 @@ function onEvent(ev) {
   if (ev.type === 'run-started') {
     record.value = ev.payload.record
     activeRunId.value = ev.payload.record.id
+    mdCache.clear()
     clearActiveNavigation()
     Object.keys(progress).forEach((k) => delete progress[k])
   } else if (!record.value || ev.runId !== record.value.id) {
@@ -387,6 +388,7 @@ function stop() {
 function newDiscussion() {
   record.value = null
   idea.value = ''
+  mdCache.clear()
   clearActiveNavigation()
   Object.keys(progress).forEach((k) => delete progress[k])
 }
@@ -399,8 +401,15 @@ function copy(text) {
   navigator.clipboard?.writeText(text || '')
 }
 
-function renderMd(s) {
-  return safeMarkdown(s)
+// 按消息 id 记忆化：消息 content 一旦入列即不可变，避免每次时间线重渲染都重跑 marked+DOMPurify
+const mdCache = new Map()
+function renderMd(m) {
+  let html = mdCache.get(m.id)
+  if (html === undefined) {
+    html = safeMarkdown(m.content)
+    mdCache.set(m.id, html)
+  }
+  return html
 }
 
 function msgLabel(m) {

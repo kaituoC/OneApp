@@ -6,6 +6,18 @@
 
 ---
 
+## [1.21.1] - 2026-07-02
+
+### ♻️ 重构
+- 抽取 `ToolMenu` 公共组件，收敛文本处理 / 生成器 / 编码工具三处逐字复制的左侧子工具菜单（模板、样式与响应式）。
+- 抽取 `useToolResult` composable，统一数据工具 / 文本处理 / 生成器的结果状态内核（`output` / `statusMessage` / `hasError` 三字段与 `reset` / `setSuccess` / `setError` 原语），各工具保留自身字段映射与专属状态。
+- 研讨编排器抽取 `collectPhase`，合并两轮逐字相同的结果收集逻辑；多时区对照行改为数据驱动的 `pinned` 属性。
+- 清理死代码与未用导入，复用既有 `SHORTCUT_MODIFIER`，合并 DiffTab 前缀函数。
+
+### ⚡ 性能
+- 研讨室时间线按消息 id 记忆化 Markdown 渲染，避免运行期重复 `marked` + `DOMPurify` 解析。
+- 多时区对照按时区缓存 `Intl.DateTimeFormat`，减少每秒定时刷新时的重复构造。
+
 ## [1.21.0] - 2026-07-01
 
 ### ✨ 新增

@@ -152,7 +152,7 @@ ipcMain.handle('read-file', async (event, filePath) => { ... })
 
 **fileHelper.js** 封装了 IPC 调用并添加了额外逻辑（路径校验）。
 
-**事件型 IPC（Agent 研讨室）**：研讨是长任务，由主进程编排并通过 `webContents.send('agent-discussion:event', …)` 向渲染层推送阶段/调用/消息/失败/完成事件；preload 暴露窄接口 `electronAPI.agentWorkshop`（`onEvent(cb)` 返回取消订阅函数，仅订阅单一 channel，不暴露通用 `on`）。主进程逻辑位于 `electron/agentWorkshop/`：`adapters`（只读参数构造）、`detection`（登录 shell 解析路径 + `claude auth status` / `codex login status` 登录态探测）、`runner`（spawn / 超时 / 取消 / 进程组终止 / 输出截断）、`gitSafety`（`git status` 快照与比较，作为咨询式二次防线——变化只提示不中断，实时只读靠 CLI 沙箱参数）、`records`（userData 下 JSON 记录持久化）、`orchestrator`（依赖注入的流程编排状态机，决策可单测；第二轮仅第一轮成功子集进入）、`ipc`（handlers 与事件发射，由 main.js 注册；start 在主进程侧 `validateStartParams` 复核 + 运行互斥 + try/catch/finally 异常兜底）。`electron/appDialogs.js` 提供应用级消息弹窗图标路径解析、GitHub latest Release 检查与更新结果归一化支撑逻辑。Windows 暂不支持（detection 用登录 shell、runner 用进程组终止，均未适配），由 `AgentWorkshopTab.vue` 用 `navigator.platform` 门控显示「暂不支持」。
+**事件型 IPC（Agent 研讨室）**：研讨是长任务，由主进程编排并通过 `webContents.send('agent-discussion:event', …)` 向渲染层推送阶段/调用/消息/失败/完成事件；preload 暴露窄接口 `electronAPI.agentWorkshop`（`onEvent(cb)` 返回取消订阅函数，仅订阅单一 channel，不暴露通用 `on`）。主进程逻辑位于 `electron/agentWorkshop/`：`adapters`（只读参数构造）、`detection`（登录 shell 解析路径 + `claude auth status` / `codex login status` 登录态探测）、`runner`（spawn / 超时 / 取消 / 进程组终止 / 输出截断 / 显式子进程 `env` 注入）、`gitSafety`（`git status` 快照与比较，作为咨询式二次防线——变化只提示不中断，实时只读靠 CLI 沙箱参数）、`records`（userData 下 JSON 记录持久化）、`orchestrator`（依赖注入的流程编排状态机，决策可单测；第二轮仅第一轮成功子集进入）、`ipc`（handlers 与事件发射，由 main.js 注册；start 在主进程侧 `validateStartParams` 复核 + 运行互斥 + try/catch/finally 异常兜底；代理配置读写校验，正式研讨调用与按需 `test-agent-connection` 共用同一套 `buildAgentEnvironment` 代理 env 派生，连接测试同样受运行互斥保护且不写入研讨记录）。`electron/appDialogs.js` 提供应用级消息弹窗图标路径解析、GitHub latest Release 检查与更新结果归一化支撑逻辑。Windows 暂不支持（detection 用登录 shell、runner 用进程组终止，均未适配），由 `AgentWorkshopTab.vue` 用 `navigator.platform` 门控显示「暂不支持」。
 
 ### 工具模块
 
@@ -168,7 +168,7 @@ ipcMain.handle('read-file', async (event, filePath) => { ... })
 - **encodeHelper.js**：编码工具合集纯逻辑——base64Encode/Decode（TextEncoder 处理 UTF-8）、urlEncode/Decode、decodeJWT（三段拆分 + exp/iat/nbf 转可读时间，不验签）、hashAll（MD5 via js-md5 + SHA-1/256/512 via crypto.subtle，异步）、convertBase（BigInt 四进制联动）、unicodeEscape/Unescape（`\u` / `\u{}` / HTML 实体三格式），均返回 `{ success, result/error }`
 - **textHelper.js**：文本处理纯逻辑——getTextStats（字符/字数/行数/非空行/UTF-8 字节）、convertTextCase（大小写与命名风格转换）、sortLines、dedupeLines，供 TextTab 与单测复用
 - **updateHelper.js**：语义化版本解析/比较、GitHub Release 响应归一化和更新说明摘要，供 Settings 更新检查与主进程 IPC 支撑逻辑复用
-- **agentWorkshopHelper.js**：Agent 研讨室与进程无关的纯逻辑——常量/状态枚举、就绪态与配置派生（readyAgents、三态 agentCardState、moderator 默认与回退、validateStart、主进程侧 validateStartParams）、调用次数估算（2n+1）、三阶段 prompt 构造（含只读/plan-only/不反问约束）、minimal 仓库上下文、研讨记录 Markdown 导出；渲染进程与主进程双向 import、可单测
+- **agentWorkshopHelper.js**：Agent 研讨室与进程无关的纯逻辑——常量/状态枚举、就绪态与配置派生（readyAgents、三态 agentCardState、moderator 默认与回退、validateStart、主进程侧 validateStartParams）、代理配置（DEFAULT_PROXY_CONFIG、normalizeProxyConfig、validateProxyConfig，及 `PROXY_ENV_MAP` 表驱动的 `buildAgentEnvironment`——启用时按开关注入大小写 `HTTP(S)_PROXY`/`ALL_PROXY`，关闭时清理继承的代理变量）、调用次数估算（2n+1）、三阶段 prompt 构造（含只读/plan-only/不反问约束）、minimal 仓库上下文、研讨记录 Markdown 导出；渲染进程与主进程双向 import、可单测
 - **safeMarkdown.js**：`marked` 解析 + `DOMPurify` 消毒的安全 Markdown 渲染（剥离 `<script>`/`on*`/`javascript:`，外链补 `target=_blank`+`rel=noopener`），供 Agent 研讨室时间线 `v-html` 使用；测试在 jsdom 环境下运行
 
 ### 构建系统
@@ -195,7 +195,7 @@ electron-vite 构建三个独立的 bundle：
 - **composables/useRegexMatcher.js**：封装正则匹配 Worker 的生命周期——发起匹配、超时（1.5s）`terminate` 兜底、重建待命 Worker、组件卸载释放，杜绝灾难性回溯冻结 UI
 - **workers/regex.worker.js**：子线程内调用 `regexHelper.runRegex` 执行匹配，postMessage 回传位置数组
 - **EncodeTab.vue**：编码工具合集，左侧菜单切换 6 个子工具（Base64 / URL / JWT / Hash / 进制 / Unicode）；编解码类用「左源右果 + ⇄ 方向」实时计算，Hash 异步（generation 计数防过期响应），进制四框联动，纯逻辑全在 `encodeHelper.js`
-- **AgentWorkshopTab.vue**：Agent 研讨室标签，左栏配置（仓库选择 / agent 三态检测卡片 / 主持选择 / 调用估算 / 开始-停止）与运行进度，右栏想法输入或 Markdown 时间线；经 `window.electronAPI.agentWorkshop` 调用主进程，订阅 `agent-discussion:event` 事件流（卸载时取消订阅），用 `activeRunId` 区分本会话运行与恢复查看的旧记录
+- **AgentWorkshopTab.vue**：Agent 研讨室标签，左栏配置（仓库选择 / agent 三态检测卡片 + 按需「测试连接」/ 网络·代理配置（启用开关 / URL / 可选 ALL_PROXY，实时校验 + 持久化）/ 主持选择 / 调用估算 / 开始-停止）与运行进度，右栏想法输入或 Markdown 时间线；经 `window.electronAPI.agentWorkshop` 调用主进程，订阅 `agent-discussion:event` 事件流（卸载时取消订阅），用 `activeRunId` 区分本会话运行与恢复查看的旧记录
 - **SettingsTab.vue**：平台感知快捷键（Cmd vs Ctrl）、electron-store 持久化、GitHub Release 更新检查与统一消息弹窗结果展示
 
 ### 应用配置

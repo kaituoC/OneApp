@@ -11,6 +11,12 @@ describe('buildCodexArgs', () => {
     expect(args).toContain('--color')
     expect(args).toContain('--skip-git-repo-check')
   })
+
+  it('代理环境集成不改变 Codex 只读参数', () => {
+    const joined = buildCodexArgs({ repoDir: '/p' }).join(' ')
+    expect(joined).toContain('--sandbox read-only')
+    expect(joined).not.toMatch(/dangerously|full-access|workspace-write/)
+  })
 })
 
 describe('buildClaudeArgs', () => {
@@ -31,6 +37,13 @@ describe('buildClaudeArgs', () => {
   it('不包含任何写类工具', () => {
     const joined = buildClaudeArgs({ repoDir: '/p' }).join(' ')
     expect(joined).not.toMatch(/\bWrite\b|\bEdit\b|\bBash\b/)
+  })
+
+  it('代理环境集成不改变 ClaudeCode 只读参数', () => {
+    const joined = buildClaudeArgs({ repoDir: '/p' }).join(' ')
+    expect(joined).toContain('--permission-mode plan')
+    expect(joined).toContain('--allowedTools Read')
+    expect(joined).not.toMatch(/dangerously-skip-permissions|\bWrite\b|\bEdit\b|\bBash\b/)
   })
 })
 

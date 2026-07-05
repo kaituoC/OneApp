@@ -11,11 +11,11 @@ function truncateOutput(s) {
 /**
  * @returns Promise<{ ok, text?, error?, truncated?, timeout?, canceled? }>
  */
-export function runAgent({ command, args, cwd, prompt, timeoutMs = DEFAULT_TIMEOUT_MS, signal }) {
+export function runAgent({ command, args, cwd, prompt, timeoutMs = DEFAULT_TIMEOUT_MS, signal, env }) {
   return new Promise((resolve) => {
     let child
     try {
-      child = spawn(command, args, { cwd, shell: false, detached: true })
+      child = spawn(command, args, { cwd, shell: false, detached: true, env: env || process.env })
     } catch (e) {
       resolve({ ok: false, error: `无法启动进程：${e.message}` })
       return

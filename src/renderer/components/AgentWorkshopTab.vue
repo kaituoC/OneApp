@@ -36,9 +36,52 @@
             />
             <span class="aw-agent-name">{{ AGENTS[id].name }}</span>
           </label>
-          <span class="aw-agent-state">{{ stateLabel(id) }}</span>
+          <div class="aw-agent-side">
+            <span class="aw-agent-state">{{ stateLabel(id) }}</span>
+            <button
+              class="aw-link"
+              :disabled="running || testingConnection(id) || cardState(id) === 'not-installed' || !config.repoDir || !proxyValidation.ok"
+              @click="testConnection(id)"
+            >
+              {{ testingConnection(id) ? '测试中…' : '测试连接' }}
+            </button>
+          </div>
         </div>
+        <p v-for="id in connectionResultIds" :key="`conn-${id}`" class="aw-hint" :class="{ 'aw-warn': connectionResults[id]?.success === false }">
+          {{ connectionResultText(id) }}
+        </p>
         <p v-if="loggedOutHint" class="aw-warn">{{ loggedOutHint }}</p>
+      </section>
+
+      <section class="aw-block">
+        <div class="aw-block-title">网络 / 代理</div>
+        <label class="aw-toggle-row">
+          <input
+            type="checkbox"
+            v-model="config.proxyConfig.enabled"
+            :disabled="running"
+            @change="persistProxy"
+          />
+          <span>启用代理</span>
+        </label>
+        <input
+          v-model="config.proxyConfig.url"
+          class="aw-input"
+          type="text"
+          placeholder="http://127.0.0.1:7897"
+          :disabled="running || !config.proxyConfig.enabled"
+          @blur="persistProxy"
+        />
+        <label class="aw-toggle-row">
+          <input
+            type="checkbox"
+            v-model="config.proxyConfig.applyAll"
+            :disabled="running || !config.proxyConfig.enabled"
+            @change="persistProxy"
+          />
+          <span>ALL_PROXY</span>
+        </label>
+        <p v-if="proxyMessage" class="aw-hint" :class="{ 'aw-warn': !proxyValidation.ok || proxySaveError }">{{ proxyMessage }}</p>
       </section>
 
       <section class="aw-block">
@@ -144,6 +187,9 @@ import {
   defaultSelectedAgents,
   defaultModerator,
   moderatorFallback,
+  DEFAULT_PROXY_CONFIG,
+  normalizeProxyConfig,
+  validateProxyConfig,
   validateStart,
   estimateCallCount,
   buildMessageNavigationTargets,
@@ -160,7 +206,13 @@ const api = window.electronAPI.agentWorkshop
 // 平台门控：Windows 上本地 CLI 检测与进程组管理尚未适配，整页显示「暂不支持」
 const supported = !/^win/i.test(navigator.platform || '')
 
-const config = reactive({ repoDir: '', selectedAgents: [], moderator: null, costNoticeAccepted: false })
+const config = reactive({
+  repoDir: '',
+  selectedAgents: [],
+  moderator: null,
+  costNoticeAccepted: false,
+  proxyConfig: normalizeProxyConfig(DEFAULT_PROXY_CONFIG)
+})
 const availability = ref(null)
 const detecting = ref(false)
 const starting = ref(false) // 已发起 start、尚未进入 running 的窗口，防重复点击
@@ -169,8 +221,11 @@ const record = ref(null)
 const activeRunId = ref(null) // 仅本会话真正启动的运行；恢复的旧记录不算
 const repoGitState = ref(null) // 当前所选目录的 Git 探测结果，独立于历史记录
 const progress = reactive({})
+const connectionTesting = reactive({})
+const connectionResults = reactive({})
 const initialized = ref(false)
 const activeMessageId = ref(null)
+const proxySaveError = ref('')
 const messageElements = new Map()
 let unsubscribe = null
 let highlightTimer = null
@@ -208,13 +263,21 @@ async function refreshRepoGit() {
 
 const callCount = computed(() => estimateCallCount(config.selectedAgents.length))
 
-const startValidation = computed(() => validateStart({
-  promptText: idea.value,
-  repoDirValid: !!config.repoDir,
-  selectedAgents: config.selectedAgents,
-  moderator: config.moderator,
-  detecting: detecting.value
-}))
+const proxyValidation = computed(() => validateProxyConfig(config.proxyConfig))
+const proxyMessage = computed(() => proxySaveError.value || proxyValidation.value.error || '')
+
+const startValidation = computed(() => {
+  const base = validateStart({
+    promptText: idea.value,
+    repoDirValid: !!config.repoDir,
+    selectedAgents: config.selectedAgents,
+    moderator: config.moderator,
+    detecting: detecting.value
+  })
+  if (!base.ok) return base
+  if (!proxyValidation.value.ok) return { ok: false, reason: proxyValidation.value.error }
+  return base
+})
 
 const moderatorModel = computed({
   get: () => config.moderator,
@@ -283,6 +346,7 @@ async function init() {
   const cfg = await api.getConfig()
   config.repoDir = cfg.repoDir || ''
   config.costNoticeAccepted = !!cfg.costNoticeAccepted
+  config.proxyConfig = normalizeProxyConfig(cfg.proxyConfig)
   refreshRepoGit()
   if (cfg.availability) {
     availability.value = cfg.availability
@@ -316,12 +380,48 @@ function toggleAgent(id) {
 }
 
 function persist() {
+  // 代理配置由其自身控件（启用/URL blur/ALL_PROXY）独立持久化，不在通用 persist 里连带保存，
+  // 避免无关操作触发代理校验错误与多余 IPC 写入
   api.setConfig({
     repoDir: config.repoDir,
     selectedAgents: JSON.parse(JSON.stringify(config.selectedAgents)),
     moderator: config.moderator,
     costNoticeAccepted: config.costNoticeAccepted
   })
+}
+
+async function persistProxy() {
+  const valid = proxyValidation.value
+  if (!valid.ok) {
+    proxySaveError.value = valid.error
+    return
+  }
+  // normalizeProxyConfig 已返回全为原始值的新对象，可直接结构化克隆用于 IPC
+  const res = await api.setConfig({ proxyConfig: normalizeProxyConfig(config.proxyConfig) })
+  proxySaveError.value = res?.success === false ? (res.error || '代理配置保存失败') : ''
+}
+
+const connectionResultIds = computed(() => AGENT_IDS.filter((id) => connectionResults[id]))
+const testingConnection = (id) => !!connectionTesting[id]
+
+function connectionResultText(id) {
+  const result = connectionResults[id]
+  if (!result) return ''
+  if (result.success) return `${AGENTS[id].name} 连接测试成功`
+  return `${AGENTS[id].name} 连接测试失败：${result.error || '未知错误'}`
+}
+
+async function testConnection(id) {
+  if (running.value || testingConnection(id) || !proxyValidation.value.ok) return
+  await persistProxy()
+  if (proxySaveError.value) return
+  connectionTesting[id] = true
+  connectionResults[id] = null
+  try {
+    connectionResults[id] = await api.testAgentConnection({ agentId: id, repoDir: config.repoDir })
+  } finally {
+    connectionTesting[id] = false
+  }
 }
 
 async function chooseRepo() {
@@ -353,6 +453,8 @@ function onEvent(ev) {
 async function start() {
   if (running.value || starting.value) return
   if (!startValidation.value.ok) return
+  await persistProxy()
+  if (proxySaveError.value) return
   if (!config.costNoticeAccepted) {
     const res = await window.electronAPI.showMessageBox({
       type: 'warning',
@@ -422,6 +524,12 @@ function msgLabel(m) {
 watch(() => props.isActive, (v) => {
   if (v && supported && !initialized.value) { initialized.value = true; init() }
 }, { immediate: true })
+
+// 代理配置或仓库变化后，此前的连接测试结果不再代表当前配置，清空避免误导
+watch(
+  () => [config.proxyConfig.enabled, config.proxyConfig.url, config.proxyConfig.applyAll, config.repoDir],
+  () => { Object.keys(connectionResults).forEach((id) => delete connectionResults[id]) }
+)
 
 onUnmounted(() => {
   if (unsubscribe) unsubscribe()
@@ -516,14 +624,30 @@ onUnmounted(() => {
 .aw-agent.ready { border-color: var(--accent-border); background: var(--accent-soft); }
 .aw-agent.logged-out, .aw-agent.not-installed { opacity: 0.7; }
 .aw-agent-main { display: flex; gap: 6px; align-items: center; cursor: pointer; }
+.aw-agent-side {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
 .aw-agent-state { font-size: 12px; color: var(--text-secondary); }
-.aw-select, .aw-textarea {
+.aw-select, .aw-textarea, .aw-input {
   width: 100%;
   background: var(--bg-primary);
   color: var(--text-primary);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-sm);
   padding: 8px;
+}
+.aw-input:disabled { opacity: 0.65; }
+.aw-toggle-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-secondary);
+  font-size: 12px;
+  margin: 8px 0;
 }
 .aw-textarea {
   min-height: 260px;

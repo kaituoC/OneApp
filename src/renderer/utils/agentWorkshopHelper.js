@@ -47,7 +47,68 @@ export const STORE_KEYS = {
   moderator: 'agentWorkshop.moderator',
   availability: 'agentWorkshop.availability',
   lastRunId: 'agentWorkshop.lastRunId',
-  costNoticeAccepted: 'agentWorkshop.costNoticeAccepted'
+  costNoticeAccepted: 'agentWorkshop.costNoticeAccepted',
+  proxyConfig: 'agentWorkshop.proxyConfig'
+}
+
+export const DEFAULT_PROXY_CONFIG = {
+  enabled: false,
+  url: '',
+  applyHttp: true,
+  applyHttps: true,
+  applyAll: false
+}
+
+// 每个开关 → 它控制的大小写环境变量名；「删除继承值」与「注入配置值」共用这一张表，单一真相源
+const PROXY_ENV_MAP = [
+  { flag: 'applyHttp', keys: ['HTTP_PROXY', 'http_proxy'] },
+  { flag: 'applyHttps', keys: ['HTTPS_PROXY', 'https_proxy'] },
+  { flag: 'applyAll', keys: ['ALL_PROXY', 'all_proxy'] }
+]
+
+export const PROXY_ENV_KEYS = PROXY_ENV_MAP.flatMap((m) => m.keys)
+
+export function normalizeProxyConfig(config = {}) {
+  return {
+    enabled: Boolean(config.enabled),
+    url: String(config.url || '').trim(),
+    applyHttp: config.applyHttp !== false,
+    applyHttps: config.applyHttps !== false,
+    applyAll: Boolean(config.applyAll)
+  }
+}
+
+export function validateProxyConfig(config = {}) {
+  const normalized = normalizeProxyConfig(config)
+  if (!normalized.enabled) return { ok: true, error: null }
+  if (!normalized.url) return { ok: false, error: '请输入代理地址' }
+  try {
+    const url = new URL(normalized.url)
+    if (url.protocol !== 'http:' && url.protocol !== 'https:') {
+      return { ok: false, error: '代理地址必须使用 HTTP 或 HTTPS' }
+    }
+    if (!url.hostname) return { ok: false, error: '代理地址缺少主机名' }
+  } catch {
+    return { ok: false, error: '代理地址格式无效' }
+  }
+  if (!normalized.applyHttp && !normalized.applyHttps && !normalized.applyAll) {
+    return { ok: false, error: '请至少选择一种代理环境变量' }
+  }
+  return { ok: true, error: null }
+}
+
+export function buildAgentEnvironment(baseEnv = {}, proxyConfig = DEFAULT_PROXY_CONFIG) {
+  const env = { ...(baseEnv || {}) }
+  for (const key of PROXY_ENV_KEYS) delete env[key]
+
+  const config = normalizeProxyConfig(proxyConfig)
+  if (!validateProxyConfig(config).ok) return env
+  if (!config.enabled) return env
+
+  for (const { flag, keys } of PROXY_ENV_MAP) {
+    if (config[flag]) for (const key of keys) env[key] = config.url
+  }
+  return env
 }
 
 // ───────────────────────── 可用性与就绪态 ─────────────────────────

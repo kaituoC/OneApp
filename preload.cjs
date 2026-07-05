@@ -24,6 +24,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     checkAgents: () => ipcRenderer.invoke('agent-discussion:check-agents'),
     getLastRun: () => ipcRenderer.invoke('agent-discussion:get-last-run'),
     checkRepo: (dir) => ipcRenderer.invoke('agent-discussion:check-repo', dir),
+    testAgentConnection: (params) => ipcRenderer.invoke('agent-discussion:test-agent-connection', params),
     start: (params) => ipcRenderer.invoke('agent-discussion:start', params),
     stop: () => ipcRenderer.invoke('agent-discussion:stop'),
     exportMarkdown: (record) => ipcRenderer.invoke('agent-discussion:export-markdown', record),

@@ -5,12 +5,16 @@ import {
   STORE_LIMIT_BYTES,
   DOWNSTREAM_CHAR_LIMIT,
   STORE_KEYS,
+  DEFAULT_PROXY_CONFIG,
   isAgentReady,
   agentCardState,
   readyAgents,
   defaultSelectedAgents,
   defaultModerator,
   moderatorFallback,
+  normalizeProxyConfig,
+  validateProxyConfig,
+  buildAgentEnvironment,
   validateStart,
   validateStartParams,
   estimateCallCount,
@@ -40,11 +44,27 @@ describe('常量与模型', () => {
       expect(key.startsWith('agentWorkshop.')).toBe(true)
     }
   })
+
+  it('代理默认配置默认禁用', () => {
+    expect(DEFAULT_PROXY_CONFIG).toEqual({
+      enabled: false,
+      url: '',
+      applyHttp: true,
+      applyHttps: true,
+      applyAll: false
+    })
+    expect(STORE_KEYS.proxyConfig).toBe('agentWorkshop.proxyConfig')
+  })
 })
 
 describe('isAgentReady', () => {
   it('已安装且已登录才算就绪', () => {
     expect(isAgentReady({ installed: true, loggedIn: true })).toBe(true)
+  })
+
+  it('连接测试结果不影响就绪态', () => {
+    expect(isAgentReady({ installed: true, loggedIn: true, connection: { ok: false } })).toBe(true)
+    expect(isAgentReady({ installed: true, loggedIn: false, connection: { ok: true } })).toBe(false)
   })
 
   it('已安装未登录不就绪', () => {
@@ -57,6 +77,64 @@ describe('isAgentReady', () => {
 
   it('缺失条目不就绪', () => {
     expect(isAgentReady(undefined)).toBe(false)
+  })
+})
+
+describe('proxy config helpers', () => {
+  it('归一化有效代理配置并保留默认 HTTP/HTTPS 注入', () => {
+    expect(normalizeProxyConfig({ enabled: true, url: ' http://127.0.0.1:7897 ' })).toEqual({
+      enabled: true,
+      url: 'http://127.0.0.1:7897',
+      applyHttp: true,
+      applyHttps: true,
+      applyAll: false
+    })
+  })
+
+  it('拒绝启用状态下的无效代理 URL', () => {
+    const result = validateProxyConfig({ enabled: true, url: 'ftp://127.0.0.1:7897' })
+    expect(result.ok).toBe(false)
+    expect(result.error).toMatch(/HTTP|HTTPS|代理/)
+  })
+
+  it('禁用代理时允许空 URL', () => {
+    expect(validateProxyConfig({ enabled: false, url: '' })).toEqual({ ok: true, error: null })
+  })
+
+  it('启用代理时写入大小写 HTTP/HTTPS 变量', () => {
+    const env = buildAgentEnvironment({ PATH: '/bin' }, { enabled: true, url: 'http://127.0.0.1:7897' })
+    expect(env.PATH).toBe('/bin')
+    expect(env.HTTP_PROXY).toBe('http://127.0.0.1:7897')
+    expect(env.HTTPS_PROXY).toBe('http://127.0.0.1:7897')
+    expect(env.http_proxy).toBe('http://127.0.0.1:7897')
+    expect(env.https_proxy).toBe('http://127.0.0.1:7897')
+    expect(env.ALL_PROXY).toBeUndefined()
+    expect(env.all_proxy).toBeUndefined()
+  })
+
+  it('按需写入 ALL_PROXY 变量', () => {
+    const env = buildAgentEnvironment({}, { enabled: true, url: 'http://127.0.0.1:7897', applyAll: true })
+    expect(env.ALL_PROXY).toBe('http://127.0.0.1:7897')
+    expect(env.all_proxy).toBe('http://127.0.0.1:7897')
+  })
+
+  it('禁用代理时清理继承的代理变量', () => {
+    const env = buildAgentEnvironment({
+      PATH: '/bin',
+      HTTP_PROXY: 'http://old',
+      HTTPS_PROXY: 'http://old',
+      ALL_PROXY: 'http://old',
+      http_proxy: 'http://old',
+      https_proxy: 'http://old',
+      all_proxy: 'http://old'
+    }, { enabled: false })
+    expect(env.PATH).toBe('/bin')
+    expect(env.HTTP_PROXY).toBeUndefined()
+    expect(env.HTTPS_PROXY).toBeUndefined()
+    expect(env.ALL_PROXY).toBeUndefined()
+    expect(env.http_proxy).toBeUndefined()
+    expect(env.https_proxy).toBeUndefined()
+    expect(env.all_proxy).toBeUndefined()
   })
 })
 

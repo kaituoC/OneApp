@@ -191,11 +191,11 @@ Agent 研讨室额外使用事件型 IPC：主进程通过 `webContents.send('ag
 
 - `adapters.js`：Codex / ClaudeCode 只读调用参数构造
 - `detection.js`：登录 shell 解析 CLI 路径、版本和登录态
-- `runner.js`：spawn、超时、取消、进程组终止、输出截断
+- `runner.js`：spawn、超时、取消、进程组终止、输出截断、显式子进程 `env` 注入
 - `gitSafety.js`：`git status --short` 快照和咨询式比较
 - `records.js`：userData 下 JSON 讨论记录读写
 - `orchestrator.js`：三阶段研讨流程状态机，依赖注入，便于单测
-- `ipc.js`：IPC handlers 与事件发射，由 `main.js` 注册
+- `ipc.js`：IPC handlers 与事件发射，由 `main.js` 注册；含代理配置读写校验与按需 `test-agent-connection`，与正式研讨调用共用同一套代理 env 派生
 
 `electron/appDialogs.js`：应用级消息弹窗图标路径解析、GitHub latest Release 检查与更新结果归一化支撑逻辑；`main.js` 通过 IPC 暴露给 preload。
 
@@ -216,7 +216,7 @@ Windows 暂不支持 Agent Workshop 的本地 CLI 检测与进程组管理，渲
 - `encodeHelper.js`：Base64、URL、JWT、Hash、进制、Unicode 纯逻辑
 - `textHelper.js`：文本统计、大小写/命名风格转换、按行排序、按行去重纯逻辑
 - `updateHelper.js`：语义化版本解析/比较、GitHub Release 响应归一化和更新说明摘要
-- `agentWorkshopHelper.js`：Agent Workshop 进程无关逻辑、配置校验、prompt 构造、Markdown 导出
+- `agentWorkshopHelper.js`：Agent Workshop 进程无关逻辑、配置校验、代理配置归一化/校验与 `buildAgentEnvironment` 代理 env 派生、prompt 构造、Markdown 导出
 - `safeMarkdown.js`：`marked` + `DOMPurify` 安全渲染，供 Agent Workshop 时间线 `v-html` 使用
 
 ### 主要组件

@@ -12,11 +12,19 @@ import {
   exportMarkdown,
   buildRepoContext,
   validateStartParams,
+  normalizeProxyConfig,
+  validateProxyConfig,
+  buildAgentEnvironment,
+  DEFAULT_PROXY_CONFIG,
   AGENTS,
   STORE_KEYS,
   RUN_STATUS,
   MESSAGE_TYPE
 } from '../../src/renderer/utils/agentWorkshopHelper.js'
+
+const isExistingDir = (dir) => {
+  try { return !!dir && fs.statSync(dir).isDirectory() } catch { return false }
+}
 
 export function registerAgentWorkshopIpc({ store, getWindow }) {
   const records = createRecordStore(app.getPath('userData'))
@@ -26,16 +34,20 @@ export function registerAgentWorkshopIpc({ store, getWindow }) {
     const win = getWindow()
     if (win && !win.isDestroyed()) win.webContents.send('agent-discussion:event', { runId, type, payload })
   }
+  const readProxyConfig = () => normalizeProxyConfig(store.get(STORE_KEYS.proxyConfig, DEFAULT_PROXY_CONFIG))
+  const buildCurrentAgentEnv = () => buildAgentEnvironment(process.env, readProxyConfig())
 
   ipcMain.handle('agent-discussion:get-config', () => ({
     repoDir: store.get(STORE_KEYS.repoDir, ''),
     selectedAgents: store.get(STORE_KEYS.selectedAgents, []),
     moderator: store.get(STORE_KEYS.moderator, null),
     availability: store.get(STORE_KEYS.availability, null),
-    costNoticeAccepted: store.get(STORE_KEYS.costNoticeAccepted, false)
+    costNoticeAccepted: store.get(STORE_KEYS.costNoticeAccepted, false),
+    proxyConfig: readProxyConfig()
   }))
 
   ipcMain.handle('agent-discussion:set-config', (e, partial) => {
+    // 先持久化其余合法键，proxyConfig 校验失败只拒绝它自身，不牵连兄弟键
     const map = {
       repoDir: STORE_KEYS.repoDir,
       selectedAgents: STORE_KEYS.selectedAgents,
@@ -44,6 +56,12 @@ export function registerAgentWorkshopIpc({ store, getWindow }) {
     }
     for (const [k, v] of Object.entries(partial || {})) {
       if (map[k]) store.set(map[k], v)
+    }
+    if (partial && Object.prototype.hasOwnProperty.call(partial, 'proxyConfig')) {
+      const proxyConfig = normalizeProxyConfig(partial.proxyConfig)
+      const valid = validateProxyConfig(proxyConfig)
+      if (!valid.ok) return { success: false, error: valid.error }
+      store.set(STORE_KEYS.proxyConfig, proxyConfig)
     }
     return { success: true }
   })
@@ -58,6 +76,37 @@ export function registerAgentWorkshopIpc({ store, getWindow }) {
 
   // 探测当前所选目录是否 Git 仓库（供 UI 实时提示，不依赖历史记录）
   ipcMain.handle('agent-discussion:check-repo', (e, dir) => ({ isGit: isGitRepo(dir) }))
+
+  ipcMain.handle('agent-discussion:test-agent-connection', async (e, params = {}) => {
+    // 与正式研讨互斥：运行中禁止再 spawn 测试进程（不信任 renderer 的按钮禁用态）
+    if (active) return { success: false, error: '研讨进行中，无法测试连接' }
+    const { agentId } = params
+    if (!AGENTS[agentId]) return { success: false, error: '未知 Agent' }
+
+    const availability = store.get(STORE_KEYS.availability, {}) || {}
+    const entry = availability[agentId]
+    if (!entry?.installed || !entry?.resolvedPath) return { success: false, error: 'Agent 未安装或尚未检测' }
+
+    const repoDir = params.repoDir || store.get(STORE_KEYS.repoDir, '')
+    if (!isExistingDir(repoDir)) return { success: false, error: '仓库目录无效或不存在' }
+
+    const args = buildAgentArgs(agentId, { repoDir })
+    const res = await runAgent({
+      command: entry.resolvedPath,
+      args,
+      cwd: repoDir,
+      prompt: 'Reply with exactly: OK',
+      env: buildCurrentAgentEnv(),
+      timeoutMs: 120000
+    })
+    return {
+      success: res.ok,
+      text: res.text || '',
+      error: res.ok ? null : (res.error || '连接测试失败'),
+      truncated: !!res.truncated,
+      timeout: !!res.timeout
+    }
+  })
 
   ipcMain.handle('agent-discussion:stop', () => {
     if (active) {
@@ -91,9 +140,7 @@ export function registerAgentWorkshopIpc({ store, getWindow }) {
     const availability = store.get(STORE_KEYS.availability, {}) || {}
 
     // 主进程参数校验：不信任 renderer 传来的参数
-    let repoDirIsDir = false
-    try { repoDirIsDir = !!repoDir && fs.statSync(repoDir).isDirectory() } catch { repoDirIsDir = false }
-    const valid = validateStartParams({ repoDir, idea, selectedAgents, moderator, availability, repoDirIsDir })
+    const valid = validateStartParams({ repoDir, idea, selectedAgents, moderator, availability, repoDirIsDir: isExistingDir(repoDir) })
     if (!valid.ok) return { success: false, error: valid.error }
 
     const isGit = isGitRepo(repoDir)
@@ -129,10 +176,11 @@ export function registerAgentWorkshopIpc({ store, getWindow }) {
     emitEvent(runId, 'run-started', { record })
 
     const resolvedPath = (id) => availability[id]?.resolvedPath || id
+    const agentEnv = buildCurrentAgentEnv()
 
     const invoke = async ({ agentId, prompt }) => {
       const args = buildAgentArgs(agentId, { repoDir })
-      return runAgent({ command: resolvedPath(agentId), args, cwd: repoDir, prompt, signal: abort.signal })
+      return runAgent({ command: resolvedPath(agentId), args, cwd: repoDir, prompt, signal: abort.signal, env: agentEnv })
     }
     const gitCheck = async () => {
       if (!isGit) return { ok: true }

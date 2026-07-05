@@ -85,8 +85,9 @@ npm test -- tests/jsonHelper.test.js # 运行单个测试文件
     - 打 `vX.Y.Z` tag 并 `git push origin vX.Y.Z` → GitHub Actions（`.github/workflows/release.yml`）自动构建 mac arm64 / Windows / Linux 三平台并创建 GitHub Release（notes 取自 CHANGELOG 对应版本段）。tag 与 `package.json` 版本不一致时 CI 会失败。
     - mac Intel(x64) 包补传（必做，无需额外确认）：先用 `uname -m` 自检当前机器架构（`x86_64` = Intel，`arm64` = Apple Silicon）；若为 Intel，在 CI 跑包期间并行执行 `npm run dist:mac` 本地打包，CI 完成/Release 创建后立即执行 `gh release upload vX.Y.Z dist/OneApp-X.Y.Z-mac-x64.dmg dist/OneApp-X.Y.Z-mac-x64.zip` 补传。架构判断由 agent 自行完成，不询问用户。
     - 不再本地手动 `npm run dist` 全量打包 + `gh release create`；发布由 CI 负责，本地仅补 Intel 包。
+14. 清理产物（防止磁盘占用，必做）：流程收尾删除本轮本地编译 / 打包产物：`out/`（`npm run build` 输出）与 `dist/`（`npm run dist*` 打包输出）。`dist/` 会累积历次发版的安装包、可达数 GB，是磁盘占用大头，发版后尤其要清；两目录均 gitignored、可随时重新生成。前提：若本轮发版，先确认 Release 所需产物（尤其 mac Intel 包）已成功上传，再删除本地 `dist/`。
 
-简化流程（小修复 / 文档类）：跳过探索、提案、归档；保留：建分支 → 实现 → 自测/校验 → 文档（按需）→ 版本与 CHANGELOG（仅影响功能或发布时）→ 最终验证 → 提交 → Push + PR。
+简化流程（小修复 / 文档类）：跳过探索、提案、归档；保留：建分支 → 实现 → 自测/校验 → 文档（按需）→ 版本与 CHANGELOG（仅影响功能或发布时）→ 最终验证 → 提交 → Push + PR → 清理产物（如有）。
 
 确认卡点汇总：自动推进模式下，本地提交、`git push`、创建 PR、合并 PR、打 tag 和发布 Release 不再需要人工确认，但必须在执行动作时明确告知用户，并且必须建立在最终验证通过的基础上；非自动推进模式下，这些外发动作仍需用户明确请求。版本号升级不是独立确认卡点，在 push 前自动完成。
 
@@ -116,6 +117,7 @@ npm test -- tests/jsonHelper.test.js # 运行单个测试文件
 - 最终验证通过后创建本地 commit
 - 告知用户后执行 `git push`、创建 PR、合并 PR
 - 发版需求在 PR 合并后，告知用户并执行 tag、推送 tag、等待 CI Release 和必要的 mac Intel(x64) 包补传
+- 流程收尾清理本地编译 / 打包产物（`out/`、`dist/`），防止 `dist/` 累积历史安装包长期占用磁盘；发版时先确认所需产物已上传 Release 再删除本地 `dist/`
 
 自动推进模式下，遇到以下情况必须暂停并请求用户介入：
 
@@ -127,11 +129,11 @@ npm test -- tests/jsonHelper.test.js # 运行单个测试文件
 - 需要升 major version，或版本影响和 explore 阶段预估不一致
 - 需要新增/变更 CI、发布流程、权限、安全边界或外部服务配置
 - 需要访问敏感凭证、付费资源、外部账号或用户本机隐私数据
-- 需要删除分支、丢弃改动、覆盖远端历史、强推、改写 tag 或执行其他破坏性动作
+- 需要删除分支、丢弃改动、覆盖远端历史、强推、改写 tag 或执行其他破坏性动作（清理 gitignored 且可重新生成的 `out/` / `dist/` 编译产物不属破坏性动作，是流程收尾常规环节）
 
 自动推进的停止条件：
 
-- 成功：本地实现、归档、版本/CHANGELOG、最终验证、commit、push、PR、合并和 Release（如需发版）全部完成。
+- 成功：本地实现、归档、版本/CHANGELOG、最终验证、commit、push、PR、合并、Release（如需发版）和产物清理全部完成。
 - 受阻：出现必须用户介入的情况；agent 汇报当前状态、已完成事项、阻塞原因和可选方案。
 - 失败：验证无法通过或方案不可行；agent 保留现场，不回滚用户或未知来源改动，并给出下一步建议。
 

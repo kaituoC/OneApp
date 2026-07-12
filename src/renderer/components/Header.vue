@@ -38,7 +38,7 @@
             <span class="nav-label">{{ tab.label }}</span>
             <span class="nav-desc">{{ tab.summary || tab.description }}</span>
           </span>
-          <span class="nav-shortcut">{{ tab.shortcut }}</span>
+          <span v-if="!isCollapsed" class="nav-shortcut">{{ tab.shortcut }}</span>
         </button>
       </section>
     </nav>
@@ -243,12 +243,6 @@ const isCollapsed = ref(false)
   font-family: var(--font-mono);
   font-size: 11px;
   text-align: right;
-}
-
-.workbench-nav.collapsed .nav-shortcut {
-  min-width: 0;
-  font-size: 10px;
-  text-align: center;
 }
 
 @media (max-width: 980px) {

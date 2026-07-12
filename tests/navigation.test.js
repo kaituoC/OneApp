@@ -23,18 +23,18 @@ describe('navigation metadata', () => {
     expect(getNavigationTooltip(editor, 'Cmd')).toContain('Cmd+1')
   })
 
-  it('数字快捷键顺序保留 1-9 并将 0 作为第 10 个入口', () => {
+  it('数字快捷键按侧栏从上到下的顺序保留 1-9，并将 0 作为第 10 个入口', () => {
     expect(TAB_KEYS).toEqual([
       'editor',
       'json',
+      'time',
+      'encode',
       'diff',
       'text',
-      'time',
       'regex',
-      'encode',
+      'generator',
       'agent',
-      'settings',
-      'generator'
+      'settings'
     ])
 
     const data = NAV_ITEMS.find((item) => item.key === 'json')
@@ -45,7 +45,7 @@ describe('navigation metadata', () => {
 
     const text = NAV_ITEMS.find((item) => item.key === 'text')
     expect(text.label).toBe('文本处理')
-    expect(getNavigationTooltip(text, 'Cmd')).toContain('Cmd+4')
+    expect(getNavigationTooltip(text, 'Cmd')).toContain('Cmd+6')
 
     const time = NAV_ITEMS.find((item) => item.key === 'time')
     expect(time.description).toContain('Cron')
@@ -54,8 +54,12 @@ describe('navigation metadata', () => {
     const generator = NAV_ITEMS.find((item) => item.key === 'generator')
     expect(generator.label).toBe('生成器')
     expect(generator.description).toContain('二维码')
-    expect(getNavigationTooltip(generator, 'Cmd')).toContain('Cmd+0')
-    expect(getShortcutSortValue(generator.shortcut)).toBe(10)
+    expect(getNavigationTooltip(generator, 'Cmd')).toContain('Cmd+8')
+    expect(generator.shortcut).toBe(8)
+
+    const settings = NAV_ITEMS.find((item) => item.key === 'settings')
+    expect(settings.shortcut).toBe(0)
+    expect(getShortcutSortValue(settings.shortcut)).toBe(10)
   })
 
   it('生成器位于生成工具分组', () => {

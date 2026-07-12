@@ -44,7 +44,7 @@ export const NAV_GROUPS = [
         label: '时间工具',
         description: '日期、Cron 与多时区',
         summary: 'Cron / 时区',
-        shortcut: 5,
+        shortcut: 3,
         icon: Clock3
       },
       {
@@ -52,7 +52,7 @@ export const NAV_GROUPS = [
         label: '编码',
         description: 'Base64 / URL / JWT / Hash',
         summary: 'Base64 / JWT',
-        shortcut: 7,
+        shortcut: 4,
         icon: SquareCode
       }
     ]
@@ -66,7 +66,7 @@ export const NAV_GROUPS = [
         label: '文本对比',
         description: '并排与统一差异视图',
         summary: 'Split / Diff',
-        shortcut: 3,
+        shortcut: 5,
         icon: GitCompareArrows
       },
       {
@@ -74,7 +74,7 @@ export const NAV_GROUPS = [
         label: '文本处理',
         description: '统计、转换、排序、去重',
         summary: '统计 / 去重',
-        shortcut: 4,
+        shortcut: 6,
         icon: Pilcrow
       },
       {
@@ -82,7 +82,7 @@ export const NAV_GROUPS = [
         label: '正则',
         description: '实时匹配与捕获组检查',
         summary: '匹配 / 捕获组',
-        shortcut: 6,
+        shortcut: 7,
         icon: Regex
       }
     ]
@@ -96,7 +96,7 @@ export const NAV_GROUPS = [
         label: '生成器',
         description: 'UUID / 密码 / Lorem / 二维码',
         summary: 'UUID / QR',
-        shortcut: 0,
+        shortcut: 8,
         icon: WandSparkles
       }
     ]
@@ -110,7 +110,7 @@ export const NAV_GROUPS = [
         label: 'Agent 研讨室',
         description: '本地 AI 只读研讨工作流',
         summary: '本地 AI workflow',
-        shortcut: 8,
+        shortcut: 9,
         icon: Bot,
         featured: true
       }
@@ -125,7 +125,7 @@ export const NAV_GROUPS = [
         label: '设置',
         description: '偏好、最近文件与快捷键',
         summary: '偏好 / 快捷键',
-        shortcut: 9,
+        shortcut: 0,
         icon: Settings
       }
     ]

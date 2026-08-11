@@ -68,6 +68,53 @@ JSON、Diff、Text Processing、Regex 和 Encode 工具 SHALL 使用清晰 label
 - **WHEN** Encode 工具处于激活状态
 - **THEN** Base64、URL、JWT、Hash、进制转换和 Unicode 子工具仍然可发现并可切换
 
+### Requirement: Diff 对比支持可逆编辑流程
+
+Diff 工具 SHALL 允许用户在输入态与结果态之间往返，并在返回编辑时保留未明确清空的源文本。
+
+#### Scenario: 从结果返回编辑
+- **WHEN** 用户已生成差异结果并点击“编辑内容”
+- **THEN** 系统显示文本 A 和文本 B 的可编辑输入区
+- **AND** 两侧内容与本次对比使用的源文本保持一致
+
+#### Scenario: 清空单侧内容
+- **WHEN** 用户在输入态清空文本 A 或文本 B 的单侧内容
+- **THEN** 系统只清空目标侧并保留另一侧文本
+- **AND** 系统将输入焦点移动到被清空的编辑器
+
+#### Scenario: 修改后重新对比
+- **WHEN** 用户返回输入态并修改任意一侧内容后点击“对比”
+- **THEN** 系统基于两侧当前内容重新生成 split、unified 和摘要结果
+- **AND** 系统进入结果态
+
+#### Scenario: 结果态加载文件
+- **WHEN** 用户在结果态为任意一侧加载新文件
+- **THEN** 系统保留另一侧内容并使用新文件内容刷新当前差异结果
+- **AND** 刷新后的摘要与 split、unified 结果均对应当前两侧源文本
+
+#### Scenario: 结果态交换文本
+- **WHEN** 用户在结果态交换文本 A 与文本 B
+- **THEN** 系统交换两侧源文本并刷新当前差异结果
+- **AND** 结果中的新增与删除方向反映交换后的文本顺序
+
+#### Scenario: 清空全部内容
+- **WHEN** 用户点击“清空全部”
+- **THEN** 系统清空文本 A、文本 B 和已有差异结果
+- **AND** 系统返回可编辑输入态
+
+### Requirement: Diff 重新计算采用显式触发
+
+Diff 工具 SHALL 仅在用户发起对比或结果态下的明确源文本操作完成后重新计算差异，不得在输入态每次键入时自动执行完整差异计算。
+
+#### Scenario: 输入过程不自动计算
+- **WHEN** 用户在输入态键入或粘贴文本
+- **THEN** 系统更新对应输入内容但不生成或刷新差异结果
+
+#### Scenario: 切换结果视图不重复计算
+- **WHEN** 用户在已有结果上切换并排视图与统一视图
+- **THEN** 系统使用本次对比已生成的结果切换展示
+- **AND** 系统不因视图切换再次执行文本差异计算
+
 ### Requirement: 多栏工具具备 responsive fallback
 
 双栏或多栏工具 SHALL 在横向空间不足时采用 stack、drawer、compact navigation 或其他 responsive fallback，避免固定宽度侧栏和多 panel 同时挤压主工作区。

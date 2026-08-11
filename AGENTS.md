@@ -223,8 +223,8 @@ Windows 暂不支持 Agent Workshop 的本地 CLI 检测与进程组管理，渲
 
 ### 主要组件
 
-- `App.vue`：根组件，管理 active tab、主题、字号、最近文件和快捷键（Ctrl/Cmd+1-9/0、Ctrl/Cmd+Tab）。
-- `Header.vue`：当前主导航组件；若执行 workbench UI refresh，可能会演进为左侧导航 / 应用壳。
+- `App.vue`：根组件，管理 active tab、主题、字号、最近文件、受控导航收起状态和快捷键；macOS 数字直达使用 `Cmd+1-9/0`，Windows/Linux 使用 `Ctrl+1-9/0`，全平台循环切换使用 `Ctrl+Tab` / `Ctrl+Shift+Tab`，不得拦截 macOS `Cmd+Tab`。
+- `Header.vue`：左侧一级工具导航，约 900px 以下由 shell 自动收起并允许当前会话手动覆盖；compact 状态仍须通过 tooltip / accessible name 提供工具名和数字快捷键。
 - `StatusBar.vue`：底部状态栏，必须覆盖全部一级工具名称。
 - `EditorTab.vue`：统一编辑器，使用 `useEditorFile`，按 mode 渲染 Markdown / HTML / 纯文本工作流。
 - `EditorWithLineNumbers.vue`：带同步行号的复用 textarea。
@@ -236,9 +236,9 @@ Windows 暂不支持 Agent Workshop 的本地 CLI 检测与进程组管理，渲
 - `RegexTab.vue`：正则测试器，匹配由 `useRegexMatcher` 和 `workers/regex.worker.js` 执行。
 - `EncodeTab.vue`：编码工具合集，左侧子工具导航。
 - `GeneratorTab.vue`：生成器合集，左侧子工具导航，支持 UUID、随机密码、Lorem 和二维码。
-- `TimeTab.vue`：时间、时间戳转换、Cron 表达式解释与多时区对照。
-- `AgentWorkshopTab.vue`：Agent 研讨室，订阅主进程事件流并渲染配置、进度和 Markdown 时间线。
-- `SettingsTab.vue`：工作目录、主题、字号、最近文件、快捷键、关于信息和 GitHub Release 更新检查。
+- `TimeTab.vue`：当前时间、时间转换、Cron、多时区四个子工具；页面生命周期内保留切换状态，Cron 初始提供默认表达式的解释与未来执行时间。
+- `AgentWorkshopTab.vue`：Agent 研讨室，仅根据现有状态派生准备、运行、结果三阶段并渲染配置、进度和 Markdown 时间线；不得借 UI 调整修改 IPC、编排和记录语义。
+- `SettingsTab.vue`：以常用设置、最近文件、快捷键、关于四个分区组织工作目录、主题、字号、更新检查与说明。
 
 ## 构建系统
 

@@ -1,6 +1,11 @@
 <template>
   <div class="app-container">
-    <Header :active-tab="activeTab" @tab-change="activeTab = $event" />
+    <Header
+      :active-tab="activeTab"
+      :collapsed="navigationCollapsed"
+      @tab-change="activeTab = $event"
+      @toggle-collapse="toggleNavigation"
+    />
     <section class="workbench-main">
       <div class="context-bar">
         <div class="context-title">
@@ -89,7 +94,14 @@ import GeneratorTab from './components/GeneratorTab.vue'
 import AgentWorkshopTab from './components/AgentWorkshopTab.vue'
 import SettingsTab from './components/SettingsTab.vue'
 import StatusBar from './components/StatusBar.vue'
-import { TAB_BY_KEY, TAB_KEYS, formatShortcut } from './utils/navigation.js'
+import {
+  IS_MAC,
+  TAB_BY_KEY,
+  TAB_KEYS,
+  formatShortcut,
+  isCycleNavigationEvent,
+  isNumericNavigationEvent
+} from './utils/navigation.js'
 
 const activeTab = ref('editor')
 const currentFile = ref('')
@@ -97,6 +109,8 @@ const workDir = ref('')
 const currentTheme = ref('dark')
 const editorFontSize = ref(14)
 const recentFiles = ref([])
+const narrowNavigation = ref(typeof window !== 'undefined' && window.innerWidth <= 900)
+const navigationOverride = ref(null)
 
 const activeTool = computed(() => TAB_BY_KEY[activeTab.value] || TAB_BY_KEY.editor)
 const shortcutHint = computed(() => formatShortcut(activeTool.value))
@@ -105,6 +119,15 @@ const activeContext = computed(() => {
   if (activeTab.value === 'agent') return 'AI · 本地仓库只读研讨'
   return activeTool.value.description
 })
+const navigationCollapsed = computed(() => navigationOverride.value ?? narrowNavigation.value)
+
+function updateNavigationWidth() {
+  narrowNavigation.value = window.innerWidth <= 900
+}
+
+function toggleNavigation() {
+  navigationOverride.value = !navigationCollapsed.value
+}
 
 function applyTheme(theme) {
   document.documentElement.setAttribute('data-theme', theme)
@@ -147,15 +170,14 @@ function onFileOpen(filePath) {
 }
 
 function onKeydown(e) {
-  const primary = e.ctrlKey || e.metaKey
   const num = Number(e.key)
-  if (primary && ((num >= 1 && num <= 9) || e.key === '0')) {
+  if (isNumericNavigationEvent(e, IS_MAC)) {
     const index = e.key === '0' ? 9 : num - 1
     if (!TAB_KEYS[index]) return
     e.preventDefault()
     activeTab.value = TAB_KEYS[index]
   }
-  if (primary && e.key === 'Tab') {
+  if (isCycleNavigationEvent(e)) {
     e.preventDefault()
     const n = TAB_KEYS.length
     const idx = TAB_KEYS.indexOf(activeTab.value)
@@ -171,10 +193,13 @@ function onKeydown(e) {
 
 onMounted(() => {
   document.addEventListener('keydown', onKeydown)
+  window.addEventListener('resize', updateNavigationWidth)
+  updateNavigationWidth()
 })
 
 onUnmounted(() => {
   document.removeEventListener('keydown', onKeydown)
+  window.removeEventListener('resize', updateNavigationWidth)
 })
 </script>
 

@@ -3,8 +3,8 @@
 import { runRegex } from '../utils/regexHelper.js'
 
 self.onmessage = (e) => {
-  const { pattern, flags, text, gen } = e.data || {}
+  const { pattern, flags, text, gen, signature } = e.data || {}
   const result = runRegex(pattern, flags, text)
   // 回传 gen，供主线程丢弃陈旧响应
-  self.postMessage({ ...result, gen })
+  self.postMessage({ ...result, gen, signature })
 }

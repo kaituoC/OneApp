@@ -339,6 +339,12 @@ export function agentsForDiscussionPhase(phase, { record, config }) {
   return Array.isArray(source.selectedAgents) ? source.selectedAgents : []
 }
 
+export function getWorkshopUiStage(record, activeRunId) {
+  if (!record) return 'prepare'
+  if (record.status === 'running' && record.id === activeRunId) return 'running'
+  return 'result'
+}
+
 // ───────────────────────── Markdown 导出 ─────────────────────────
 
 function statusLabel(status) {

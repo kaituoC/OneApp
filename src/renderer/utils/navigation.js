@@ -152,6 +152,11 @@ export const IS_MAC = typeof navigator !== 'undefined' && /mac/i.test(navigator.
 
 export const SHORTCUT_MODIFIER = IS_MAC ? 'Cmd' : 'Ctrl'
 
+export const CYCLE_SHORTCUTS = Object.freeze({
+  next: 'Ctrl+Tab',
+  previous: 'Ctrl+Shift+Tab'
+})
+
 export function formatShortcut(item, modifier = SHORTCUT_MODIFIER) {
   if (!item) return ''
   return `${modifier}+${item.shortcut}`
@@ -160,4 +165,21 @@ export function formatShortcut(item, modifier = SHORTCUT_MODIFIER) {
 export function getNavigationTooltip(item, modifier = SHORTCUT_MODIFIER) {
   if (!item) return ''
   return `${item.label}\n${item.description}\n${formatShortcut(item, modifier)}`
+}
+
+export function isNumericNavigationEvent(event, isMac = IS_MAC) {
+  const numericKey = /^(?:[1-9]|0)$/.test(event?.key || '')
+  if (!numericKey || event?.altKey || event?.shiftKey) return false
+  return isMac
+    ? Boolean(event?.metaKey && !event?.ctrlKey)
+    : Boolean(event?.ctrlKey && !event?.metaKey)
+}
+
+export function isCycleNavigationEvent(event) {
+  return Boolean(
+    event?.ctrlKey &&
+    !event?.metaKey &&
+    !event?.altKey &&
+    event?.key === 'Tab'
+  )
 }

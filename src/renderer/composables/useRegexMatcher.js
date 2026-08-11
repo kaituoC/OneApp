@@ -3,6 +3,14 @@ import { ref, computed, onUnmounted } from 'vue'
 // 单次匹配超时（ms）；超时即判定为灾难性回溯，terminate Worker
 const TIMEOUT_MS = 1500
 
+export function createRegexInputSignature(pattern, flags, text) {
+  return JSON.stringify([pattern || '', flags || '', text || ''])
+}
+
+export function isRegexResultCurrent(resultSignature, pattern, flags, text) {
+  return resultSignature === createRegexInputSignature(pattern, flags, text)
+}
+
 /**
  * 正则匹配 composable：在 Web Worker 中执行匹配，主线程超时兜底。
  * 超时 → terminate 当前 Worker → 提示 → 重建待命 Worker，UI 永不冻结。
@@ -14,6 +22,7 @@ export function useRegexMatcher() {
   const truncated = ref(false)
   const error = ref('')      // 正则非法或超时的提示
   const matching = ref(false)
+  const resultSignature = ref('')
 
   // count 始终与 matches.length 相同，用 computed 消除冗余状态
   const count = computed(() => matches.value.length)
@@ -31,17 +40,19 @@ export function useRegexMatcher() {
     worker.onmessage = (e) => {
       const r = e.data
       // 丢弃与当前 generation 不符的陈旧响应（快速连续输入时可能出现）
-      if (r.gen !== generation) return
+      if (r.gen !== generation || r.signature !== currentSignature) return
       clearTimer()
       matching.value = false
       if (r.success) {
         matches.value = r.matches
         truncated.value = r.truncated
         error.value = ''
+        resultSignature.value = r.signature
       } else {
         matches.value = []
         truncated.value = false
         error.value = r.error
+        resultSignature.value = r.signature
       }
     }
   }
@@ -49,10 +60,24 @@ export function useRegexMatcher() {
   function reset() {
     matches.value = []
     truncated.value = false
+    resultSignature.value = ''
+  }
+
+  let currentSignature = ''
+
+  function invalidate(pattern, flags, text) {
+    generation++
+    clearTimer()
+    matching.value = false
+    currentSignature = createRegexInputSignature(pattern, flags, text)
+    reset()
+    error.value = ''
   }
 
   function match(pattern, flags, text) {
     if (!worker) createWorker()
+    const signature = createRegexInputSignature(pattern, flags, text)
+    currentSignature = signature
     const gen = ++generation
     matching.value = true
     clearTimer()
@@ -66,7 +91,7 @@ export function useRegexMatcher() {
       error.value = '正则过于复杂，已中止'
       createWorker()
     }, TIMEOUT_MS)
-    worker.postMessage({ pattern, flags, text, gen })
+    worker.postMessage({ pattern, flags, text, gen, signature })
   }
 
   onUnmounted(() => {
@@ -74,5 +99,5 @@ export function useRegexMatcher() {
     if (worker) { worker.terminate(); worker = null }
   })
 
-  return { matches, count, truncated, error, matching, match }
+  return { matches, count, truncated, error, matching, resultSignature, invalidate, match }
 }

@@ -1,15 +1,16 @@
 <template>
   <div class="encode-tab">
     <!-- 左侧菜单 -->
-    <ToolMenu :items="TOOLS" :active="tool" @select="tool = $event" />
+    <ToolMenu :items="TOOLS" :active="tool" label="编码工具" @select="tool = $event" />
 
     <!-- 右侧工作区 -->
     <section class="work-area tool-workspace" :style="{ fontSize: fontSize + 'px' }">
       <!-- Base64 -->
       <div v-show="tool === 'base64'" class="pane">
         <div class="pane-toolbar tool-panel">
-          <button class="dir-btn" @click="b64Dir = b64Dir === 'encode' ? 'decode' : 'encode'">
-            {{ b64Dir === 'encode' ? '文本 -> Base64' : 'Base64 -> 文本' }}
+          <span class="direction-status">当前方向：{{ b64Dir === 'encode' ? '文本 → Base64' : 'Base64 → 文本' }}</span>
+          <button class="dir-btn" :aria-label="b64Dir === 'encode' ? '切换为 Base64 解码' : '切换为 Base64 编码'" @click="b64Dir = b64Dir === 'encode' ? 'decode' : 'encode'">
+            <ArrowLeftRight :size="14" aria-hidden="true" />切换方向
           </button>
         </div>
         <div class="dual">
@@ -28,7 +29,8 @@
                 复制
               </button>
             </div>
-            <textarea :value="b64Result.success ? b64Result.result : ''" class="io" readonly spellcheck="false"></textarea>
+            <div v-if="!b64Input" class="tool-empty-state encode-empty">输入{{ b64Dir === 'encode' ? '文本' : ' Base64' }}后实时显示结果</div>
+            <textarea v-else :value="b64Result.success ? b64Result.result : ''" class="io" readonly spellcheck="false"></textarea>
             <div v-if="!b64Result.success" class="err tool-status-chip error">{{ b64Result.error }}</div>
           </div>
         </div>
@@ -37,8 +39,9 @@
       <!-- URL -->
       <div v-show="tool === 'url'" class="pane">
         <div class="pane-toolbar tool-panel">
-          <button class="dir-btn" @click="urlDir = urlDir === 'encode' ? 'decode' : 'encode'">
-            {{ urlDir === 'encode' ? '文本 -> URL 编码' : 'URL 编码 -> 文本' }}
+          <span class="direction-status">当前方向：{{ urlDir === 'encode' ? '文本 → URL 编码' : 'URL 编码 → 文本' }}</span>
+          <button class="dir-btn" :aria-label="urlDir === 'encode' ? '切换为 URL 解码' : '切换为 URL 编码'" @click="urlDir = urlDir === 'encode' ? 'decode' : 'encode'">
+            <ArrowLeftRight :size="14" aria-hidden="true" />切换方向
           </button>
         </div>
         <div class="dual">
@@ -57,7 +60,8 @@
                 复制
               </button>
             </div>
-            <textarea :value="urlResult.success ? urlResult.result : ''" class="io" readonly spellcheck="false"></textarea>
+            <div v-if="!urlInput" class="tool-empty-state encode-empty">输入{{ urlDir === 'encode' ? '文本' : ' URL 编码' }}后实时显示结果</div>
+            <textarea v-else :value="urlResult.success ? urlResult.result : ''" class="io" readonly spellcheck="false"></textarea>
             <div v-if="!urlResult.success" class="err tool-status-chip error">{{ urlResult.error }}</div>
           </div>
         </div>
@@ -66,8 +70,9 @@
       <!-- Unicode -->
       <div v-show="tool === 'unicode'" class="pane">
         <div class="pane-toolbar tool-panel">
-          <button class="dir-btn" @click="uniDir = uniDir === 'encode' ? 'decode' : 'encode'">
-            {{ uniDir === 'encode' ? '转义' : '反转义' }}
+          <span class="direction-status">当前方向：{{ uniDir === 'encode' ? '原文 → Unicode 转义' : 'Unicode 转义 → 原文' }}</span>
+          <button class="dir-btn" :aria-label="uniDir === 'encode' ? '切换为 Unicode 反转义' : '切换为 Unicode 转义'" @click="uniDir = uniDir === 'encode' ? 'decode' : 'encode'">
+            <ArrowLeftRight :size="14" aria-hidden="true" />切换方向
           </button>
           <label v-if="uniDir === 'encode'" class="fmt-label">
             格式：
@@ -94,7 +99,8 @@
                 复制
               </button>
             </div>
-            <textarea :value="uniResult.success ? uniResult.result : ''" class="io" readonly spellcheck="false"></textarea>
+            <div v-if="!uniInput" class="tool-empty-state encode-empty">输入{{ uniDir === 'encode' ? '原文' : '转义文本' }}后实时显示结果</div>
+            <textarea v-else :value="uniResult.success ? uniResult.result : ''" class="io" readonly spellcheck="false"></textarea>
             <div v-if="!uniResult.success" class="err tool-status-chip error">{{ uniResult.error }}</div>
           </div>
         </div>
@@ -332,6 +338,11 @@ function onBaseInput(key, e) {
   font-size: 13px;
   cursor: pointer;
 }
+.direction-status {
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 700;
+}
 .fmt-label {
   font-size: 13px;
   color: var(--text-secondary);
@@ -379,6 +390,10 @@ function onBaseInput(key, e) {
 .io[readonly] {
   background: var(--bg-primary);
 }
+.encode-empty {
+  flex: 1;
+  background: var(--bg-primary);
+}
 .swap-btn {
   align-self: center;
 }
@@ -417,10 +432,6 @@ function onBaseInput(key, e) {
 }
 .jwt-json.sig {
   color: var(--text-secondary);
-}
-.muted {
-  color: var(--text-secondary);
-  font-size: 11px;
 }
 .jwt-times {
   list-style: none;
@@ -502,11 +513,19 @@ function onBaseInput(key, e) {
   .encode-tab {
     flex-direction: column;
   }
+
+  .work-area {
+    overflow: hidden;
+  }
 }
 
 @media (max-width: 760px) {
   .dual {
     flex-direction: column;
+    overflow: auto;
+  }
+
+  .work-area {
     overflow: auto;
   }
 

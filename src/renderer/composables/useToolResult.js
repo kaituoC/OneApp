@@ -1,4 +1,5 @@
 import { ref } from 'vue'
+import { publishToolStatus } from '../utils/toolStatus.js'
 
 // 各工具 Tab 共用的「结果状态」内核：output / statusMessage / hasError 三字段，
 // 配 reset / setSuccess / setError 三个原语。各组件保留自己的字段映射
@@ -18,12 +19,14 @@ export function useToolResult() {
     output.value = result
     statusMessage.value = message
     hasError.value = false
+    publishToolStatus(message || '操作完成', 'success')
   }
 
   function setError(message) {
     output.value = message
     statusMessage.value = message
     hasError.value = true
+    publishToolStatus(message, 'error')
   }
 
   return { output, statusMessage, hasError, reset, setSuccess, setError }

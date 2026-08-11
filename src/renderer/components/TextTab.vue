@@ -1,18 +1,12 @@
 <template>
-  <div class="text-tab">
+  <div class="text-tab tool-page">
     <ToolMenu :items="TOOLS" :active="tool" label="文本处理工具" @select="setTool" />
 
     <section class="work-area tool-workspace" :style="{ fontSize: fontSize + 'px' }">
       <div class="toolbar tool-command-bar">
         <template v-if="tool === 'case'">
-          <button
-            v-for="option in CASE_OPTIONS"
-            :key="option.key"
-            :class="{ primary: option.key === 'title' }"
-            @click="runCase(option.key)"
-          >
-            {{ option.label }}
-          </button>
+          <button class="primary" @click="runCase('upper')">大写</button>
+          <OverflowMenu label="更多转换" :items="caseSecondaryActions" @select="runCase" />
         </template>
         <template v-else-if="tool === 'sort'">
           <button class="primary" @click="runSort('asc')">A-Z</button>
@@ -24,9 +18,6 @@
         <template v-else>
           <span class="toolbar-note">实时统计</span>
         </template>
-        <span class="toolbar-spacer"></span>
-        <button @click="copyResult" :disabled="!output">复制结果</button>
-        <button @click="clearAll">清空</button>
       </div>
 
       <div class="content">
@@ -45,8 +36,12 @@
         <div class="panel tool-panel">
           <div class="panel-header tool-panel-header">
             <span class="tool-panel-title">{{ outputTitle }}</span>
-            <span :class="['tool-status-chip', hasError ? 'error' : output ? 'success' : '']">
-              {{ statusChip }}
+            <span class="tool-panel-actions">
+              <span :class="['tool-status-chip', hasError ? 'error' : output || tool === 'stats' ? 'success' : '']" role="status" aria-live="polite">
+                {{ statusChip }}
+              </span>
+              <button v-if="tool !== 'stats'" @click="copyResult" :disabled="!output || hasError">复制</button>
+              <button @click="clearAll" :disabled="!input && !output">清空</button>
             </span>
           </div>
 
@@ -72,9 +67,6 @@
         </div>
       </div>
 
-      <div class="status-bar" :class="{ 'status-error': hasError, empty: !statusMessage }">
-        {{ statusMessage || emptyStatusText }}
-      </div>
     </section>
 
     <div v-if="copyMessage" class="tool-copy-toast">{{ copyMessage }}</div>
@@ -86,6 +78,7 @@ import { computed, ref } from 'vue'
 import { ArrowDownAZ, CaseSensitive, ListChecks, Pilcrow } from 'lucide-vue-next'
 import EditorWithLineNumbers from './EditorWithLineNumbers.vue'
 import ToolMenu from './ToolMenu.vue'
+import OverflowMenu from './OverflowMenu.vue'
 import { useCopyToast } from '../composables/useCopyToast.js'
 import { useToolResult } from '../composables/useToolResult.js'
 import {
@@ -115,6 +108,8 @@ const CASE_OPTIONS = [
   { key: 'snake', label: 'snake_case' },
   { key: 'kebab', label: 'kebab-case' }
 ]
+const caseSecondaryActions = CASE_OPTIONS
+  .filter((option) => option.key !== 'upper')
 
 const tool = ref('stats')
 const input = ref('')
@@ -136,10 +131,6 @@ const statusChip = computed(() => {
   if (hasError.value) return '错误'
   if (tool.value === 'stats') return '实时'
   return output.value ? '就绪' : '待处理'
-})
-const emptyStatusText = computed(() => {
-  if (tool.value === 'stats') return '等待输入文本'
-  return '选择操作后生成结果'
 })
 
 function setTool(nextTool) {
@@ -189,6 +180,7 @@ function clearAll() {
 <style scoped>
 .text-tab {
   display: flex;
+  flex-direction: row;
   height: 100%;
   background: var(--bg-primary);
 }
@@ -199,10 +191,6 @@ function clearAll() {
   flex-direction: column;
   min-width: 0;
   overflow: hidden;
-}
-
-.toolbar-spacer {
-  flex: 1;
 }
 
 .toolbar-note {
@@ -238,8 +226,11 @@ function clearAll() {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  min-height: 44px;
-  border-bottom: 1px solid var(--border-subtle);
+  min-height: 88px;
+  padding: 14px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  background: var(--surface-subtle);
 }
 
 .stat-label {
@@ -263,23 +254,6 @@ function clearAll() {
 
 .error-output .editor-textarea {
   color: var(--error) !important;
-}
-
-.status-bar {
-  flex: none;
-  padding: 6px 12px;
-  color: var(--success);
-  background: var(--bg-secondary);
-  border-top: 1px solid var(--border-color);
-  font-size: 12px;
-}
-
-.status-bar.empty {
-  color: var(--text-muted);
-}
-
-.status-error {
-  color: var(--error);
 }
 
 @media (max-width: 900px) {

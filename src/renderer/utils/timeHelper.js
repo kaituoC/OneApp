@@ -118,6 +118,8 @@ const CRON_FIELDS = [
   { key: 'dayOfWeek', label: '星期', min: 0, max: 7 }
 ]
 
+export const DEFAULT_CRON_EXPRESSION = '*/15 9-18 * * 1-5'
+
 export const TIMEZONE_PRESETS = [
   { id: 'local', label: '本地', timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC', pinned: true },
   { id: 'new-york', label: '纽约', timeZone: 'America/New_York' },
@@ -146,6 +148,13 @@ export function explainCronExpression(expression, baseDate = new Date()) {
     nextRuns,
     formattedRuns: nextRuns.map((date) => formatDate(date.getTime(), 'yyyy-MM-dd HH:mm:ss')),
     message: 'Cron 表达式解析完成'
+  }
+}
+
+export function buildInitialCronPreview(baseDate = new Date()) {
+  return {
+    expression: DEFAULT_CRON_EXPRESSION,
+    ...explainCronExpression(DEFAULT_CRON_EXPRESSION, baseDate)
   }
 }
 

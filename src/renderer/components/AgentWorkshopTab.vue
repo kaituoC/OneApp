@@ -8,9 +8,23 @@
       </div>
     </div>
 
+    <template v-if="supported">
+      <div class="aw-stage-bar" aria-label="研讨阶段">
+        <span
+          v-for="stage in WORKSHOP_STAGES"
+          :key="stage.key"
+          :class="['aw-stage', stageState(stage.key)]"
+          :aria-current="workshopStage === stage.key ? 'step' : undefined"
+        >
+          <span class="aw-stage-index">{{ stage.index }}</span>
+          {{ stage.label }}
+        </span>
+      </div>
+
+      <div :class="['aw-layout', `stage-${workshopStage}`]">
     <!-- 左栏：配置 / 进度 -->
-    <aside v-if="supported" class="aw-left">
-      <section class="aw-block">
+    <aside class="aw-left">
+      <section v-if="workshopStage === 'prepare'" class="aw-block">
         <div class="aw-block-title">本地仓库</div>
         <div class="aw-repo">
           <code class="aw-repo-path" :title="config.repoDir">{{ config.repoDir || '未选择目录' }}</code>
@@ -19,7 +33,7 @@
         <p v-if="repoWarning" class="aw-warn">{{ repoWarning }}</p>
       </section>
 
-      <section class="aw-block">
+      <section v-if="workshopStage === 'prepare'" class="aw-block">
         <div class="aw-block-title">
           Agent 检测
           <button class="aw-link" :disabled="detecting || running" @click="detect">
@@ -53,7 +67,7 @@
         <p v-if="loggedOutHint" class="aw-warn">{{ loggedOutHint }}</p>
       </section>
 
-      <section class="aw-block">
+      <section v-if="workshopStage === 'prepare'" class="aw-block">
         <div class="aw-block-title">网络 / 代理</div>
         <label class="aw-toggle-row">
           <input
@@ -84,14 +98,14 @@
         <p v-if="proxyMessage" class="aw-hint" :class="{ 'aw-warn': !proxyValidation.ok || proxySaveError }">{{ proxyMessage }}</p>
       </section>
 
-      <section class="aw-block">
+      <section v-if="workshopStage === 'prepare'" class="aw-block">
         <div class="aw-block-title">主持 Agent</div>
         <select v-model="moderatorModel" class="aw-select" :disabled="running || config.selectedAgents.length === 0">
           <option v-for="id in config.selectedAgents" :key="id" :value="id">{{ AGENTS[id].name }}</option>
         </select>
       </section>
 
-      <section v-if="!running && !finishedRecord" class="aw-block">
+      <section v-if="workshopStage === 'prepare'" class="aw-block aw-start-block">
         <div class="aw-estimate">预计调用 {{ callCount }} 次 agent</div>
         <button class="aw-btn aw-btn-primary" :disabled="!startValidation.ok || starting" :title="startValidation.reason || ''" @click="start">
           {{ starting ? '启动中…' : '开始研讨' }}
@@ -99,7 +113,7 @@
         <p v-if="!startValidation.ok" class="aw-hint">{{ startValidation.reason }}</p>
       </section>
 
-      <section v-if="running || finishedRecord" class="aw-block">
+      <section v-if="workshopStage !== 'prepare'" class="aw-block aw-progress-block">
         <div class="aw-block-title">进度</div>
         <div v-for="ph in phaseList" :key="ph.key" class="aw-phase">
           <div class="aw-phase-name">{{ ph.label }}</div>
@@ -111,6 +125,7 @@
                 class="aw-pill aw-pill-nav"
                 :class="progressStatus(ph.key, id)"
                 :title="`跳转到${ph.label} · ${AGENTS[id].name}`"
+                :aria-label="`${ph.label} · ${AGENTS[id].name} · ${progressStatusLabel(progressStatus(ph.key, id))}，跳转到消息`"
                 @click="scrollToMessage(ph.key, id)"
               >
                 {{ AGENTS[id].name }}
@@ -119,6 +134,7 @@
                 v-else
                 class="aw-pill"
                 :class="progressStatus(ph.key, id)"
+                :aria-label="`${ph.label} · ${AGENTS[id].name} · ${progressStatusLabel(progressStatus(ph.key, id))}`"
               >
                 {{ AGENTS[id].name }}
               </span>
@@ -126,17 +142,13 @@
           </div>
         </div>
         <button v-if="running" class="aw-btn" @click="stop">停止研讨</button>
-        <div v-else class="aw-actions">
-          <button class="aw-btn" @click="newDiscussion">新研讨</button>
-          <button class="aw-btn" :disabled="!record" @click="exportMd">导出 Markdown</button>
-        </div>
         <div class="aw-status">状态：{{ statusText }}</div>
       </section>
     </aside>
 
     <!-- 右栏：想法输入 / 时间线 -->
-    <main v-if="supported" class="aw-right">
-      <div v-if="record && !running" class="aw-record-banner tool-panel">
+    <main class="aw-right">
+      <div v-if="workshopStage === 'result'" class="aw-record-banner tool-panel">
         <div>
           <div class="aw-record-title">{{ recordBanner.title }}</div>
           <div class="aw-record-copy">{{ recordBanner.copy }}</div>
@@ -147,7 +159,7 @@
         </div>
       </div>
 
-      <div v-if="!running && !record" class="aw-idea">
+      <div v-if="workshopStage === 'prepare'" class="aw-idea tool-panel">
         <div class="aw-block-title">你的想法 / 初始方案</div>
         <textarea
           v-model="idea"
@@ -173,6 +185,8 @@
         </article>
       </div>
     </main>
+      </div>
+    </template>
   </div>
 </template>
 
@@ -193,7 +207,8 @@ import {
   validateStart,
   estimateCallCount,
   buildMessageNavigationTargets,
-  agentsForDiscussionPhase
+  agentsForDiscussionPhase,
+  getWorkshopUiStage
 } from '../utils/agentWorkshopHelper.js'
 
 const props = defineProps({
@@ -235,10 +250,21 @@ const phaseList = [
   { key: 'round2', label: '第二轮 · 交叉评审' },
   { key: 'final', label: '最终方案' }
 ]
+const WORKSHOP_STAGES = [
+  { key: 'prepare', label: '准备', index: 1 },
+  { key: 'running', label: '运行', index: 2 },
+  { key: 'result', label: '结果', index: 3 }
+]
 
 // 仅当记录是本会话启动且仍在运行时，才视为「运行中」；恢复的 running 旧记录按已中断处理
 const running = computed(() => record.value?.status === 'running' && record.value?.id === activeRunId.value)
-const finishedRecord = computed(() => !!record.value && !running.value)
+const workshopStage = computed(() => getWorkshopUiStage(record.value, activeRunId.value))
+const stageState = (key) => {
+  const currentIndex = WORKSHOP_STAGES.findIndex((stage) => stage.key === workshopStage.value)
+  const targetIndex = WORKSHOP_STAGES.findIndex((stage) => stage.key === key)
+  if (targetIndex === currentIndex) return 'active'
+  return targetIndex < currentIndex ? 'complete' : 'pending'
+}
 
 const cardState = (id) => agentCardState(availability.value?.[id])
 const stateLabel = (id) => ({ 'not-installed': '未安装', 'logged-out': '已安装·未登录', ready: '就绪' }[cardState(id)])
@@ -305,6 +331,13 @@ const messageNavigationTargets = computed(() => buildMessageNavigationTargets(re
 const navKey = (phase, agentId) => `${phase}:${agentId}`
 const hasNavigationTarget = (phase, agentId) => !!messageNavigationTargets.value[navKey(phase, agentId)]
 const progressStatus = (phase, agentId) => progress[navKey(phase, agentId)] || (hasNavigationTarget(phase, agentId) ? 'succeeded' : 'pending')
+const progressStatusLabel = (status) => ({
+  pending: '等待中',
+  running: '进行中',
+  succeeded: '已完成',
+  failed: '失败',
+  canceled: '已取消'
+}[status] || status)
 
 function clearActiveNavigation() {
   activeMessageId.value = null
@@ -541,24 +574,106 @@ onUnmounted(() => {
 <style scoped>
 .agent-workshop {
   display: flex;
+  flex-direction: column;
   height: 100%;
   background: var(--bg-primary);
   color: var(--text-primary);
   min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+.aw-stage-bar {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 46px;
+  padding: 7px 16px;
+  border-bottom: 1px solid var(--border-color);
+  background: var(--bg-secondary);
+}
+.aw-stage {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 96px;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+.aw-stage + .aw-stage::before {
+  content: '';
+  width: 24px;
+  height: 1px;
+  margin-right: 1px;
+  background: var(--border-color);
+}
+.aw-stage-index {
+  display: inline-grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border: 1px solid var(--border-color);
+  border-radius: 50%;
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+.aw-stage.active { color: var(--accent); }
+.aw-stage.active .aw-stage-index {
+  color: #fff;
+  background: var(--accent);
+  border-color: var(--accent);
+}
+.aw-stage.complete { color: var(--success); }
+.aw-stage.complete .aw-stage-index { border-color: var(--success); }
+.aw-layout {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+}
+.aw-layout.stage-prepare {
+  align-items: flex-start;
+  overflow-y: auto;
+}
+.aw-layout.stage-running,
+.aw-layout.stage-result {
+  overflow: hidden;
 }
 .aw-left {
   width: clamp(300px, 30vw, 380px);
   min-width: 300px;
+  flex: none;
   border-right: 1px solid var(--border-color);
   padding: 14px;
-  overflow-y: auto;
   background: var(--bg-secondary);
 }
 .aw-right {
   flex: 1;
-  overflow-y: auto;
   padding: 16px;
   min-width: 0;
+}
+.stage-running .aw-right,
+.stage-result .aw-right {
+  overflow-y: auto;
+}
+.aw-start-block {
+  position: sticky;
+  bottom: 0;
+  z-index: 4;
+  box-shadow: 0 -10px 26px var(--bg-secondary);
+}
+.aw-progress-block {
+  position: sticky;
+  top: 14px;
+}
+.aw-idea {
+  padding: 14px;
+}
+.aw-timeline {
+  width: min(100%, 980px);
+  margin: 0 auto;
 }
 .aw-record-banner {
   display: flex;
@@ -704,7 +819,6 @@ onUnmounted(() => {
 .aw-pill.running { border-color: var(--accent); color: var(--accent); }
 .aw-pill.succeeded { border-color: #2ea043; color: #2ea043; }
 .aw-pill.failed { border-color: #e05555; color: #e05555; }
-.aw-actions { display: flex; gap: 6px; }
 .aw-status { margin-top: 8px; font-size: 12px; color: var(--text-secondary); }
 .aw-msg {
   border: 1px solid var(--border-color);
@@ -731,7 +845,7 @@ onUnmounted(() => {
   margin-bottom: 8px;
   font-weight: 700;
 }
-.aw-msg-body { line-height: 1.6; word-break: break-word; }
+.aw-msg-body { max-width: 80ch; line-height: 1.6; word-break: break-word; }
 .aw-msg-body :deep(pre) {
   background: var(--bg-primary);
   border: 1px solid var(--border-subtle);
@@ -762,25 +876,35 @@ onUnmounted(() => {
 .aw-unsupported-title { font-weight: 600; color: var(--text-primary); margin-bottom: 8px; }
 
 @media (max-width: 1040px) {
-  .agent-workshop {
+  .aw-layout.stage-prepare,
+  .aw-layout.stage-running,
+  .aw-layout.stage-result {
     flex-direction: column;
-    overflow: hidden;
+    overflow-y: auto;
+    overflow-x: hidden;
   }
 
   .aw-left {
     width: auto;
     min-width: 0;
-    max-height: 38%;
     border-right: none;
     border-bottom: 1px solid var(--border-color);
   }
 
-  .aw-right {
+  .aw-right,
+  .stage-running .aw-right,
+  .stage-result .aw-right {
+    flex: none;
     min-height: 0;
+    width: 100%;
+    overflow: visible;
+  }
+
+  .aw-progress-block {
+    position: static;
   }
 
   .aw-repo,
-  .aw-actions,
   .aw-record-banner,
   .aw-record-actions {
     flex-wrap: wrap;
@@ -789,8 +913,20 @@ onUnmounted(() => {
 
 @media (max-width: 760px) {
   .aw-left {
-    max-height: 48%;
     padding: 10px;
+  }
+
+  .aw-stage-bar {
+    justify-content: flex-start;
+    overflow-x: auto;
+  }
+
+  .aw-stage {
+    min-width: max-content;
+  }
+
+  .aw-stage + .aw-stage::before {
+    width: 12px;
   }
 
   .aw-block {

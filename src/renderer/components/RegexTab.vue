@@ -1,5 +1,5 @@
 <template>
-  <div class="regex-tab">
+  <div class="regex-tab tool-page" :style="{ '--regex-result-height': resultHeight + 'px' }">
     <!-- ① pattern 行 -->
     <div class="pattern-bar">
       <span class="label">正则</span>
@@ -18,6 +18,8 @@
           :key="f"
           :class="['flag', { on: flagState[f] }]"
           :title="FLAG_TITLES[f]"
+          :aria-label="`${FLAG_TITLES[f]}，当前${flagState[f] ? '已开启' : '已关闭'}`"
+          :aria-pressed="flagState[f]"
           @click="flagState[f] = !flagState[f]"
         >{{ f }}</button>
       </div>
@@ -50,7 +52,7 @@
 
       <div class="preview-pane tool-panel">
         <div class="pane-header tool-panel-header">匹配高亮</div>
-        <pre class="preview" :style="{ fontSize: fontSize + 'px' }"><span
+        <pre class="preview" tabindex="0" aria-label="匹配高亮预览" :style="{ fontSize: fontSize + 'px' }"><span
           v-for="(seg, i) in segments"
           :key="i"
           :class="['seg', seg.type, { active: seg.matchIndex === activeMatch }]"
@@ -90,6 +92,21 @@
       </aside>
     </div>
 
+    <div
+      class="result-splitter"
+      role="separator"
+      tabindex="0"
+      aria-label="调整匹配结果区高度"
+      aria-orientation="horizontal"
+      :aria-valuemin="RESULT_MIN_HEIGHT"
+      :aria-valuemax="RESULT_MAX_HEIGHT"
+      :aria-valuenow="resultHeight"
+      title="拖动或用上下方向键调整，双击恢复默认"
+      @pointerdown="startResize"
+      @dblclick="resetResultHeight"
+      @keydown="onSplitterKeydown"
+    ><span></span></div>
+
     <!-- ④ 结果列表 -->
     <div class="result-list">
       <div class="result-header">
@@ -99,8 +116,9 @@
           <Copy :size="13" aria-hidden="true" />
           复制全部
         </button>
+        <button v-if="resultHeight !== RESULT_DEFAULT_HEIGHT" class="copy-btn" @click="resetResultHeight">默认高度</button>
       </div>
-      <div class="result-rows">
+      <div class="result-rows" tabindex="0" aria-label="正则匹配结果列表">
         <div
           v-for="(m, i) in renderedMatches"
           :key="i"
@@ -175,6 +193,9 @@ const colorFor = (i) => GROUP_COLORS[i % GROUP_COLORS.length]
 
 const MAX_TEXT_LEN = 100000
 const RENDER_LIMIT = 500   // 预览高亮 / 结果列表渲染上限
+const RESULT_MIN_HEIGHT = 140
+const RESULT_MAX_HEIGHT = 420
+const RESULT_DEFAULT_HEIGHT = 210
 
 // 预填示例，打开即见效果（含多捕获组展示配色）
 const pattern = ref('(\\d{3})-(\\d{4})')
@@ -187,7 +208,9 @@ const showCheatsheet = ref(false)
 const activeMatch = ref(null)
 const { copyMessage, copyToClipboard } = useCopyToast()
 
-const { matches, count, truncated, error, matching, match } = useRegexMatcher()
+const { matches, count, truncated, error, matching, invalidate, match } = useRegexMatcher()
+const resultHeight = ref(RESULT_DEFAULT_HEIGHT)
+let stopActiveResize = null
 
 const nearLimit = computed(() => text.value.length >= MAX_TEXT_LEN * 0.9)
 const overLimit = computed(() => text.value.length >= MAX_TEXT_LEN)
@@ -261,12 +284,61 @@ async function copyAll() {
 let debounceTimer = null
 function schedule() {
   clearTimeout(debounceTimer)
+  invalidate(pattern.value, flagsString.value, text.value)
   debounceTimer = setTimeout(() => {
     match(pattern.value, flagsString.value, text.value)
   }, 250)
 }
 watch([pattern, flagsString, text], schedule, { immediate: true })
-onUnmounted(() => clearTimeout(debounceTimer))
+
+function clampResultHeight(value) {
+  return Math.min(RESULT_MAX_HEIGHT, Math.max(RESULT_MIN_HEIGHT, value))
+}
+
+function resetResultHeight() {
+  resultHeight.value = RESULT_DEFAULT_HEIGHT
+}
+
+function onSplitterKeydown(event) {
+  if (event.key === 'ArrowUp') {
+    event.preventDefault()
+    resultHeight.value = clampResultHeight(resultHeight.value + 20)
+  } else if (event.key === 'ArrowDown') {
+    event.preventDefault()
+    resultHeight.value = clampResultHeight(resultHeight.value - 20)
+  } else if (event.key === 'Home') {
+    event.preventDefault()
+    resetResultHeight()
+  }
+}
+
+function startResize(event) {
+  if (event.button !== 0) return
+  event.preventDefault()
+  stopActiveResize?.()
+  const startY = event.clientY
+  const startHeight = resultHeight.value
+
+  const onMove = (moveEvent) => {
+    resultHeight.value = clampResultHeight(startHeight + startY - moveEvent.clientY)
+  }
+  const onUp = () => {
+    window.removeEventListener('pointermove', onMove)
+    window.removeEventListener('pointerup', onUp)
+    window.removeEventListener('pointercancel', onUp)
+    stopActiveResize = null
+  }
+
+  stopActiveResize = onUp
+  window.addEventListener('pointermove', onMove)
+  window.addEventListener('pointerup', onUp)
+  window.addEventListener('pointercancel', onUp)
+}
+
+onUnmounted(() => {
+  clearTimeout(debounceTimer)
+  stopActiveResize?.()
+})
 </script>
 
 <style scoped>
@@ -423,11 +495,30 @@ onUnmounted(() => clearTimeout(debounceTimer))
   margin-right: 8px;
 }
 .result-list {
-  height: 30%;
+  height: var(--regex-result-height);
+  flex: none;
   display: flex;
   flex-direction: column;
   border-top: 1px solid var(--border-color);
   background: var(--bg-secondary);
+}
+.result-splitter {
+  position: relative;
+  flex: 0 0 8px;
+  cursor: row-resize;
+  background: var(--bg-secondary);
+  border-top: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--border-color);
+}
+.result-splitter span {
+  position: absolute;
+  left: 50%;
+  top: 2px;
+  width: 42px;
+  height: 2px;
+  transform: translateX(-50%);
+  border-radius: 999px;
+  background: var(--scrollbar-thumb);
 }
 .result-header {
   display: flex;
@@ -472,9 +563,14 @@ onUnmounted(() => clearTimeout(debounceTimer))
 }
 
 @media (max-width: 820px) {
+  .regex-tab {
+    overflow-y: auto;
+  }
+
   .content {
     flex-direction: column;
-    overflow: auto;
+    flex: none;
+    overflow: visible;
   }
 
   .editor-pane,
@@ -483,7 +579,16 @@ onUnmounted(() => clearTimeout(debounceTimer))
   }
 
   .result-list {
+    height: auto;
     min-height: 180px;
+  }
+
+  .result-splitter {
+    display: none;
+  }
+
+  .result-rows {
+    max-height: 320px;
   }
 }
 </style>

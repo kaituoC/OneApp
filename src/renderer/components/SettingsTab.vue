@@ -1,5 +1,5 @@
 <template>
-  <div class="settings-tab">
+  <div class="settings-tab tool-page-scroll">
     <header class="settings-hero">
       <div>
         <h2>设置</h2>
@@ -8,7 +8,18 @@
       <span class="version-pill">v{{ version }}</span>
     </header>
 
-    <section class="setting-section">
+    <div class="settings-navigation tool-segmented" role="radiogroup" aria-label="设置分区" @keydown="handleSegmentedKeydown">
+      <button
+        v-for="section in SETTING_SECTIONS"
+        :key="section.key"
+        role="radio"
+        :aria-checked="activeSection === section.key"
+        :class="{ active: activeSection === section.key }"
+        @click="activeSection = section.key"
+      >{{ section.label }}</button>
+    </div>
+
+    <section v-show="activeSection === 'general'" class="setting-section">
       <h3 class="section-title">工作目录</h3>
       <div class="setting-row">
         <span class="current-dir">当前：{{ workDir || '未设置' }}</span>
@@ -16,21 +27,23 @@
       </div>
     </section>
 
-    <section class="setting-section">
+    <section v-show="activeSection === 'general'" class="setting-section">
       <h3 class="section-title">界面设置</h3>
       <div class="setting-row">
         <label>主题：</label>
-        <div class="btn-group">
-          <button :class="{ active: theme === 'dark' }" @click="theme = 'dark'">深色</button>
-          <button :class="{ active: theme === 'light' }" @click="theme = 'light'">浅色</button>
+        <div class="btn-group" role="radiogroup" aria-label="主题" @keydown="handleSegmentedKeydown">
+          <button role="radio" :aria-checked="theme === 'dark'" :class="{ active: theme === 'dark' }" @click="theme = 'dark'">深色</button>
+          <button role="radio" :aria-checked="theme === 'light'" :class="{ active: theme === 'light' }" @click="theme = 'light'">浅色</button>
         </div>
       </div>
       <div class="setting-row">
         <label>字体大小：</label>
-        <div class="btn-group">
+        <div class="btn-group" role="radiogroup" aria-label="编辑字号" @keydown="handleSegmentedKeydown">
           <button
             v-for="size in [12, 14, 16, 18]"
             :key="size"
+            role="radio"
+            :aria-checked="fontSize === size"
             :class="{ active: fontSize === size }"
             @click="fontSize = size"
           >
@@ -40,7 +53,7 @@
       </div>
     </section>
 
-    <section class="setting-section">
+    <section v-show="activeSection === 'recent'" class="setting-section">
       <h3 class="section-title">最近文件</h3>
       <div class="recent-files">
         <span v-if="recentFiles.length === 0" class="empty-hint">无最近文件</span>
@@ -52,7 +65,7 @@
       <button @click="$emit('clear-recent')" :disabled="recentFiles.length === 0">清除记录</button>
     </section>
 
-    <section class="setting-section">
+    <section v-show="activeSection === 'shortcuts'" class="setting-section">
       <h3 class="section-title">快捷键说明</h3>
       <table class="shortcut-table">
         <tbody>
@@ -61,15 +74,15 @@
           <tr><td>{{ SHORTCUT_MODIFIER }}+S</td><td>保存文件</td></tr>
           <tr><td>{{ SHORTCUT_MODIFIER }}+W</td><td>关闭当前文件</td></tr>
           <tr><td>{{ SHORTCUT_MODIFIER }}+R / F5</td><td>刷新页面</td></tr>
-          <tr><td>{{ SHORTCUT_MODIFIER }}+Tab</td><td>切换下一个标签</td></tr>
-          <tr><td>{{ SHORTCUT_MODIFIER }}+Shift+Tab</td><td>切换上一个标签</td></tr>
+          <tr><td>{{ CYCLE_SHORTCUTS.next }}</td><td>切换下一个工具</td></tr>
+          <tr><td>{{ CYCLE_SHORTCUTS.previous }}</td><td>切换上一个工具</td></tr>
           <tr><td>{{ SHORTCUT_MODIFIER }}+1~9 / 0</td><td>切换到指定工具</td></tr>
           <tr><td>{{ isMac ? 'Cmd+Option+I' : 'Ctrl+Shift+I' }} / F12</td><td>打开/关闭调试工具</td></tr>
         </tbody>
       </table>
     </section>
 
-    <section class="setting-section">
+    <section v-show="activeSection === 'about'" class="setting-section">
       <h3 class="section-title">关于</h3>
       <div class="about-info">
         <p>OneApp v{{ version }}</p>
@@ -89,7 +102,8 @@
 <script setup>
 import { computed, ref } from 'vue'
 import { chooseDirectory } from '../utils/fileHelper.js'
-import { IS_MAC, SHORTCUT_MODIFIER } from '../utils/navigation.js'
+import { CYCLE_SHORTCUTS, IS_MAC, SHORTCUT_MODIFIER } from '../utils/navigation.js'
+import { handleSegmentedKeydown } from '../utils/segmentedControl.js'
 
 const version = __APP_VERSION__
 const buildDate = __BUILD_DATE__
@@ -106,6 +120,13 @@ defineEmits(['clear-recent'])
 
 const isMac = IS_MAC
 const checkingUpdate = ref(false)
+const activeSection = ref('general')
+const SETTING_SECTIONS = [
+  { key: 'general', label: '常用设置' },
+  { key: 'recent', label: '最近文件' },
+  { key: 'shortcuts', label: '快捷键' },
+  { key: 'about', label: '关于' }
+]
 
 const recentFileItems = computed(() => props.recentFiles.map((path) => {
   const parts = String(path).split(/[\\/]/)
@@ -205,6 +226,13 @@ function openGitHub() {
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
 }
+.settings-navigation {
+  position: sticky;
+  top: -20px;
+  z-index: 4;
+  margin-bottom: 16px;
+  background: var(--bg-secondary);
+}
 .settings-hero h2 {
   font-size: 20px;
   margin-bottom: 4px;
@@ -265,14 +293,15 @@ function openGitHub() {
   color: #fff;
 }
 .recent-files {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 8px;
   margin-bottom: 8px;
 }
 .file-name {
   display: flex;
-  min-width: min(100%, 340px);
+  width: 100%;
+  min-width: 0;
   flex-direction: column;
   gap: 2px;
   font-family: var(--font-mono);

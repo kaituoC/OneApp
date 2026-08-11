@@ -1,7 +1,18 @@
 <template>
   <div class="time-tab">
+    <div class="time-navigation tool-segmented" role="radiogroup" aria-label="时间工具" @keydown="handleSegmentedKeydown">
+      <button
+        v-for="section in TIME_SECTIONS"
+        :key="section.key"
+        role="radio"
+        :aria-checked="activeSection === section.key"
+        :class="{ active: activeSection === section.key }"
+        @click="activeSection = section.key"
+      >{{ section.label }}</button>
+    </div>
+
     <!-- 实时时间显示区 -->
-    <div class="live-section tool-panel">
+    <div v-show="activeSection === 'current'" class="live-section tool-panel">
       <div class="live-row">
         <div class="live-item">
           <span class="live-label">当前时间</span>
@@ -12,9 +23,9 @@
           <span class="live-label">时间戳</span>
           <div class="live-ts-row">
             <span class="live-value">{{ liveTimestamp }}</span>
-          <div class="unit-toggle tool-segmented">
-              <button :class="{ active: displayMode === 'second' }" @click="displayMode = 'second'">秒</button>
-              <button :class="{ active: displayMode === 'millisecond' }" @click="displayMode = 'millisecond'">毫秒</button>
+          <div class="unit-toggle tool-segmented" role="radiogroup" aria-label="当前时间戳单位" @keydown="handleSegmentedKeydown">
+              <button role="radio" :aria-checked="displayMode === 'second'" :class="{ active: displayMode === 'second' }" @click="displayMode = 'second'">秒</button>
+              <button role="radio" :aria-checked="displayMode === 'millisecond'" :class="{ active: displayMode === 'millisecond' }" @click="displayMode = 'millisecond'">毫秒</button>
             </div>
           </div>
           <button class="copy-btn" @click="copyLiveTimestamp">复制</button>
@@ -23,7 +34,7 @@
     </div>
 
     <!-- 时间戳转日期 -->
-    <div class="convert-section tool-panel">
+    <div v-show="activeSection === 'convert'" class="convert-section tool-panel">
       <div class="section-header tool-panel-header">时间戳转日期</div>
       <div class="convert-content">
         <div class="convert-row">
@@ -65,7 +76,7 @@
     </div>
 
     <!-- 日期转时间戳 -->
-    <div class="convert-section tool-panel">
+    <div v-show="activeSection === 'convert'" class="convert-section tool-panel">
       <div class="section-header tool-panel-header">日期转时间戳</div>
       <div class="convert-content">
         <div class="convert-row">
@@ -97,7 +108,7 @@
       </div>
     </div>
 
-    <div class="convert-section tool-panel">
+    <div v-show="activeSection === 'cron'" class="convert-section tool-panel">
       <div class="section-header tool-panel-header">Cron 表达式解释</div>
       <div class="convert-content">
         <div class="convert-row">
@@ -126,7 +137,7 @@
       </div>
     </div>
 
-    <div class="convert-section tool-panel">
+    <div v-show="activeSection === 'timezone'" class="convert-section tool-panel">
       <div class="section-header tool-panel-header">多时区对照</div>
       <div class="convert-content">
         <div class="convert-row">
@@ -170,6 +181,7 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useCopyToast } from '../composables/useCopyToast.js'
+import { handleSegmentedKeydown } from '../utils/segmentedControl.js'
 import {
   formatDate,
   timestampToDate,
@@ -177,6 +189,7 @@ import {
   getCurrentTimestamp,
   getCurrentFormattedDate,
   explainCronExpression,
+  buildInitialCronPreview,
   buildTimezoneComparison,
   getAvailableTimezonePresets
 } from '../utils/timeHelper.js'
@@ -184,6 +197,14 @@ import {
 defineProps({
   fontSize: { type: Number, default: 14 }
 })
+
+const TIME_SECTIONS = [
+  { key: 'current', label: '当前时间' },
+  { key: 'convert', label: '时间转换' },
+  { key: 'cron', label: 'Cron' },
+  { key: 'timezone', label: '多时区' }
+]
+const activeSection = ref('current')
 
 // 显示模式
 const displayMode = ref('second')
@@ -269,7 +290,8 @@ function copyMsTs() {
   copyToClipboard(dateToTsResultMs.value)
 }
 
-const cronInput = ref('*/15 9-18 * * 1-5')
+const initialCron = buildInitialCronPreview()
+const cronInput = ref(initialCron.expression)
 const cronDescription = ref('')
 const cronRuns = ref([])
 const cronHasError = ref(false)
@@ -304,6 +326,13 @@ function removeTimezone(row) {
 
 // 启动定时器
 onMounted(() => {
+  if (initialCron.success) {
+    cronDescription.value = initialCron.description
+    cronRuns.value = initialCron.formattedRuns
+  } else {
+    cronDescription.value = initialCron.displayMessage
+    cronHasError.value = true
+  }
   timer = setInterval(() => {
     liveTime.value = Date.now()
   }, 1000)
@@ -322,6 +351,15 @@ onUnmounted(() => {
   overflow-y: auto;
   padding: 16px;
   gap: 12px;
+}
+
+.time-navigation {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  flex: none;
+  align-self: flex-start;
+  background: var(--bg-secondary);
 }
 
 /* 实时时间显示区 */

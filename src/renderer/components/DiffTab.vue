@@ -1,5 +1,5 @@
 <template>
-  <div class="diff-tab">
+  <div class="diff-tab tool-page">
     <div class="toolbar tool-command-bar">
       <button
         v-if="!showDiff"
@@ -13,18 +13,25 @@
       <button @click="swapTexts">交换</button>
       <button @click="clearAll">清空全部</button>
       <div class="toolbar-separator"></div>
-      <div class="mode-toggle tool-segmented">
+      <div class="mode-toggle tool-segmented" role="radiogroup" aria-label="差异结果视图" @keydown="handleSegmentedKeydown">
         <button
+          role="radio"
+          :aria-checked="viewMode === 'split'"
           :class="{ active: viewMode === 'split' }"
+          :disabled="!showDiff"
           @click="viewMode = 'split'"
           title="并排对比"
         >并排</button>
         <button
+          role="radio"
+          :aria-checked="viewMode === 'unified'"
           :class="{ active: viewMode === 'unified' }"
+          :disabled="!showDiff"
           @click="viewMode = 'unified'"
           title="统一差异"
         >统一</button>
       </div>
+      <span v-if="!showDiff" class="toolbar-guidance">输入两侧文本后开始对比</span>
     </div>
 
     <div v-if="showDiff" class="diff-summary">
@@ -139,6 +146,7 @@
 import { nextTick, ref } from 'vue'
 import { diffTextUnified, diffTextSplit, diffStats } from '../utils/diffHelper.js'
 import { readFile, openFile } from '../utils/fileHelper.js'
+import { handleSegmentedKeydown } from '../utils/segmentedControl.js'
 import EditorWithLineNumbers from './EditorWithLineNumbers.vue'
 
 const props = defineProps({
@@ -264,6 +272,13 @@ function onScrollRight() {
 .summary-mode {
   color: var(--text-muted);
   font-size: 12px;
+}
+
+.toolbar-guidance {
+  margin-left: auto;
+  color: var(--text-muted);
+  font-size: 12px;
+  white-space: nowrap;
 }
 
 .main-area {
@@ -435,6 +450,10 @@ function onScrollRight() {
   }
 
   .toolbar-separator {
+    display: none;
+  }
+
+  .toolbar-guidance {
     display: none;
   }
 }

@@ -1,42 +1,18 @@
 <template>
-  <div class="json-tab">
+  <div class="json-tab tool-page">
     <div class="toolbar tool-command-bar">
-      <div class="mode-toggle tool-segmented" aria-label="数据格式">
-        <button :class="{ active: mode === 'json' }" @click="setMode('json')">JSON</button>
-        <button :class="{ active: mode === 'yaml' }" @click="setMode('yaml')">YAML</button>
-        <button :class="{ active: mode === 'csv' }" @click="setMode('csv')">CSV</button>
-        <button :class="{ active: mode === 'sql' }" @click="setMode('sql')">SQL</button>
-        <button :class="{ active: mode === 'xml' }" @click="setMode('xml')">XML</button>
+      <div class="mode-toggle tool-segmented" role="radiogroup" aria-label="数据格式" @keydown="handleSegmentedKeydown">
+        <button
+          v-for="item in MODES"
+          :key="item.key"
+          role="radio"
+          :aria-checked="mode === item.key"
+          :class="{ active: mode === item.key }"
+          @click="setMode(item.key)"
+        >{{ item.label }}</button>
       </div>
-      <div class="toolbar-separator"></div>
-      <template v-if="mode === 'json'">
-        <button class="primary" @click="doFormat">格式化</button>
-        <button @click="doMinify">压缩</button>
-        <button @click="doValidate">校验</button>
-        <button @click="doUnescape">去除转义</button>
-        <button @click="doJsonToYaml">转 YAML</button>
-        <button @click="doJsonPathQuery">JSONPath 查询</button>
-      </template>
-      <template v-else-if="mode === 'yaml'">
-        <button class="primary" @click="doYamlToJson">转 JSON</button>
-        <button @click="doValidateYaml">校验</button>
-      </template>
-      <template v-else-if="mode === 'csv'">
-        <button class="primary" @click="doCsvToJson">CSV 转 JSON</button>
-        <button @click="doJsonToCsv">JSON 转 CSV</button>
-        <button @click="doPreviewCsv">表格预览</button>
-      </template>
-      <template v-else-if="mode === 'sql'">
-        <button class="primary" @click="doFormatSql">格式化</button>
-        <button @click="doMinifySql">压缩</button>
-      </template>
-      <template v-else>
-        <button class="primary" @click="doFormatXml">格式化</button>
-        <button @click="doMinifyXml">压缩</button>
-      </template>
-      <span class="toolbar-spacer"></span>
-      <button @click="copyResult">复制结果</button>
-      <button @click="clearAll">清空</button>
+      <button class="primary" @click="runPrimaryAction">{{ primaryAction.label }}</button>
+      <OverflowMenu :items="secondaryActions" @select="runSecondaryAction" />
     </div>
     <div v-if="mode === 'json'" class="jsonpath-bar">
       <label for="jsonpath-expression">JSONPath</label>
@@ -49,7 +25,7 @@
       />
     </div>
 
-    <div class="content tool-workspace">
+    <div class="content tool-workspace tool-grid-split">
       <div class="panel tool-panel">
         <div class="panel-header tool-panel-header">
           <span class="tool-panel-title">{{ inputTitle }}</span>
@@ -64,8 +40,12 @@
       <div class="panel tool-panel">
         <div class="panel-header tool-panel-header">
           <span class="tool-panel-title">{{ outputTitle }}</span>
-          <span :class="['tool-status-chip', hasError ? 'error' : 'success']">
-            {{ hasError ? '错误' : (output ? '就绪' : '待处理') }}
+          <span class="tool-panel-actions">
+            <span :class="['tool-status-chip', hasError ? 'error' : hasResult ? 'success' : '']" role="status" aria-live="polite">
+              {{ resultStatus }}
+            </span>
+            <button @click="copyResult" :disabled="!output || hasError">复制</button>
+            <button @click="clearAll" :disabled="!input && !hasResult">清空</button>
           </span>
         </div>
         <div v-if="tablePreview" class="csv-preview-wrap">
@@ -111,9 +91,6 @@
       </div>
     </div>
 
-    <div class="status-bar" :class="{ 'status-error': hasError, empty: !statusMessage }">
-      {{ statusMessage || emptyStatusText }}
-    </div>
     <div v-if="copyMessage" class="tool-copy-toast">{{ copyMessage }}</div>
   </div>
 </template>
@@ -141,7 +118,9 @@ import {
   minifyXML
 } from '../utils/formatHelper.js'
 import { queryJSONPath } from '../utils/jsonPathHelper.js'
+import { handleSegmentedKeydown } from '../utils/segmentedControl.js'
 import EditorWithLineNumbers from './EditorWithLineNumbers.vue'
+import OverflowMenu from './OverflowMenu.vue'
 import { useCopyToast } from '../composables/useCopyToast.js'
 import { useToolResult } from '../composables/useToolResult.js'
 
@@ -156,6 +135,31 @@ const jsonPathMatches = ref([])
 const tablePreview = ref(null)
 const { output, statusMessage, hasError, reset, setSuccess, setError } = useToolResult()
 const { copyMessage, copyToClipboard } = useCopyToast()
+
+const MODES = [
+  { key: 'json', label: 'JSON' },
+  { key: 'yaml', label: 'YAML' },
+  { key: 'csv', label: 'CSV' },
+  { key: 'sql', label: 'SQL' },
+  { key: 'xml', label: 'XML' }
+]
+
+const ACTIONS = {
+  json: {
+    primary: { key: 'format', label: '格式化' },
+    secondary: [
+      { key: 'minify', label: '压缩' },
+      { key: 'validate', label: '校验' },
+      { key: 'unescape', label: '去除转义' },
+      { key: 'to-yaml', label: '转 YAML' },
+      { key: 'jsonpath', label: 'JSONPath 查询' }
+    ]
+  },
+  yaml: { primary: { key: 'to-json', label: '转 JSON' }, secondary: [{ key: 'validate-yaml', label: '校验' }] },
+  csv: { primary: { key: 'csv-to-json', label: 'CSV 转 JSON' }, secondary: [{ key: 'json-to-csv', label: 'JSON 转 CSV' }, { key: 'preview-csv', label: '表格预览' }] },
+  sql: { primary: { key: 'format-sql', label: '格式化' }, secondary: [{ key: 'minify-sql', label: '压缩' }] },
+  xml: { primary: { key: 'format-xml', label: '格式化' }, secondary: [{ key: 'minify-xml', label: '压缩' }] }
+}
 
 const inputTitle = computed(() => `${mode.value.toUpperCase()} 输入`)
 const outputTitle = computed(() => {
@@ -174,15 +178,43 @@ const inputPlaceholder = computed(() =>
     xml: '在此粘贴 XML 内容...'
   }[mode.value])
 )
-const emptyStatusText = computed(() =>
-  ({
-    json: '等待输入 JSON 内容',
-    yaml: '等待输入 YAML 内容',
-    csv: '等待输入 CSV 或 JSON 对象数组',
-    sql: '等待输入 SQL 内容',
-    xml: '等待输入 XML 内容'
-  }[mode.value])
-)
+const primaryAction = computed(() => ACTIONS[mode.value].primary)
+const secondaryActions = computed(() => ACTIONS[mode.value].secondary)
+const hasResult = computed(() => Boolean(output.value || tablePreview.value || jsonPathMatches.value.length || statusMessage.value))
+const resultStatus = computed(() => {
+  if (hasError.value) return '错误'
+  if (hasResult.value) return '就绪'
+  return input.value ? '选择操作' : '等待输入'
+})
+
+function runPrimaryAction() {
+  runAction(primaryAction.value.key)
+}
+
+function runSecondaryAction(action) {
+  runAction(action)
+}
+
+function runAction(action) {
+  const handlers = {
+    format: doFormat,
+    minify: doMinify,
+    validate: doValidate,
+    unescape: doUnescape,
+    'to-yaml': doJsonToYaml,
+    jsonpath: doJsonPathQuery,
+    'to-json': doYamlToJson,
+    'validate-yaml': doValidateYaml,
+    'csv-to-json': doCsvToJson,
+    'json-to-csv': doJsonToCsv,
+    'preview-csv': doPreviewCsv,
+    'format-sql': doFormatSql,
+    'minify-sql': doMinifySql,
+    'format-xml': doFormatXml,
+    'minify-xml': doMinifyXml
+  }
+  handlers[action]?.()
+}
 
 function setMode(nextMode) {
   mode.value = nextMode
@@ -300,9 +332,6 @@ function clearAll() {
   flex-direction: column;
   height: 100%;
 }
-.toolbar-spacer {
-  flex: 1;
-}
 .jsonpath-bar {
   display: flex;
   align-items: center;
@@ -335,7 +364,6 @@ function clearAll() {
 }
 .content {
   flex: 1;
-  display: flex;
   overflow: hidden;
   gap: 12px;
   padding: 12px;
@@ -423,27 +451,8 @@ function clearAll() {
   color: var(--text-primary);
   background: var(--bg-tertiary);
 }
-.status-bar {
-  padding: 6px 12px;
-  font-size: 12px;
-  background: var(--bg-secondary);
-  border-top: 1px solid var(--border-color);
-  color: var(--success);
-}
-.status-bar.empty {
-  color: var(--text-muted);
-}
-.status-error {
-  color: var(--error);
-}
-
-@media (max-width: 860px) {
-  .toolbar-spacer {
-    display: none;
-  }
-
+@media (max-width: 900px) {
   .content {
-    flex-direction: column;
     overflow: auto;
   }
 

@@ -25,6 +25,7 @@ import {
   buildFinalPrompt,
   buildMessageNavigationTargets,
   agentsForDiscussionPhase,
+  getWorkshopUiStage,
   exportMarkdown
 } from '../src/renderer/utils/agentWorkshopHelper.js'
 
@@ -451,6 +452,15 @@ describe('agentsForDiscussionPhase', () => {
 
     expect(agentsForDiscussionPhase('round1', { record: null, config })).toEqual(['codex', 'claude'])
     expect(agentsForDiscussionPhase('final', { record: null, config })).toEqual(['codex'])
+  })
+})
+
+describe('getWorkshopUiStage', () => {
+  it('maps existing workshop state to prepare, running and result UI stages', () => {
+    expect(getWorkshopUiStage(null, null)).toBe('prepare')
+    expect(getWorkshopUiStage({ id: 'run-1', status: 'running' }, 'run-1')).toBe('running')
+    expect(getWorkshopUiStage({ id: 'run-1', status: 'completed' }, 'run-1')).toBe('result')
+    expect(getWorkshopUiStage({ id: 'old', status: 'running' }, null)).toBe('result')
   })
 })
 

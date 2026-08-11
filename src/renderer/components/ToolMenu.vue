@@ -3,7 +3,9 @@
     <button
       v-for="item in items"
       :key="item.key"
+      type="button"
       :class="['menu-item', { active: item.key === active }]"
+      :aria-current="item.key === active ? 'page' : undefined"
       @click="$emit('select', item.key)"
     >
       <component :is="item.icon" :size="15" aria-hidden="true" />

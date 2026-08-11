@@ -7,6 +7,8 @@ import {
   getCurrentTimestamp,
   getCurrentFormattedDate,
   explainCronExpression,
+  buildInitialCronPreview,
+  DEFAULT_CRON_EXPRESSION,
   parseCronExpression,
   buildTimezoneComparison,
   getAvailableTimezonePresets,
@@ -204,6 +206,15 @@ describe('timeHelper', () => {
   })
 
   describe('explainCronExpression', () => {
+    it('builds a ready initial preview for the default Cron expression', () => {
+      const preview = buildInitialCronPreview(new Date(2026, 0, 1, 8, 0, 0))
+
+      expect(preview.expression).toBe(DEFAULT_CRON_EXPRESSION)
+      expect(preview.success).toBe(true)
+      expect(preview.description).toBeTruthy()
+      expect(preview.formattedRuns).toHaveLength(5)
+    })
+
     it('should explain cron and return next 5 local run times', () => {
       const base = new Date(2026, 0, 1, 8, 0, 0)
       const result = explainCronExpression('0 9 * * 1-5', base)

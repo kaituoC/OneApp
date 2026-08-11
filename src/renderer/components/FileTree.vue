@@ -11,6 +11,7 @@
           :class="['tool-icon-button', { on: showHidden }]"
           :title="showHidden ? '隐藏隐藏项' : '显示隐藏项'"
           :aria-label="showHidden ? '隐藏隐藏项' : '显示隐藏项'"
+          :aria-pressed="showHidden"
           @click="showHidden = !showHidden"
         >
           <component :is="showHidden ? Eye : EyeOff" :size="15" aria-hidden="true" />

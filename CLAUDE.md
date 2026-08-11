@@ -184,7 +184,7 @@ electron-vite 构建三个独立的 bundle：
 
 ### 核心组件
 
-- **App.vue**：根组件，管理标签页状态、主题、字号、最近文件和键盘快捷键（Ctrl+1-9/0、Ctrl+Tab）
+- **App.vue**：根组件，管理一级工具状态、主题、字号、最近文件、约 900px 以下自动收起的受控导航和键盘快捷键（macOS `Cmd+1-9/0`、Windows/Linux `Ctrl+1-9/0`，全平台 `Ctrl+Tab` / `Ctrl+Shift+Tab` 循环；不拦截 macOS `Cmd+Tab`）
 - **EditorWithLineNumbers.vue**：可复用的 textarea，带同步行号列
 - **EditorTab.vue**：统一编辑器标签，按文件后缀驱动 `mode`（markdown / html），多态预览（`MarkdownPreview` / `HtmlPreview`）、上下文工具栏（markdown 模式额外含导出 HTML/PDF、语法介绍）、滚动同步（markdown 双向 / html 单向），使用 `useEditorFile` composable
 - **JsonTab.vue**：数据工具合集，提供 JSON / YAML / CSV / SQL / XML 子工具；JSON 子工具支持 JSONPath 查询结果列表和完整 JSON 输出，CSV 子工具支持 CSV ⇄ JSON 与只读表格预览，SQL / XML 子工具支持格式化与压缩
@@ -193,12 +193,13 @@ electron-vite 构建三个独立的 bundle：
 - **DiffTab.vue**：并排/统一差异视图，带滚动同步，使用 diff-match-patch 库
 - **TextTab.vue**：文本处理工具，左侧子工具导航切换统计、大小写/命名风格转换、排序和去重，纯逻辑在 `textHelper.js`
 - **GeneratorTab.vue**：生成器合集，左侧子工具导航切换 UUID、随机密码、Lorem 和二维码，纯逻辑在 `generatorHelper.js`
-- **RegexTab.vue**：正则测试器，结构化 `/pattern/flags` 输入、实时匹配、编辑/高亮预览双区、捕获组多色、匹配结果列表（与预览双向 hover 联动）、右侧速查抽屉；匹配经 `useRegexMatcher` 在 Web Worker 中执行
-- **composables/useRegexMatcher.js**：封装正则匹配 Worker 的生命周期——发起匹配、超时（1.5s）`terminate` 兜底、重建待命 Worker、组件卸载释放，杜绝灾难性回溯冻结 UI
+- **RegexTab.vue**：正则测试器，结构化 `/pattern/flags` 输入、实时匹配、编辑/高亮预览双区、捕获组多色、匹配结果列表（与预览双向 hover 联动）、右侧速查抽屉；结果区分隔条支持指针和键盘调节，匹配经 `useRegexMatcher` 在 Web Worker 中执行
+- **composables/useRegexMatcher.js**：封装正则匹配 Worker 的生命周期——完整输入签名、输入变化立即失效旧结果、丢弃乱序响应、超时（1.5s）`terminate` 兜底、重建待命 Worker、组件卸载释放，杜绝灾难性回溯冻结 UI
 - **workers/regex.worker.js**：子线程内调用 `regexHelper.runRegex` 执行匹配，postMessage 回传位置数组
 - **EncodeTab.vue**：编码工具合集，左侧菜单切换 6 个子工具（Base64 / URL / JWT / Hash / 进制 / Unicode）；编解码类用「左源右果 + ⇄ 方向」实时计算，Hash 异步（generation 计数防过期响应），进制四框联动，纯逻辑全在 `encodeHelper.js`
-- **AgentWorkshopTab.vue**：Agent 研讨室标签，左栏配置（仓库选择 / agent 三态检测卡片 + 按需「测试连接」/ 网络·代理配置（启用开关 / URL / 可选 ALL_PROXY，实时校验 + 持久化）/ 主持选择 / 调用估算 / 开始-停止）与运行进度，右栏想法输入或 Markdown 时间线；经 `window.electronAPI.agentWorkshop` 调用主进程，订阅 `agent-discussion:event` 事件流（卸载时取消订阅），用 `activeRunId` 区分本会话运行与恢复查看的旧记录
-- **SettingsTab.vue**：平台感知快捷键（Cmd vs Ctrl）、electron-store 持久化、GitHub Release 更新检查与统一消息弹窗结果展示
+- **TimeTab.vue**：按当前时间、时间转换、Cron、多时区四个子工具组织；使用 `v-show` 保留页面生命周期内状态，Cron 首次进入已有合法默认表达式的解释与未来时间
+- **AgentWorkshopTab.vue**：Agent 研讨室标签，仅从现有前端状态派生「准备 / 运行 / 结果」三阶段；准备阶段展示配置与启动，运行/结果阶段展示进度和 Markdown 时间线；经 `window.electronAPI.agentWorkshop` 调用主进程，订阅 `agent-discussion:event` 事件流（卸载时取消订阅），用 `activeRunId` 区分本会话运行与恢复查看的旧记录，不改变 IPC、编排和持久化语义
+- **SettingsTab.vue**：以常用设置、最近文件、快捷键、关于四个分区组织平台感知快捷键、electron-store 持久化、GitHub Release 更新检查与统一消息弹窗结果展示
 
 ### 应用配置
 

@@ -1,18 +1,14 @@
 <template>
-  <div class="generator-tab">
+  <div class="generator-tab tool-page">
     <ToolMenu :items="TOOLS" :active="tool" label="生成器工具" @select="setTool" />
 
     <section class="work-area tool-workspace" :style="{ fontSize: fontSize + 'px' }">
       <div class="toolbar tool-command-bar">
         <button class="primary" @click="runGenerate">生成</button>
-        <span class="toolbar-spacer"></span>
-        <button v-if="tool === 'qr'" @click="downloadQrPng" :disabled="!qrImage || hasError">下载 PNG</button>
-        <button v-if="tool === 'qr'" @click="copyQrPng" :disabled="!qrImage || hasError">复制 PNG</button>
-        <button v-else @click="copyResult" :disabled="!output || hasError">复制结果</button>
-        <button @click="clearOutput" :disabled="!output && !statusMessage">清空</button>
+        <span class="toolbar-note">根据左侧配置生成 {{ activeTool.label }} 结果</span>
       </div>
 
-      <div class="content">
+      <div class="content tool-grid-config-result">
         <div class="panel tool-panel config-panel">
           <div class="panel-header tool-panel-header">
             <span class="tool-panel-title">{{ activeTool.label }} 设置</span>
@@ -86,25 +82,30 @@
         <div class="panel tool-panel output-panel">
           <div class="panel-header tool-panel-header">
             <span class="tool-panel-title">生成结果</span>
-            <span :class="['tool-status-chip', hasError ? 'error' : output ? 'success' : '']">
-              {{ statusChip }}
+            <span class="tool-panel-actions">
+              <span :class="['tool-status-chip', hasError ? 'error' : output ? 'success' : '']" role="status" aria-live="polite">
+                {{ statusChip }}
+              </span>
+              <button v-if="tool === 'qr'" @click="downloadQrPng" :disabled="!qrImage || hasError">下载 PNG</button>
+              <button v-if="tool === 'qr'" @click="copyQrPng" :disabled="!qrImage || hasError">复制 PNG</button>
+              <button v-else @click="copyResult" :disabled="!output || hasError">复制</button>
+              <button @click="clearOutput" :disabled="!output && !statusMessage">清空</button>
             </span>
           </div>
           <div v-if="qrImage && !hasError" class="qr-preview">
             <img :src="qrImage" alt="二维码预览" />
           </div>
           <EditorWithLineNumbers
-            v-else
+            v-else-if="output"
             v-model="output"
             :font-size="fontSize"
             readonly
             :class="{ 'error-output': hasError }"
           />
+          <div v-else class="tool-empty-state generator-empty">
+            完成左侧配置后点击“生成”，结果会显示在这里
+          </div>
         </div>
-      </div>
-
-      <div class="status-bar" :class="{ 'status-error': hasError, empty: !statusMessage }">
-        {{ statusMessage || emptyStatusText }}
       </div>
     </section>
 
@@ -177,7 +178,6 @@ const statusChip = computed(() => {
   if (hasError.value) return '错误'
   return output.value ? '就绪' : '待生成'
 })
-const emptyStatusText = computed(() => `${activeTool.value.label} 等待生成`)
 
 function setTool(nextTool) {
   tool.value = nextTool
@@ -249,6 +249,7 @@ function clearOutput() {
 <style scoped>
 .generator-tab {
   display: flex;
+  flex-direction: row;
   height: 100%;
   background: var(--bg-primary);
 }
@@ -261,8 +262,9 @@ function clearOutput() {
   overflow: hidden;
 }
 
-.toolbar-spacer {
-  flex: 1;
+.toolbar-note {
+  color: var(--text-muted);
+  font-size: 12px;
 }
 
 .content {
@@ -282,11 +284,18 @@ function clearOutput() {
 .config-panel {
   display: flex;
   flex-direction: column;
+  align-self: start;
+  max-height: 100%;
+  overflow: auto;
 }
 
 .output-panel {
   display: flex;
   flex-direction: column;
+}
+
+.generator-empty {
+  flex: 1;
 }
 
 .form-grid {
@@ -375,23 +384,6 @@ function clearOutput() {
   color: var(--error) !important;
 }
 
-.status-bar {
-  flex: none;
-  padding: 6px 12px;
-  color: var(--success);
-  background: var(--bg-secondary);
-  border-top: 1px solid var(--border-color);
-  font-size: 12px;
-}
-
-.status-bar.empty {
-  color: var(--text-muted);
-}
-
-.status-error {
-  color: var(--error);
-}
-
 @media (max-width: 900px) {
   .generator-tab {
     flex-direction: column;
@@ -407,6 +399,12 @@ function clearOutput() {
   .config-panel,
   .output-panel {
     min-height: 260px;
+  }
+
+  .config-panel {
+    width: 100%;
+    max-height: none;
+    overflow: visible;
   }
 }
 </style>

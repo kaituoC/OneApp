@@ -3,8 +3,11 @@ import {
   NAV_GROUPS,
   NAV_ITEMS,
   TAB_KEYS,
+  CYCLE_SHORTCUTS,
   getNavigationTooltip,
-  getShortcutSortValue
+  getShortcutSortValue,
+  isCycleNavigationEvent,
+  isNumericNavigationEvent
 } from '../src/renderer/utils/navigation.js'
 
 describe('navigation metadata', () => {
@@ -67,5 +70,19 @@ describe('navigation metadata', () => {
 
     expect(group.label).toBe('生成工具')
     expect(group.items.map((item) => item.key)).toEqual(['generator'])
+  })
+
+  it('数字直达按平台使用可靠的修饰键', () => {
+    expect(isNumericNavigationEvent({ key: '2', metaKey: true }, true)).toBe(true)
+    expect(isNumericNavigationEvent({ key: '2', ctrlKey: true }, true)).toBe(false)
+    expect(isNumericNavigationEvent({ key: '2', ctrlKey: true }, false)).toBe(true)
+    expect(isNumericNavigationEvent({ key: '2', metaKey: true }, false)).toBe(false)
+  })
+
+  it('循环切换始终使用 Ctrl+Tab，并保留 macOS Cmd+Tab', () => {
+    expect(CYCLE_SHORTCUTS).toEqual({ next: 'Ctrl+Tab', previous: 'Ctrl+Shift+Tab' })
+    expect(isCycleNavigationEvent({ key: 'Tab', ctrlKey: true })).toBe(true)
+    expect(isCycleNavigationEvent({ key: 'Tab', ctrlKey: true, shiftKey: true })).toBe(true)
+    expect(isCycleNavigationEvent({ key: 'Tab', metaKey: true })).toBe(false)
   })
 })

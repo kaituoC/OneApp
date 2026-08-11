@@ -1,12 +1,14 @@
 <template>
-  <div class="editor-tab">
+  <div class="editor-tab tool-page">
     <div class="toolbar tool-command-bar">
-      <div class="view-controls tool-segmented" aria-label="视图控制">
-        <button :class="{ active: showFileList }" title="显示或隐藏文件列表" @click="showFileList = !showFileList">列表</button>
-        <button :class="{ active: showEditor }" title="显示或隐藏编辑区" @click="showEditor = !showEditor">编辑</button>
+      <div class="view-controls panel-toggles" role="group" aria-label="显示面板">
+        <span class="panel-toggles-label">显示面板</span>
+        <button :class="{ active: showFileList }" :aria-pressed="showFileList" title="显示或隐藏文件列表" @click="showFileList = !showFileList">列表</button>
+        <button :class="{ active: showEditor }" :aria-pressed="showEditor" title="显示或隐藏编辑区" @click="showEditor = !showEditor">编辑</button>
         <button
           v-if="mode !== 'plaintext'"
           :class="{ active: showPreview }"
+          :aria-pressed="showPreview"
           title="显示或隐藏预览区"
           @click="showPreview = !showPreview"
         >预览</button>
@@ -15,36 +17,17 @@
         <FolderOpen :size="15" aria-hidden="true" />
         打开文件
       </button>
-      <div class="new-btn-wrap">
-        <button @click="showNewMenu = !showNewMenu" aria-haspopup="menu" :aria-expanded="showNewMenu">
-          <FilePlus2 :size="15" aria-hidden="true" />
-          新建
-          <ChevronDown :size="14" aria-hidden="true" />
-        </button>
-        <div v-if="showNewMenu" class="new-menu" @mouseleave="showNewMenu = false">
-          <div class="new-menu-item" @click="handleNewFile('markdown')">新建 Markdown</div>
-          <div class="new-menu-item" @click="handleNewFile('html')">新建 HTML</div>
-          <div class="new-menu-item" @click="handleNewFile('plaintext')">新建纯文本</div>
-        </div>
-      </div>
+      <OverflowMenu label="新建" :items="NEW_FILE_ITEMS" @select="handleNewFile" />
       <button class="primary" @click="saveFile">
         <Save :size="15" aria-hidden="true" />
         保存
       </button>
-      <template v-if="mode === 'markdown'">
-        <button @click="exportHTML">
-          <Download :size="15" aria-hidden="true" />
-          导出 HTML
-        </button>
-        <button @click="exportPDF">
-          <FileDown :size="15" aria-hidden="true" />
-          导出 PDF
-        </button>
-        <button @click="showSyntaxHelp = true">
-          <BookOpen :size="15" aria-hidden="true" />
-          语法介绍
-        </button>
-      </template>
+      <OverflowMenu
+        v-if="mode === 'markdown'"
+        label="更多"
+        :items="MARKDOWN_ACTIONS"
+        @select="handleMarkdownAction"
+      />
     </div>
 
     <div
@@ -97,7 +80,7 @@
 
 <script setup>
 import { ref, computed, watch, nextTick } from 'vue'
-import { BookOpen, ChevronDown, Download, FileDown, FilePlus2, FolderOpen, Save } from 'lucide-vue-next'
+import { FolderOpen, Save } from 'lucide-vue-next'
 import { useEditorFile } from '../composables/useEditorFile.js'
 import { saveFile as dialogSaveFile } from '../utils/fileHelper.js'
 
@@ -111,6 +94,19 @@ import MarkdownPreview from './MarkdownPreview.vue'
 import HtmlPreview from './HtmlPreview.vue'
 import FileTree from './FileTree.vue'
 import SyntaxHelpModal from './SyntaxHelpModal.vue'
+import OverflowMenu from './OverflowMenu.vue'
+
+const NEW_FILE_ITEMS = [
+  { key: 'markdown', label: '新建 Markdown' },
+  { key: 'html', label: '新建 HTML' },
+  { key: 'plaintext', label: '新建纯文本' }
+]
+
+const MARKDOWN_ACTIONS = [
+  { key: 'html', label: '导出 HTML' },
+  { key: 'pdf', label: '导出 PDF' },
+  { key: 'help', label: 'Markdown 语法介绍' }
+]
 
 const props = defineProps({
   workDir: { type: String, default: '' },
@@ -127,7 +123,6 @@ const showFileList = ref(true)
 const showEditor = ref(true)
 const showPreview = ref(false)
 const showSyntaxHelp = ref(false)
-const showNewMenu = ref(false)
 
 const { editorContent, currentFilePath, mode, openFileDialog: baseOpenFileDialog, openFromTree, newFile, saveFile, onContentChange } =
   useEditorFile({
@@ -142,8 +137,13 @@ const editableExtensions = []
 
 function handleNewFile(type) {
   newFile(type)
-  showNewMenu.value = false
   showPreview.value = false
+}
+
+function handleMarkdownAction(action) {
+  if (action === 'html') exportHTML()
+  else if (action === 'pdf') exportPDF()
+  else if (action === 'help') showSyntaxHelp.value = true
 }
 
 // 成功打开非纯文本文件时自动展开预览（取消/失败不动），规则单一来源
@@ -258,33 +258,34 @@ async function exportPDF() {
   height: 100%;
 }
 
-.new-btn-wrap {
-  position: relative;
-}
-
-.new-menu {
-  position: absolute;
-  top: 100%;
-  left: 0;
-  z-index: 100;
-  background: var(--surface);
+.panel-toggles {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px;
   border: 1px solid var(--border-color);
-  border-radius: var(--radius-md);
-  min-width: 130px;
-  box-shadow: var(--shadow-soft);
-  margin-top: 6px;
-  overflow: hidden;
+  border-radius: var(--radius-sm);
+  background: var(--surface-subtle);
 }
 
-.new-menu-item {
-  padding: 8px 14px;
-  font-size: 13px;
-  cursor: pointer;
-  white-space: nowrap;
+.panel-toggles-label {
+  padding: 0 5px;
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 700;
 }
 
-.new-menu-item:hover {
-  background: var(--surface-hover);
+.panel-toggles button {
+  min-height: 26px;
+  padding: 3px 8px;
+  background: transparent;
+  border-color: transparent;
+}
+
+.panel-toggles button.active {
+  color: var(--accent);
+  background: var(--accent-soft);
+  border-color: var(--accent-border);
 }
 
 .content {

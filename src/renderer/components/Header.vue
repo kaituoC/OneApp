@@ -1,27 +1,28 @@
 <template>
-  <aside :class="['workbench-nav', { collapsed: isCollapsed }]">
+  <aside :class="['workbench-nav', { collapsed }]">
     <div class="nav-chrome-space"></div>
 
     <div class="brand">
-      <component v-if="!isCollapsed" :is="WORKBENCH_ICON" class="brand-icon" :size="18" aria-hidden="true" />
-      <div v-if="!isCollapsed" class="brand-copy">
+      <component v-if="!collapsed" :is="WORKBENCH_ICON" class="brand-icon" :size="18" aria-hidden="true" />
+      <div v-if="!collapsed" class="brand-copy">
         <div class="brand-name">OneApp</div>
         <div class="brand-subtitle">Developer Workbench</div>
       </div>
       <button
         type="button"
         class="nav-collapse"
-        :title="isCollapsed ? '展开导航' : '收起导航'"
-        :aria-label="isCollapsed ? '展开导航' : '收起导航'"
-        @click="isCollapsed = !isCollapsed"
+        :title="collapsed ? '展开导航' : '收起导航'"
+        :aria-label="collapsed ? '展开导航' : '收起导航'"
+        :aria-pressed="collapsed"
+        @click="$emit('toggle-collapse')"
       >
-        <component :is="isCollapsed ? PanelLeftOpen : PanelLeftClose" :size="15" aria-hidden="true" />
+        <component :is="collapsed ? PanelLeftOpen : PanelLeftClose" :size="15" aria-hidden="true" />
       </button>
     </div>
 
     <nav class="nav-groups" aria-label="主导航">
       <section v-for="group in NAV_GROUPS" :key="group.key" class="nav-group">
-        <div v-if="!isCollapsed" class="nav-group-label" :title="group.label">{{ group.label }}</div>
+        <div v-if="!collapsed" class="nav-group-label" :title="group.label">{{ group.label }}</div>
         <button
           v-for="tab in group.items"
           :key="tab.key"
@@ -29,16 +30,17 @@
           :class="['nav-item', { active: activeTab === tab.key, featured: tab.featured }]"
           :title="getNavigationTooltip(tab)"
           :aria-label="getNavigationTooltip(tab)"
+          :aria-current="activeTab === tab.key ? 'page' : undefined"
           @click="$emit('tab-change', tab.key)"
         >
           <span class="nav-icon-wrap">
             <component :is="tab.icon" class="nav-icon" :size="17" aria-hidden="true" />
           </span>
-          <span v-if="!isCollapsed" class="nav-text">
+          <span v-if="!collapsed" class="nav-text">
             <span class="nav-label">{{ tab.label }}</span>
             <span class="nav-desc">{{ tab.summary || tab.description }}</span>
           </span>
-          <span v-if="!isCollapsed" class="nav-shortcut">{{ tab.shortcut }}</span>
+          <span v-if="!collapsed" class="nav-shortcut">{{ tab.shortcut }}</span>
         </button>
       </section>
     </nav>
@@ -46,17 +48,15 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
 import { PanelLeftClose, PanelLeftOpen } from 'lucide-vue-next'
 import { NAV_GROUPS, WORKBENCH_ICON, getNavigationTooltip } from '../utils/navigation.js'
 
 defineProps({
-  activeTab: { type: String, required: true }
+  activeTab: { type: String, required: true },
+  collapsed: { type: Boolean, default: false }
 })
 
-defineEmits(['tab-change'])
-
-const isCollapsed = ref(false)
+defineEmits(['tab-change', 'toggle-collapse'])
 </script>
 
 <style scoped>

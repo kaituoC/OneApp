@@ -1,9 +1,5 @@
-# cron-expression-helper Specification
+## MODIFIED Requirements
 
-## Purpose
-
-cron-expression-helper 定义时间工具中的标准 5 位 Cron 表达式解释能力：校验表达式、输出可读解释，并基于本地系统时区预览未来 5 次执行时间。
-## Requirements
 ### Requirement: Cron 表达式解释器
 
 时间工具 SHALL provide a standard 5-field Cron expression helper that validates the expression, explains it in readable text, previews the next 5 run times using the local system time zone, and automatically explains the initial valid default expression.

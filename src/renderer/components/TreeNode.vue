@@ -1,9 +1,12 @@
 <template>
   <div class="tree-node">
-    <div
+    <button
+      type="button"
       :class="['node-row', { 'is-dir': item.isDirectory, active: !item.isDirectory && activePath === item.path }]"
       :style="{ paddingLeft: `${depth * 14 + 8}px` }"
       :title="item.path"
+      :aria-expanded="item.isDirectory ? expanded : undefined"
+      :aria-current="!item.isDirectory && activePath === item.path ? 'page' : undefined"
       @click="onClick"
     >
       <span v-if="item.isDirectory" class="twisty">
@@ -14,7 +17,7 @@
         <component :is="item.isDirectory ? Folder : FileText" :size="14" aria-hidden="true" />
       </span>
       <span class="node-name">{{ item.name }}</span>
-    </div>
+    </button>
 
     <div v-if="item.isDirectory && expanded" class="node-children">
       <div v-if="loading" class="node-hint" :style="{ paddingLeft: `${(depth + 1) * 14 + 8}px` }">加载中...</div>
@@ -90,6 +93,7 @@ async function loadChildren() {
 
 <style scoped>
 .node-row {
+  width: 100%;
   display: flex;
   align-items: center;
   gap: 4px;
@@ -103,6 +107,10 @@ async function loadChildren() {
   overflow: hidden;
   user-select: none;
   border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  background: transparent;
+  border: 1px solid transparent;
+  text-align: left;
 }
 
 .node-row:hover {

@@ -1,11 +1,17 @@
 <template>
   <div class="diff-tab">
     <div class="toolbar tool-command-bar">
-      <button class="primary" @click="compare" :disabled="!textA && !textB">对比</button>
+      <button
+        v-if="!showDiff"
+        class="primary"
+        @click="compare"
+        :disabled="!textA && !textB"
+      >对比</button>
+      <button v-else class="primary" @click="editTexts">编辑内容</button>
       <button @click="loadFileA">加载文件A</button>
       <button @click="loadFileB">加载文件B</button>
       <button @click="swapTexts">交换</button>
-      <button @click="clearAll">清空</button>
+      <button @click="clearAll">清空全部</button>
       <div class="toolbar-separator"></div>
       <div class="mode-toggle tool-segmented">
         <button
@@ -32,16 +38,34 @@
       <!-- 输入区域 -->
       <div v-if="!showDiff" class="input-area">
         <div class="panel tool-panel">
-          <div class="panel-header tool-panel-header">文本 A (原文)</div>
+          <div class="panel-header tool-panel-header">
+            <span>文本 A (原文)</span>
+            <button
+              class="panel-clear-button"
+              title="只清空文本 A"
+              aria-label="清空文本 A"
+              @click="clearSide('A')"
+            >清空此侧</button>
+          </div>
           <EditorWithLineNumbers
+            ref="editorARef"
             v-model="textA"
             :font-size="fontSize"
             placeholder="输入或加载文本 A..."
           />
         </div>
         <div class="panel tool-panel">
-          <div class="panel-header tool-panel-header">文本 B (新文)</div>
+          <div class="panel-header tool-panel-header">
+            <span>文本 B (新文)</span>
+            <button
+              class="panel-clear-button"
+              title="只清空文本 B"
+              aria-label="清空文本 B"
+              @click="clearSide('B')"
+            >清空此侧</button>
+          </div>
           <EditorWithLineNumbers
+            ref="editorBRef"
             v-model="textB"
             :font-size="fontSize"
             placeholder="输入或加载文本 B..."
@@ -112,7 +136,7 @@
 </template>
 
 <script setup>
-import { ref, watch } from 'vue'
+import { nextTick, ref } from 'vue'
 import { diffTextUnified, diffTextSplit, diffStats } from '../utils/diffHelper.js'
 import { readFile, openFile } from '../utils/fileHelper.js'
 import EditorWithLineNumbers from './EditorWithLineNumbers.vue'
@@ -131,6 +155,8 @@ const diffSplitResult = ref([])
 const diffUnifiedResult = ref([])
 const stats = ref({ added: 0, removed: 0, modified: 0 })
 
+const editorARef = ref(null)
+const editorBRef = ref(null)
 const leftContent = ref(null)
 const rightContent = ref(null)
 let syncing = false
@@ -142,10 +168,16 @@ function compare() {
   showDiff.value = true
 }
 
+function editTexts() {
+  showDiff.value = false
+  nextTick(() => editorARef.value?.textareaRef?.focus())
+}
+
 async function loadFileA() {
   const filePath = await openFile(props.workDir)
   if (filePath) {
     textA.value = await readFile(filePath)
+    if (showDiff.value) compare()
   }
 }
 
@@ -153,6 +185,7 @@ async function loadFileB() {
   const filePath = await openFile(props.workDir)
   if (filePath) {
     textB.value = await readFile(filePath)
+    if (showDiff.value) compare()
   }
 }
 
@@ -161,6 +194,13 @@ function swapTexts() {
   textA.value = textB.value
   textB.value = temp
   if (showDiff.value) compare()
+}
+
+function clearSide(side) {
+  const targetEditor = side === 'A' ? editorARef : editorBRef
+  if (side === 'A') textA.value = ''
+  else textB.value = ''
+  nextTick(() => targetEditor.value?.textareaRef?.focus())
 }
 
 function clearAll() {
@@ -194,13 +234,6 @@ function onScrollRight() {
   leftContent.value.scrollLeft = rightContent.value.scrollLeft
   setTimeout(() => syncing = false, 50)
 }
-
-// 文本变化时自动重新对比
-watch([textA, textB], () => {
-  if (showDiff.value && (textA.value || textB.value)) {
-    compare()
-  }
-})
 </script>
 
 <style scoped>
@@ -253,6 +286,22 @@ watch([textA, textB], () => {
   display: flex;
   flex-direction: column;
   min-width: 0;
+}
+
+.panel-clear-button {
+  min-height: 24px;
+  padding: 2px 8px;
+  color: var(--text-muted);
+  background: transparent;
+  border-color: var(--border-subtle);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.panel-clear-button:hover:not(:disabled) {
+  color: var(--error);
+  border-color: var(--error);
+  background: var(--error-soft);
 }
 
 /* 并排对比模式 */

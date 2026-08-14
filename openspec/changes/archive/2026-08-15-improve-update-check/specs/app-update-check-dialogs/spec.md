@@ -1,10 +1,4 @@
-# app-update-check-dialogs Specification
-
-## Purpose
-
-app-update-check-dialogs 定义 OneApp 的应用级更新检查与统一消息弹窗能力：设置页可以检查 GitHub Releases 最新正式版本，主进程通过系统消息框展示信息与确认消息，并默认使用 OneApp 应用图标。
-
-## Requirements
+## MODIFIED Requirements
 
 ### Requirement: GitHub Release 更新检查
 
@@ -30,6 +24,8 @@ OneApp SHALL let users check the latest public non-draft, non-prerelease GitHub 
 - **WHEN** GitHub Release 请求超时、受限流、返回非成功状态、返回数据缺失或版本号无法解析
 - **THEN** 系统通过统一消息弹窗展示清晰错误提示，并恢复检查按钮可用状态
 
+## ADDED Requirements
+
 ### Requirement: 可选启动更新检查
 
 OneApp SHALL provide a Settings preference for update checks on launch, default it to disabled, and limit successful automatic checks to at most once every 24 hours.
@@ -45,23 +41,3 @@ OneApp SHALL provide a Settings preference for update checks on launch, default 
 #### Scenario: 启用后检查失败或无需提示
 - **WHEN** 启动检查请求失败、未发现新版本，或距离上次成功检查不足 24 小时
 - **THEN** 系统不得显示错误弹窗或重复的新版本弹窗；仅在成功完成实际检查时记录检查时间
-
-### Requirement: 统一应用消息弹窗
-
-OneApp SHALL route app-level information and confirmation dialogs through a narrow preload API backed by Electron `dialog.showMessageBox`.
-
-#### Scenario: 消息框使用应用图标
-- **WHEN** 渲染层请求显示应用级消息弹窗，且 OneApp 图标文件可用
-- **THEN** 主进程显示系统消息框并注入 OneApp 应用图标
-
-#### Scenario: 图标不可用时安全降级
-- **WHEN** 渲染层请求显示应用级消息弹窗，但开发或生产路径下的图标文件不可用
-- **THEN** 主进程仍显示消息框，并使用系统默认图标而不是抛出错误
-
-#### Scenario: 渲染层不暴露通用 IPC
-- **WHEN** 渲染层需要显示应用级消息或确认
-- **THEN** preload 只暴露受限的消息框方法，并且不开放任意 channel 的 IPC 调用能力
-
-#### Scenario: 设置页不使用原生 alert
-- **WHEN** 设置页展示更新检查结果或错误
-- **THEN** 系统使用统一应用消息弹窗，而不是渲染层原生 `alert`

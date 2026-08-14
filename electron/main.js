@@ -4,7 +4,7 @@ import { fileURLToPath } from 'url'
 import fs from 'fs'
 import Store from 'electron-store'
 import { registerAgentWorkshopIpc } from './agentWorkshop/ipc.js'
-import { checkForUpdates, resolveMessageBoxIconPath } from './appDialogs.js'
+import { checkForUpdates, isUpdateCheckDue, resolveMessageBoxIconPath } from './appDialogs.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -17,11 +17,38 @@ const store = new Store({
     workDir: '',
     theme: 'dark',
     fontSize: 14,
-    recentFiles: []
+    recentFiles: [],
+    updateCheckOnLaunch: false,
+    lastUpdateCheckAt: 0
   }
 })
 
 let mainWindow
+
+function checkForAppUpdates() {
+  return checkForUpdates({
+    currentVersion: app.getVersion(),
+    platform: process.platform,
+    arch: process.arch
+  })
+}
+
+function scheduleLaunchUpdateCheck(window) {
+  if (!store.get('updateCheckOnLaunch') || !isUpdateCheckDue(store.get('lastUpdateCheckAt'))) return
+
+  window.webContents.once('did-finish-load', () => {
+    setTimeout(async () => {
+      if (window.isDestroyed()) return
+      const result = await checkForAppUpdates()
+      if (!result.success) return
+
+      store.set('lastUpdateCheckAt', Date.now())
+      if (result.updateAvailable && !window.isDestroyed()) {
+        window.webContents.send('app-update:available', result)
+      }
+    }, 800)
+  })
+}
 
 function getMessageBoxIcon() {
   const iconPath = resolveMessageBoxIconPath({
@@ -95,6 +122,8 @@ function createWindow() {
   } else {
     mainWindow.loadFile(path.join(__dirname, '../renderer/index.html'))
   }
+
+  scheduleLaunchUpdateCheck(mainWindow)
 }
 
 // 文件操作 IPC
@@ -167,8 +196,10 @@ ipcMain.handle('show-message-box', async (event, options) => {
   return dialog.showMessageBox(win, normalizeMessageBoxOptions(options))
 })
 
-ipcMain.handle('check-for-updates', async (event, currentVersion) => {
-  return checkForUpdates({ currentVersion })
+ipcMain.handle('check-for-updates', async () => {
+  const result = await checkForAppUpdates()
+  if (result.success) store.set('lastUpdateCheckAt', Date.now())
+  return result
 })
 
 // Store IPC

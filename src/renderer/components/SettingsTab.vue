@@ -94,13 +94,17 @@
         <button class="check-update" @click="checkUpdate" :disabled="checkingUpdate">
           {{ checkingUpdate ? '检查中...' : '检查更新' }}
         </button>
+        <label class="update-launch-toggle">
+          <input v-model="updateCheckOnLaunch" type="checkbox">
+          启动时每天检查一次更新
+        </label>
       </div>
     </section>
   </div>
 </template>
 
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, onUnmounted, ref } from 'vue'
 import { chooseDirectory } from '../utils/fileHelper.js'
 import { CYCLE_SHORTCUTS, IS_MAC, SHORTCUT_MODIFIER } from '../utils/navigation.js'
 import { handleSegmentedKeydown } from '../utils/segmentedControl.js'
@@ -111,6 +115,7 @@ const buildDate = __BUILD_DATE__
 const workDir = defineModel('workDir', { type: String, default: '' })
 const theme = defineModel('theme', { type: String, default: 'dark' })
 const fontSize = defineModel('fontSize', { type: Number, default: 14 })
+const updateCheckOnLaunch = defineModel('updateCheckOnLaunch', { type: Boolean, default: false })
 
 const props = defineProps({
   recentFiles: { type: Array, default: () => [] }
@@ -156,49 +161,64 @@ async function checkUpdate() {
 
   checkingUpdate.value = true
   try {
-    const result = await window.electronAPI.checkForUpdates(version)
-    if (!result?.success) {
-      await window.electronAPI.showMessageBox({
-        type: 'error',
-        title: '检查更新失败',
-        message: '检查更新失败',
-        detail: result?.error || '暂时无法获取最新版本信息，请稍后再试。'
-      })
-      return
-    }
-
-    if (!result.updateAvailable) {
-      await window.electronAPI.showMessageBox({
-        type: 'info',
-        title: '检查更新',
-        message: '已是最新版本',
-        detail: `当前版本 v${result.currentVersion} 已是最新版本。`
-      })
-      return
-    }
-
-    const response = await window.electronAPI.showMessageBox({
-      type: 'info',
-      title: '发现新版本',
-      message: `发现新版本 v${result.latestVersion}`,
-      detail: [
-        `当前版本：v${result.currentVersion}`,
-        `发布日期：${formatReleaseDate(result.publishedAt)}`,
-        '',
-        result.notesSummary
-      ].join('\n'),
-      buttons: ['前往下载', '稍后'],
-      defaultId: 0,
-      cancelId: 1
-    })
-
-    if (response?.response === 0 && result.releaseUrl) {
-      window.electronAPI.openExternal(result.releaseUrl)
-    }
+    const result = await window.electronAPI.updates.check()
+    await showUpdateResult(result, { showNoUpdate: true })
   } finally {
     checkingUpdate.value = false
   }
 }
+
+async function showUpdateResult(result, { showNoUpdate = false } = {}) {
+  if (!result?.success) {
+    await window.electronAPI.showMessageBox({
+      type: 'error',
+      title: '检查更新失败',
+      message: '检查更新失败',
+      detail: result?.error || '暂时无法获取最新版本信息，请稍后再试。'
+    })
+    return
+  }
+
+  if (!result.updateAvailable) {
+    if (!showNoUpdate) return
+    await window.electronAPI.showMessageBox({
+      type: 'info',
+      title: '检查更新',
+      message: '已是最新版本',
+      detail: `当前版本 v${result.currentVersion} 已是最新版本。`
+    })
+    return
+  }
+
+  const hasDownload = Boolean(result.downloadUrl)
+  const primaryLabel = hasDownload ? '下载更新' : '查看发布页'
+
+  const response = await window.electronAPI.showMessageBox({
+    type: 'info',
+    title: '发现新版本',
+    message: `发现新版本 v${result.latestVersion}`,
+    detail: [
+      `当前版本：v${result.currentVersion}`,
+      `发布日期：${formatReleaseDate(result.publishedAt)}`,
+      hasDownload ? `安装包：${result.assetName}` : '未找到适用于当前设备的安装包，可在发布页查看所有文件。',
+      '',
+      result.notesSummary
+    ].join('\n'),
+    buttons: [primaryLabel, '稍后'],
+    defaultId: 0,
+    cancelId: 1
+  })
+
+  if (response?.response === 0) {
+    window.electronAPI.openExternal(result.downloadUrl || result.releaseUrl)
+  }
+}
+
+const unsubscribeUpdateAvailable = window.electronAPI.updates.onAvailable((result) => {
+  showUpdateResult(result)
+})
+
+onUnmounted(() => unsubscribeUpdateAvailable?.())
 
 function openGitHub() {
   window.electronAPI.openExternal('https://github.com/kaituoC/OneApp')
@@ -358,5 +378,14 @@ function openGitHub() {
 }
 .check-update {
   margin-top: 8px;
+}
+.update-launch-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+  color: var(--text-secondary);
+  font-size: 13px;
+  cursor: pointer;
 }
 </style>

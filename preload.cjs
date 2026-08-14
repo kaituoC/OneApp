@@ -14,7 +14,14 @@ contextBridge.exposeInMainWorld('electronAPI', {
   exportPDF: (htmlContent, defaultPath) => ipcRenderer.invoke('export-pdf', htmlContent, defaultPath),
   openExternal: (url) => shell.openExternal(url),
   showMessageBox: (options) => ipcRenderer.invoke('show-message-box', options),
-  checkForUpdates: (currentVersion) => ipcRenderer.invoke('check-for-updates', currentVersion),
+  updates: {
+    check: () => ipcRenderer.invoke('check-for-updates'),
+    onAvailable: (callback) => {
+      const listener = (_event, result) => callback(result)
+      ipcRenderer.on('app-update:available', listener)
+      return () => ipcRenderer.removeListener('app-update:available', listener)
+    }
+  },
   toggleDevTools: () => ipcRenderer.invoke('toggle-devtools'),
 
   // Agent 研讨室：窄接口，不暴露通用命令执行

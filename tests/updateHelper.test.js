@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest'
 import {
   compareVersions,
   createUpdateCheckResult,
+  findReleaseAsset,
+  isSafeGitHubUrl,
   summarizeReleaseNotes
 } from '../src/renderer/utils/updateHelper.js'
 
@@ -32,8 +34,14 @@ describe('updateHelper release normalization', () => {
         name: 'v1.15.0',
         html_url: 'https://github.com/kaituoC/OneApp/releases/tag/v1.15.0',
         published_at: '2026-07-01T12:00:00Z',
-        body: '新增检查更新功能\n\n修复若干问题'
-      }
+        body: '新增检查更新功能\n\n修复若干问题',
+        assets: [{
+          name: 'OneApp-1.15.0-mac-arm64.dmg',
+          browser_download_url: 'https://github.com/kaituoC/OneApp/releases/download/v1.15.0/OneApp-1.15.0-mac-arm64.dmg'
+        }]
+      },
+      platform: 'darwin',
+      arch: 'arm64'
     })
 
     expect(result.success).toBe(true)
@@ -41,6 +49,8 @@ describe('updateHelper release normalization', () => {
     expect(result.latestVersion).toBe('1.15.0')
     expect(result.releaseUrl).toContain('/v1.15.0')
     expect(result.notesSummary).toContain('新增检查更新功能')
+    expect(result.assetName).toBe('OneApp-1.15.0-mac-arm64.dmg')
+    expect(result.downloadUrl).toContain('.dmg')
   })
 
   it('识别当前已是最新版本', () => {
@@ -65,6 +75,53 @@ describe('updateHelper release normalization', () => {
 
     expect(result.success).toBe(false)
     expect(result.error).toContain('Release')
+  })
+
+  it('拒绝 draft 和 prerelease', () => {
+    const result = createUpdateCheckResult({
+      currentVersion: '1.14.0',
+      release: {
+        tag_name: 'v1.15.0',
+        html_url: 'https://github.com/kaituoC/OneApp/releases/tag/v1.15.0',
+        prerelease: true
+      }
+    })
+
+    expect(result.success).toBe(false)
+    expect(result.error).toContain('正式版本')
+  })
+})
+
+describe('updateHelper release asset selection', () => {
+  const assets = [
+    {
+      name: 'OneApp-1.24.0-mac-arm64.dmg',
+      browser_download_url: 'https://github.com/kaituoC/OneApp/releases/download/v1.24.0/OneApp-1.24.0-mac-arm64.dmg'
+    },
+    {
+      name: 'OneApp-1.24.0-win-x64.exe',
+      browser_download_url: 'https://github.com/kaituoC/OneApp/releases/download/v1.24.0/OneApp-1.24.0-win-x64.exe'
+    },
+    {
+      name: 'OneApp-1.24.0-linux-x86_64.AppImage',
+      browser_download_url: 'https://github.com/kaituoC/OneApp/releases/download/v1.24.0/OneApp-1.24.0-linux-x86_64.AppImage'
+    }
+  ]
+
+  it('按平台和架构选择可安装附件', () => {
+    expect(findReleaseAsset(assets, { platform: 'darwin', arch: 'arm64' })?.name).toContain('mac-arm64')
+    expect(findReleaseAsset(assets, { platform: 'win32', arch: 'x64' })?.name).toContain('win-x64')
+    expect(findReleaseAsset(assets, { platform: 'linux', arch: 'x64' })?.name).toContain('linux-x86_64')
+  })
+
+  it('不接受错误平台或非 GitHub HTTPS 下载地址', () => {
+    expect(findReleaseAsset(assets, { platform: 'darwin', arch: 'x64' })).toBeNull()
+    expect(findReleaseAsset([{
+      name: 'OneApp-1.24.0-mac-arm64.dmg',
+      browser_download_url: 'http://example.com/OneApp-1.24.0-mac-arm64.dmg'
+    }], { platform: 'darwin', arch: 'arm64' })).toBeNull()
+    expect(isSafeGitHubUrl('https://github.com/kaituoC/OneApp/releases')).toBe(true)
+    expect(isSafeGitHubUrl('https://example.com/release')).toBe(false)
   })
 })
 

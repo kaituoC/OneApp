@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import {
   checkForUpdates,
+  isUpdateCheckDue,
   resolveMessageBoxIconPath
 } from '../electron/appDialogs.js'
 
@@ -69,5 +70,43 @@ describe('appDialogs update check', () => {
     expect(result.success).toBe(false)
     expect(result.error).toContain('GitHub')
     expect(result.error).toContain('403')
+  })
+
+  it('GitHub 限流时返回可行动的提示', async () => {
+    const result = await checkForUpdates({
+      currentVersion: '1.14.0',
+      fetchImpl: async () => ({
+        ok: false,
+        status: 403,
+        headers: { 'x-ratelimit-remaining': '0' }
+      })
+    })
+
+    expect(result.success).toBe(false)
+    expect(result.error).toContain('上限')
+  })
+
+  it('请求超时时返回明确错误', async () => {
+    const result = await checkForUpdates({
+      currentVersion: '1.14.0',
+      fetchImpl: async () => {
+        const error = new Error('aborted')
+        error.name = 'AbortError'
+        throw error
+      }
+    })
+
+    expect(result.success).toBe(false)
+    expect(result.error).toContain('超时')
+  })
+})
+
+describe('appDialogs launch update schedule', () => {
+  it('仅在从未检查或间隔至少一天时到期', () => {
+    const now = 2_000_000_000
+    expect(isUpdateCheckDue(0, now)).toBe(true)
+    expect(isUpdateCheckDue(now - 24 * 60 * 60 * 1000, now)).toBe(true)
+    expect(isUpdateCheckDue(now - 60 * 60 * 1000, now)).toBe(false)
+    expect(isUpdateCheckDue(now + 1, now)).toBe(true)
   })
 })

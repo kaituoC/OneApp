@@ -70,6 +70,7 @@
           v-model:work-dir="workDir"
           v-model:theme="currentTheme"
           v-model:font-size="editorFontSize"
+          v-model:update-check-on-launch="updateCheckOnLaunch"
           :recent-files="recentFiles"
           @clear-recent="recentFiles = []"
         />
@@ -109,6 +110,7 @@ const workDir = ref('')
 const currentTheme = ref('dark')
 const editorFontSize = ref(14)
 const recentFiles = ref([])
+const updateCheckOnLaunch = ref(false)
 const narrowNavigation = ref(typeof window !== 'undefined' && window.innerWidth <= 900)
 const navigationOverride = ref(null)
 
@@ -139,15 +141,17 @@ onMounted(async () => {
   currentTheme.value = store.theme || 'dark'
   editorFontSize.value = store.fontSize || 14
   recentFiles.value = store.recentFiles || []
+  updateCheckOnLaunch.value = Boolean(store.updateCheckOnLaunch)
   applyTheme(currentTheme.value)
 })
 
-watch([workDir, currentTheme, editorFontSize, recentFiles], () => {
+watch([workDir, currentTheme, editorFontSize, recentFiles, updateCheckOnLaunch], () => {
   const data = {
     workDir: workDir.value,
     theme: currentTheme.value,
     fontSize: editorFontSize.value,
-    recentFiles: JSON.parse(JSON.stringify(recentFiles.value))
+    recentFiles: JSON.parse(JSON.stringify(recentFiles.value)),
+    updateCheckOnLaunch: updateCheckOnLaunch.value
   }
   window.electronAPI.setStore(data)
 }, { deep: true })

@@ -1,6 +1,12 @@
 <template>
   <div class="text-tab tool-page">
-    <ToolMenu :items="TOOLS" :active="tool" label="文本处理工具" @select="setTool" />
+    <ToolMenu
+      :items="TOOLS"
+      :active="tool"
+      orientation="horizontal"
+      label="文本处理工具"
+      @select="setTool"
+    />
 
     <section class="work-area tool-workspace" :style="{ fontSize: fontSize + 'px' }">
       <div class="toolbar tool-command-bar">
@@ -180,7 +186,7 @@ function clearAll() {
 <style scoped>
 .text-tab {
   display: flex;
-  flex-direction: row;
+  flex-direction: column;
   height: 100%;
   background: var(--bg-primary);
 }

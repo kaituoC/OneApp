@@ -137,8 +137,8 @@ defineExpose({ refresh })
 .tree-toolbar {
   flex-shrink: 0;
   border-bottom: 1px solid var(--border-subtle);
-  padding: 8px;
-  background: var(--surface-raised);
+  padding: 9px 8px;
+  background: linear-gradient(180deg, var(--surface-raised), var(--bg-secondary));
 }
 
 .root-row {
@@ -150,7 +150,7 @@ defineExpose({ refresh })
 .root-name {
   flex: 1;
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 700;
   color: var(--text-primary);
   white-space: nowrap;
   overflow: hidden;
@@ -161,7 +161,7 @@ defineExpose({ refresh })
   flex: 1;
   overflow-y: auto;
   min-height: 0;
-  padding: 6px;
+  padding: 7px 6px 10px;
 }
 
 .tree-hint {

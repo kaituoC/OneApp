@@ -1,254 +1,151 @@
 <template>
-  <aside :class="['workbench-nav', { collapsed }]">
-    <div class="nav-chrome-space"></div>
+  <header class="workbench-header">
+    <div v-if="isMac" class="window-controls-space" aria-hidden="true"></div>
 
-    <div class="brand">
-      <component v-if="!collapsed" :is="WORKBENCH_ICON" class="brand-icon" :size="18" aria-hidden="true" />
-      <div v-if="!collapsed" class="brand-copy">
+    <div class="brand" aria-label="OneApp Developer Workbench">
+      <component :is="WORKBENCH_ICON" class="brand-icon" :size="18" aria-hidden="true" />
+      <div class="brand-copy">
         <div class="brand-name">OneApp</div>
         <div class="brand-subtitle">Developer Workbench</div>
       </div>
-      <button
-        type="button"
-        class="nav-collapse"
-        :title="collapsed ? '展开导航' : '收起导航'"
-        :aria-label="collapsed ? '展开导航' : '收起导航'"
-        :aria-pressed="collapsed"
-        @click="$emit('toggle-collapse')"
-      >
-        <component :is="collapsed ? PanelLeftOpen : PanelLeftClose" :size="15" aria-hidden="true" />
-      </button>
     </div>
 
-    <nav class="nav-groups" aria-label="主导航">
-      <section v-for="group in NAV_GROUPS" :key="group.key" class="nav-group">
-        <div v-if="!collapsed" class="nav-group-label" :title="group.label">{{ group.label }}</div>
-        <button
-          v-for="tab in group.items"
-          :key="tab.key"
-          type="button"
-          :class="['nav-item', { active: activeTab === tab.key, featured: tab.featured }]"
-          :title="getNavigationTooltip(tab)"
-          :aria-label="getNavigationTooltip(tab)"
-          :aria-current="activeTab === tab.key ? 'page' : undefined"
-          @click="$emit('tab-change', tab.key)"
-        >
-          <span class="nav-icon-wrap">
-            <component :is="tab.icon" class="nav-icon" :size="17" aria-hidden="true" />
-          </span>
-          <span v-if="!collapsed" class="nav-text">
-            <span class="nav-label">{{ tab.label }}</span>
-            <span class="nav-desc">{{ tab.summary || tab.description }}</span>
-          </span>
-          <span v-if="!collapsed" class="nav-shortcut">{{ tab.shortcut }}</span>
-        </button>
-      </section>
+    <nav class="global-nav" aria-label="主导航">
+      <button
+        v-for="group in NAV_GROUPS"
+        :key="group.key"
+        type="button"
+        :class="['global-nav-item', { active: activeGroup === group.key, featured: hasFeaturedItem(group) }]"
+        :title="group.label"
+        :aria-label="group.label"
+        :aria-current="activeGroup === group.key ? 'page' : undefined"
+        @click="$emit('group-change', group.key)"
+      >
+        <component :is="group.items[0]?.icon || WORKBENCH_ICON" :size="16" aria-hidden="true" />
+        <span>{{ group.label }}</span>
+      </button>
     </nav>
-  </aside>
+  </header>
 </template>
 
 <script setup>
-import { PanelLeftClose, PanelLeftOpen } from 'lucide-vue-next'
-import { NAV_GROUPS, WORKBENCH_ICON, getNavigationTooltip } from '../utils/navigation.js'
+import { IS_MAC, NAV_GROUPS, WORKBENCH_ICON } from '../utils/navigation.js'
 
 defineProps({
-  activeTab: { type: String, required: true },
-  collapsed: { type: Boolean, default: false }
+  activeGroup: { type: String, required: true }
 })
 
-defineEmits(['tab-change', 'toggle-collapse'])
+defineEmits(['group-change'])
+
+const isMac = IS_MAC
+
+function hasFeaturedItem(group) {
+  return group.items.some((item) => item.featured)
+}
 </script>
 
 <style scoped>
-.workbench-nav {
-  width: 230px;
-  min-width: 230px;
-  height: 100%;
+.workbench-header {
+  height: 56px;
+  min-height: 56px;
   display: flex;
-  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+  padding-right: 14px;
+  color: var(--text-primary);
   background: linear-gradient(180deg, var(--chrome-bg), var(--chrome-bg-muted));
-  border-right: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--border-color);
   -webkit-app-region: drag;
-  transition: width 0.18s ease, min-width 0.18s ease;
 }
 
-.workbench-nav.collapsed {
-  width: 72px;
-  min-width: 72px;
-}
-
-.nav-chrome-space {
-  height: 48px;
-  flex: none;
-}
+.window-controls-space { flex: 0 0 78px; }
 
 .brand {
+  flex: 0 0 auto;
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 0 14px 16px;
-  border-bottom: 1px solid var(--border-subtle);
+  gap: 8px;
+  min-width: 126px;
 }
 
-.brand-icon {
-  flex: none;
-  color: var(--accent);
-}
-
-.brand-copy {
-  min-width: 0;
-}
+.brand-icon { flex: none; color: var(--accent); }
 
 .brand-name {
   color: var(--text-primary);
   font-size: 13px;
   font-weight: 700;
-  letter-spacing: 0;
+  line-height: 1.1;
 }
 
 .brand-subtitle {
-  color: var(--text-muted);
-  font-size: 11px;
   margin-top: 2px;
-}
-
-.nav-collapse {
-  width: 28px;
-  min-width: 28px;
-  height: 28px;
-  margin-left: auto;
-  padding: 0;
   color: var(--text-muted);
-  background: var(--surface-subtle);
-  border-color: var(--border-subtle);
-  -webkit-app-region: no-drag;
+  font-size: 10px;
+  line-height: 1.1;
 }
 
-.nav-collapse:hover {
-  color: var(--accent);
-}
-
-.workbench-nav.collapsed .brand {
-  justify-content: center;
-  padding-left: 10px;
-  padding-right: 10px;
-  padding-bottom: 12px;
-}
-
-.workbench-nav.collapsed .nav-collapse {
-  margin-left: 0;
-}
-
-.nav-groups {
-  flex: 1;
-  overflow-y: auto;
-  padding: 14px 10px;
-  -webkit-app-region: no-drag;
-}
-
-.nav-group + .nav-group {
-  margin-top: 18px;
-}
-
-.nav-group-label {
-  padding: 0 8px 7px;
-  color: var(--text-faint);
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0;
-}
-
-.nav-item {
-  width: 100%;
-  min-height: 42px;
-  display: grid;
-  grid-template-columns: 28px 1fr auto;
-  align-items: center;
-  gap: 8px;
-  padding: 7px 8px;
-  border: 1px solid transparent;
-  border-radius: 8px;
-  background: transparent;
-  color: var(--text-secondary);
-  text-align: left;
-}
-
-.workbench-nav.collapsed .nav-item {
-  grid-template-columns: 1fr;
-  justify-items: center;
-  gap: 4px;
-  padding: 7px 4px;
-}
-
-.nav-item:hover {
-  background: var(--surface-hover);
-  border-color: var(--border-subtle);
-  color: var(--text-primary);
-}
-
-.nav-item.active {
-  background: var(--accent-soft);
-  border-color: var(--accent-border);
-  color: var(--text-primary);
-  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.02);
-}
-
-.nav-item.featured.active {
-  background: linear-gradient(135deg, var(--accent-soft), var(--ai-accent-soft));
-}
-
-.nav-icon-wrap {
-  display: grid;
-  place-items: center;
-  width: 28px;
-  height: 28px;
-  border-radius: 7px;
-  color: var(--text-muted);
-  background: var(--surface-subtle);
-}
-
-.nav-item.active .nav-icon-wrap {
-  color: var(--accent);
-  background: var(--accent-soft-strong);
-}
-
-.nav-text {
+.global-nav {
   min-width: 0;
   display: flex;
-  flex-direction: column;
+  align-items: stretch;
   gap: 2px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-app-region: no-drag;
 }
 
-.nav-label {
-  font-size: 13px;
-  font-weight: 650;
-  line-height: 1.1;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
+.global-nav::-webkit-scrollbar { display: none; }
 
-.nav-desc {
+.global-nav-item {
+  position: relative;
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 0;
+  padding: 0 10px;
   color: var(--text-muted);
-  font-size: 11px;
-  line-height: 1.15;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  font-size: 12px;
+  font-weight: 650;
   white-space: nowrap;
 }
 
-.nav-shortcut {
-  min-width: 18px;
-  color: var(--text-faint);
-  font-family: var(--font-mono);
-  font-size: 11px;
-  text-align: right;
+.global-nav-item::after {
+  position: absolute;
+  right: 10px;
+  bottom: 0;
+  left: 10px;
+  height: 2px;
+  content: '';
+  border-radius: 999px 999px 0 0;
+  background: transparent;
 }
 
-@media (max-width: 980px) {
-  .workbench-nav {
-    width: 204px;
-    min-width: 204px;
-  }
+.global-nav-item:hover {
+  color: var(--text-primary);
+  background: var(--surface-hover);
+  border-color: transparent;
+}
+
+.global-nav-item.active {
+  color: var(--text-primary);
+  background: var(--accent-soft);
+}
+
+.global-nav-item.active::after { background: var(--accent); }
+.global-nav-item.featured.active { background: linear-gradient(135deg, var(--accent-soft), var(--ai-accent-soft)); }
+
+@media (max-width: 920px) {
+  .brand { min-width: auto; }
+  .brand-subtitle { display: none; }
+}
+
+@media (max-width: 700px) {
+  .window-controls-space { flex-basis: 72px; }
+  .brand-copy { display: none; }
+  .global-nav-item { padding: 0 8px; }
 }
 </style>

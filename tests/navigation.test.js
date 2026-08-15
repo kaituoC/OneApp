@@ -3,7 +3,10 @@ import {
   NAV_GROUPS,
   NAV_ITEMS,
   TAB_KEYS,
+  GROUP_BY_KEY,
+  TAB_TO_GROUP_KEY,
   CYCLE_SHORTCUTS,
+  getFirstTabInGroup,
   getNavigationTooltip,
   getShortcutSortValue,
   isCycleNavigationEvent,
@@ -65,11 +68,24 @@ describe('navigation metadata', () => {
     expect(getShortcutSortValue(settings.shortcut)).toBe(10)
   })
 
-  it('生成器位于生成工具分组', () => {
+  it('一级分组映射能够驱动顶部导航与左侧上下文工具导航', () => {
     const group = NAV_GROUPS.find((item) => item.key === 'generate')
 
     expect(group.label).toBe('生成工具')
     expect(group.items.map((item) => item.key)).toEqual(['generator'])
+    expect(TAB_TO_GROUP_KEY).toMatchObject({
+      json: 'transform',
+      time: 'transform',
+      encode: 'transform',
+      diff: 'inspect',
+      text: 'inspect',
+      regex: 'inspect'
+    })
+    expect(GROUP_BY_KEY.transform.map((item) => item.key)).toEqual(['json', 'time', 'encode'])
+    expect(GROUP_BY_KEY.inspect.map((item) => item.key)).toEqual(['diff', 'text', 'regex'])
+    expect(getFirstTabInGroup('transform')).toBe('json')
+    expect(getFirstTabInGroup('inspect')).toBe('diff')
+    expect(getFirstTabInGroup('unknown')).toBe('editor')
   })
 
   it('数字直达按平台使用可靠的修饰键', () => {

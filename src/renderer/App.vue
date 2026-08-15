@@ -1,12 +1,22 @@
 <template>
   <div class="app-container">
-    <Header
-      :active-tab="activeTab"
-      :collapsed="navigationCollapsed"
-      @tab-change="activeTab = $event"
-      @toggle-collapse="toggleNavigation"
-    />
-    <section class="workbench-main">
+    <Header :active-group="activeGroup" @group-change="handleGroupChange" />
+    <section class="workbench-shell">
+      <aside v-if="hasContextualTools" class="contextual-nav">
+        <div class="contextual-nav-header">
+          <span>{{ activeGroupLabel }}</span>
+          <span>{{ activeGroupTools.length }} 个工具</span>
+        </div>
+        <ToolMenu
+          :items="activeGroupTools"
+          :active="activeTab"
+          label="当前分组工具"
+          show-description
+          show-shortcut
+          @select="setActiveTab"
+        />
+      </aside>
+      <section class="workbench-main">
       <div class="context-bar">
         <div class="context-title">
           <component :is="activeTool.icon" class="context-icon" :size="18" aria-hidden="true" />
@@ -21,7 +31,6 @@
           <span class="meta-chip">{{ editorFontSize }}px</span>
         </div>
       </div>
-
       <main class="content-area">
         <EditorTab
           v-show="activeTab === 'editor'"
@@ -77,6 +86,7 @@
       </main>
 
       <StatusBar :current-file="currentFile" :active-tab="activeTab" />
+      </section>
     </section>
   </div>
 </template>
@@ -95,10 +105,15 @@ import GeneratorTab from './components/GeneratorTab.vue'
 import AgentWorkshopTab from './components/AgentWorkshopTab.vue'
 import SettingsTab from './components/SettingsTab.vue'
 import StatusBar from './components/StatusBar.vue'
+import ToolMenu from './components/ToolMenu.vue'
 import {
   IS_MAC,
   TAB_BY_KEY,
   TAB_KEYS,
+  TAB_TO_GROUP_KEY,
+  GROUP_BY_KEY,
+  NAV_GROUPS,
+  getFirstTabInGroup,
   formatShortcut,
   isCycleNavigationEvent,
   isNumericNavigationEvent
@@ -111,24 +126,37 @@ const currentTheme = ref('dark')
 const editorFontSize = ref(14)
 const recentFiles = ref([])
 const updateCheckOnLaunch = ref(false)
-const narrowNavigation = ref(typeof window !== 'undefined' && window.innerWidth <= 900)
-const navigationOverride = ref(null)
+const recentTabByGroup = ref({})
 
 const activeTool = computed(() => TAB_BY_KEY[activeTab.value] || TAB_BY_KEY.editor)
 const shortcutHint = computed(() => formatShortcut(activeTool.value))
+const activeGroup = computed(() => TAB_TO_GROUP_KEY[activeTab.value] || 'workspace')
+const activeGroupTools = computed(() => GROUP_BY_KEY[activeGroup.value] || [])
+const activeGroupLabel = computed(() =>
+  NAV_GROUPS.find((item) => item.key === activeGroup.value)?.label || ''
+)
+const hasContextualTools = computed(() => activeGroupTools.value.length > 1)
 const activeContext = computed(() => {
   if (activeTab.value === 'editor') return currentFile.value || workDir.value || activeTool.value.description
   if (activeTab.value === 'agent') return 'AI · 本地仓库只读研讨'
   return activeTool.value.description
 })
-const navigationCollapsed = computed(() => navigationOverride.value ?? narrowNavigation.value)
-
-function updateNavigationWidth() {
-  narrowNavigation.value = window.innerWidth <= 900
+function setActiveTab(tabKey) {
+  const item = TAB_BY_KEY[tabKey]
+  if (!item) return
+  activeTab.value = tabKey
+  const groupKey = TAB_TO_GROUP_KEY[tabKey]
+  if (groupKey) {
+    recentTabByGroup.value = {
+      ...recentTabByGroup.value,
+      [groupKey]: tabKey
+    }
+  }
 }
 
-function toggleNavigation() {
-  navigationOverride.value = !navigationCollapsed.value
+function handleGroupChange(groupKey) {
+  const next = recentTabByGroup.value[groupKey] || getFirstTabInGroup(groupKey)
+  setActiveTab(next)
 }
 
 function applyTheme(theme) {
@@ -142,16 +170,23 @@ onMounted(async () => {
   editorFontSize.value = store.fontSize || 14
   recentFiles.value = store.recentFiles || []
   updateCheckOnLaunch.value = Boolean(store.updateCheckOnLaunch)
+  recentTabByGroup.value = typeof store.recentTabByGroup === 'object' && store.recentTabByGroup
+    ? store.recentTabByGroup
+    : {
+        workspace: 'editor',
+        system: 'settings'
+      }
   applyTheme(currentTheme.value)
 })
 
-watch([workDir, currentTheme, editorFontSize, recentFiles, updateCheckOnLaunch], () => {
+watch([workDir, currentTheme, editorFontSize, recentFiles, updateCheckOnLaunch, recentTabByGroup], () => {
   const data = {
     workDir: workDir.value,
     theme: currentTheme.value,
     fontSize: editorFontSize.value,
     recentFiles: JSON.parse(JSON.stringify(recentFiles.value)),
-    updateCheckOnLaunch: updateCheckOnLaunch.value
+    updateCheckOnLaunch: updateCheckOnLaunch.value,
+    recentTabByGroup: JSON.parse(JSON.stringify(recentTabByGroup.value))
   }
   window.electronAPI.setStore(data)
 }, { deep: true })
@@ -179,15 +214,16 @@ function onKeydown(e) {
     const index = e.key === '0' ? 9 : num - 1
     if (!TAB_KEYS[index]) return
     e.preventDefault()
-    activeTab.value = TAB_KEYS[index]
+    setActiveTab(TAB_KEYS[index])
   }
   if (isCycleNavigationEvent(e)) {
     e.preventDefault()
     const n = TAB_KEYS.length
     const idx = TAB_KEYS.indexOf(activeTab.value)
-    activeTab.value = e.shiftKey
+    const nextTab = e.shiftKey
       ? TAB_KEYS[(idx - 1 + n) % n]
       : TAB_KEYS[(idx + 1) % n]
+    setActiveTab(nextTab)
   }
   if (e.key === 'F12') {
     e.preventDefault()
@@ -197,23 +233,26 @@ function onKeydown(e) {
 
 onMounted(() => {
   document.addEventListener('keydown', onKeydown)
-  window.addEventListener('resize', updateNavigationWidth)
-  updateNavigationWidth()
 })
 
 onUnmounted(() => {
   document.removeEventListener('keydown', onKeydown)
-  window.removeEventListener('resize', updateNavigationWidth)
 })
 </script>
 
 <style scoped>
 .app-container {
   display: flex;
-  flex-direction: row;
+  flex-direction: column;
   height: 100%;
   background: var(--bg-primary);
   color: var(--text-primary);
+}
+
+.workbench-shell {
+  flex: 1;
+  display: flex;
+  min-height: 0;
 }
 
 .workbench-main {
@@ -224,6 +263,33 @@ onUnmounted(() => {
   background:
     linear-gradient(180deg, var(--app-bg-glow), transparent 230px),
     var(--bg-primary);
+}
+
+.contextual-nav {
+  flex: 0 0 168px;
+  min-width: 168px;
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(180deg, var(--chrome-bg), var(--chrome-bg-muted));
+  border-right: 1px solid var(--border-color);
+}
+
+.contextual-nav-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 42px;
+  padding: 0 12px;
+  color: var(--text-secondary);
+  border-bottom: 1px solid var(--border-subtle);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.contextual-nav-header span:last-child {
+  color: var(--text-faint);
+  font-size: 10px;
+  font-weight: 500;
 }
 
 .context-bar {
@@ -303,6 +369,13 @@ onUnmounted(() => {
 
   .context-meta .meta-chip:nth-child(n + 2) {
     display: none;
+  }
+}
+
+@media (max-width: 760px) {
+  .contextual-nav {
+    flex-basis: 148px;
+    min-width: 148px;
   }
 }
 

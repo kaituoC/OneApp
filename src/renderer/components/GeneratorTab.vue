@@ -1,11 +1,17 @@
 <template>
   <div class="generator-tab tool-page">
-    <ToolMenu :items="TOOLS" :active="tool" label="生成器工具" @select="setTool" />
+    <ToolMenu
+      :items="TOOLS"
+      :active="tool"
+      orientation="horizontal"
+      label="生成器工具"
+      @select="setTool"
+    />
 
     <section class="work-area tool-workspace" :style="{ fontSize: fontSize + 'px' }">
       <div class="toolbar tool-command-bar">
         <button class="primary" @click="runGenerate">生成</button>
-        <span class="toolbar-note">根据左侧配置生成 {{ activeTool.label }} 结果</span>
+        <span class="toolbar-note">按当前配置生成 {{ activeTool.label }} 结果</span>
       </div>
 
       <div class="content tool-grid-config-result">
@@ -79,7 +85,7 @@
           </div>
         </div>
 
-        <div class="panel tool-panel output-panel">
+        <div :class="['panel', 'tool-panel', 'output-panel', { 'has-result': output || qrImage || hasError }]">
           <div class="panel-header tool-panel-header">
             <span class="tool-panel-title">生成结果</span>
             <span class="tool-panel-actions">
@@ -103,7 +109,8 @@
             :class="{ 'error-output': hasError }"
           />
           <div v-else class="tool-empty-state generator-empty">
-            完成左侧配置后点击“生成”，结果会显示在这里
+            <strong>尚未生成</strong>
+            <span>完成配置后点击“生成”，结果会显示在这里。</span>
           </div>
         </div>
       </div>
@@ -249,7 +256,7 @@ function clearOutput() {
 <style scoped>
 .generator-tab {
   display: flex;
-  flex-direction: row;
+  flex-direction: column;
   height: 100%;
   background: var(--bg-primary);
 }
@@ -270,11 +277,11 @@ function clearOutput() {
 .content {
   flex: 1;
   display: grid;
-  grid-template-columns: minmax(260px, 360px) minmax(0, 1fr);
-  gap: 12px;
+  grid-template-columns: minmax(280px, 320px) minmax(0, 1fr);
+  gap: 10px;
   min-height: 0;
   overflow: hidden;
-  padding: 12px;
+  padding: 10px;
 }
 
 .panel {
@@ -292,10 +299,33 @@ function clearOutput() {
 .output-panel {
   display: flex;
   flex-direction: column;
+  min-height: 220px;
+  align-self: start;
+}
+
+.output-panel.has-result {
+  align-self: stretch;
 }
 
 .generator-empty {
   flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: center;
+  justify-content: center;
+  padding: 28px;
+  text-align: center;
+}
+
+.generator-empty strong {
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+.generator-empty span {
+  color: var(--text-muted);
+  font-size: 12px;
 }
 
 .form-grid {

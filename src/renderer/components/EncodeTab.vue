@@ -1,7 +1,13 @@
 <template>
   <div class="encode-tab">
-    <!-- 左侧菜单 -->
-    <ToolMenu :items="TOOLS" :active="tool" label="编码工具" @select="tool = $event" />
+    <!-- 上方工具模式栏 -->
+    <ToolMenu
+      :items="TOOLS"
+      :active="tool"
+      orientation="horizontal"
+      label="编码工具"
+      @select="tool = $event"
+    />
 
     <!-- 右侧工作区 -->
     <section class="work-area tool-workspace" :style="{ fontSize: fontSize + 'px' }">
@@ -311,6 +317,7 @@ function onBaseInput(key, e) {
 <style scoped>
 .encode-tab {
   display: flex;
+  flex-direction: column;
   height: 100%;
   background: var(--bg-primary);
 }

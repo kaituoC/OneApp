@@ -147,6 +147,18 @@ export const TAB_BY_KEY = Object.fromEntries(NAV_ITEMS.map((item) => [item.key, 
 
 export const WORKBENCH_ICON = Code2
 
+export const GROUP_BY_KEY = Object.fromEntries(
+  NAV_GROUPS.map((group) => [group.key, group.items])
+)
+
+export const TAB_TO_GROUP_KEY = Object.fromEntries(
+  NAV_GROUPS.flatMap((group) => group.items.map((item) => [item.key, group.key]))
+)
+
+export function getFirstTabInGroup(groupKey) {
+  return GROUP_BY_KEY[groupKey]?.[0]?.key || 'editor'
+}
+
 // 平台修饰键：进程级常量，单一来源，供各组件复用（带 guard 以便在 node 测试环境安全 import）
 export const IS_MAC = typeof navigator !== 'undefined' && /mac/i.test(navigator.platform || '')
 

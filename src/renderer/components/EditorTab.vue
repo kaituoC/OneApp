@@ -297,8 +297,8 @@ async function exportPDF() {
 }
 
 .file-list {
-  flex: 0 0 clamp(220px, 24vw, 280px);
-  min-width: 220px;
+  flex: 0 0 clamp(224px, 18vw, 256px);
+  min-width: 224px;
   border-right: 1px solid var(--border-color);
   border-top: none;
   border-bottom: none;
@@ -347,7 +347,7 @@ async function exportPDF() {
 @media (max-width: 1040px) {
   .content.has-preview.has-file-list.has-editor {
     display: grid;
-    grid-template-columns: minmax(220px, 260px) minmax(360px, 1fr);
+    grid-template-columns: minmax(224px, 248px) minmax(360px, 1fr);
     grid-template-rows: minmax(0, 1fr) minmax(220px, 38%);
     overflow: hidden;
   }

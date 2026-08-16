@@ -1,5 +1,8 @@
 <template>
-  <div class="context-nav">
+  <div
+    ref="navRef"
+    :class="['context-nav', { 'fade-left': !scrollAtStart, 'fade-right': !scrollAtEnd }]"
+  >
     <div
       class="nav-segment"
       role="radiogroup"
@@ -46,7 +49,7 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, ref, onMounted, onUnmounted } from 'vue'
 import { handleSegmentedKeydown } from '../utils/segmentedControl.js'
 import { getNavigationTooltip } from '../utils/navigation.js'
 
@@ -67,10 +70,50 @@ const subTools = computed(() => activeTool.value?.children || [])
 function emitSelect(key, subKey) {
   emit('select', subKey ? { key, subKey } : { key })
 }
+
+// 溢出渐变指示
+const navRef = ref(null)
+const scrollAtStart = ref(true)
+const scrollAtEnd = ref(true)
+
+let rafId = null
+let resizeObserver = null
+
+function updateScrollState() {
+  const el = navRef.value
+  if (!el) return
+  scrollAtStart.value = el.scrollLeft <= 0
+  scrollAtEnd.value = el.scrollLeft + el.clientWidth >= el.scrollWidth - 1
+}
+
+function onScroll() {
+  if (rafId) return
+  rafId = requestAnimationFrame(() => {
+    rafId = null
+    updateScrollState()
+  })
+}
+
+onMounted(() => {
+  const el = navRef.value
+  if (!el) return
+  el.addEventListener('scroll', onScroll, { passive: true })
+  resizeObserver = new ResizeObserver(updateScrollState)
+  resizeObserver.observe(el)
+  updateScrollState()
+})
+
+onUnmounted(() => {
+  const el = navRef.value
+  if (el) el.removeEventListener('scroll', onScroll)
+  if (resizeObserver) resizeObserver.disconnect()
+  if (rafId) cancelAnimationFrame(rafId)
+})
 </script>
 
 <style scoped>
 .context-nav {
+  position: relative;
   flex: 1;
   min-width: 0;
   display: flex;
@@ -81,6 +124,27 @@ function emitSelect(key, subKey) {
   scrollbar-width: thin;
   /* context-bar 是窗口拖拽区，交互入口必须显式 no-drag */
   -webkit-app-region: no-drag;
+}
+
+.context-nav.fade-left::before,
+.context-nav.fade-right::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 24px;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.context-nav.fade-left::before {
+  left: 0;
+  background: linear-gradient(to right, var(--topbar-bg), transparent);
+}
+
+.context-nav.fade-right::after {
+  right: 0;
+  background: linear-gradient(to left, var(--topbar-bg), transparent);
 }
 
 .nav-segment {

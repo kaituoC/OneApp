@@ -191,7 +191,7 @@ electron-vite 构建三个独立的 bundle：
 - **composables/useEditorFile.js**：编辑器共用逻辑——打开/新建/保存/快捷键，后缀→mode 派生，Ctrl+S/N 成对绑定/解绑
 - **FileTree.vue / TreeNode.vue**：可复用的懒加载目录树，被 EditorTab 使用，通过 `editableExtensions` prop 按 mode 过滤显示文件类型
 - **DiffTab.vue**：并排/统一差异视图，带滚动同步，使用 diff-match-patch 库
-- **TextTab.vue**：文本处理工具，子工具（统计、大小写/命名风格转换、排序、去重）由 context-bar 导航条切换，页内无横向子工具栏，纯逻辑在 `textHelper.js`
+- **TextTab.vue**：文本处理工具，子工具（大小写、排序、去重）由 context-bar 导航条切换，页内无横向子工具栏，纯逻辑在 `textHelper.js`；统计降级为输入面板常驻 meta 行
 - **GeneratorTab.vue**：生成器合集，子工具（UUID、随机密码、Lorem、二维码）由 context-bar 导航条切换，页内无横向子工具栏，纯逻辑在 `generatorHelper.js`
 - **RegexTab.vue**：正则测试器，结构化 `/pattern/flags` 输入、实时匹配、编辑/高亮预览双区、捕获组多色、匹配结果列表（与预览双向 hover 联动）、右侧速查抽屉；结果区分隔条支持指针和键盘调节，匹配经 `useRegexMatcher` 在 Web Worker 中执行
 - **composables/useRegexMatcher.js**：封装正则匹配 Worker 的生命周期——完整输入签名、输入变化立即失效旧结果、丢弃乱序响应、超时（1.5s）`terminate` 兜底、重建待命 Worker、组件卸载释放，杜绝灾难性回溯冻结 UI

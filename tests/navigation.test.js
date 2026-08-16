@@ -78,13 +78,13 @@ describe('navigation metadata', () => {
     expect(TAB_TO_GROUP_KEY).toMatchObject({
       json: 'transform',
       time: 'transform',
-      encode: 'transform',
+      encode: 'inspect',
       diff: 'inspect',
       text: 'inspect',
       regex: 'inspect'
     })
-    expect(GROUP_BY_KEY.transform.map((item) => item.key)).toEqual(['json', 'time', 'encode'])
-    expect(GROUP_BY_KEY.inspect.map((item) => item.key)).toEqual(['diff', 'text', 'regex'])
+    expect(GROUP_BY_KEY.transform.map((item) => item.key)).toEqual(['json', 'time'])
+    expect(GROUP_BY_KEY.inspect.map((item) => item.key)).toEqual(['diff', 'text', 'regex', 'encode'])
     expect(getFirstTabInGroup('transform')).toBe('json')
     expect(getFirstTabInGroup('inspect')).toBe('diff')
     expect(getFirstTabInGroup('unknown')).toBe('editor')

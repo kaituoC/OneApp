@@ -143,11 +143,12 @@
 </template>
 
 <script setup>
-import { nextTick, ref } from 'vue'
+import { nextTick, ref, watch } from 'vue'
 import { diffTextUnified, diffTextSplit, diffStats } from '../utils/diffHelper.js'
 import { readFile, openFile } from '../utils/fileHelper.js'
 import { handleSegmentedKeydown } from '../utils/segmentedControl.js'
 import EditorWithLineNumbers from './EditorWithLineNumbers.vue'
+import { usePendingInput } from '../composables/useSendTo.js'
 
 const props = defineProps({
   fontSize: { type: Number, default: 14 },
@@ -158,6 +159,16 @@ const textA = ref('')
 const textB = ref('')
 const viewMode = ref('split') // 'split' | 'unified'
 const showDiff = ref(false)
+
+const pendingInput = usePendingInput()
+watch(pendingInput, (val) => {
+  if (val && val.tabKey === 'diff') {
+    nextTick(() => {
+      textA.value = val.content
+      pendingInput.value = null
+    })
+  }
+})
 
 const diffSplitResult = ref([])
 const diffUnifiedResult = ref([])

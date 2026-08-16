@@ -232,7 +232,7 @@ Windows 暂不支持 Agent Workshop 的本地 CLI 检测与进程组管理，渲
 - `MarkdownPreview.vue` / `HtmlPreview.vue`：Markdown 与 HTML 预览。
 - `JsonTab.vue`：数据工具合集，提供 JSON / YAML / CSV / SQL / XML 子工具、JSONPath 查询和 CSV 表格预览。
 - `DiffTab.vue`：文本对比工具。
-- `TextTab.vue`：文本处理工具，子工具（统计、转换、排序、去重）由 context-bar 导航条切换，页内无横向子工具栏。
+- `TextTab.vue`：文本处理工具，子工具（大小写、排序、去重）由 context-bar 导航条切换，页内无横向子工具栏；统计降级为输入面板常驻 meta 行。
 - `RegexTab.vue`：正则测试器，匹配由 `useRegexMatcher` 和 `workers/regex.worker.js` 执行。
 - `EncodeTab.vue`：编码工具合集，6 个子工具由 context-bar 导航条切换。
 - `GeneratorTab.vue`：生成器合集，子工具（UUID、随机密码、Lorem、二维码）由 context-bar 导航条切换。

@@ -1,13 +1,5 @@
 <template>
   <div class="text-tab tool-page">
-    <ToolMenu
-      :items="TOOLS"
-      :active="tool"
-      orientation="horizontal"
-      label="文本处理工具"
-      @select="setTool"
-    />
-
     <section class="work-area tool-workspace" :style="{ fontSize: fontSize + 'px' }">
       <div class="toolbar tool-command-bar">
         <template v-if="tool === 'case'">
@@ -80,10 +72,8 @@
 </template>
 
 <script setup>
-import { computed, ref } from 'vue'
-import { ArrowDownAZ, CaseSensitive, ListChecks, Pilcrow } from 'lucide-vue-next'
+import { computed, ref, watch } from 'vue'
 import EditorWithLineNumbers from './EditorWithLineNumbers.vue'
-import ToolMenu from './ToolMenu.vue'
 import OverflowMenu from './OverflowMenu.vue'
 import { useCopyToast } from '../composables/useCopyToast.js'
 import { useToolResult } from '../composables/useToolResult.js'
@@ -94,16 +84,11 @@ import {
   dedupeLines
 } from '../utils/textHelper.js'
 
-defineProps({
-  fontSize: { type: Number, default: 14 }
+const props = defineProps({
+  fontSize: { type: Number, default: 14 },
+  // 子工具由左侧 nav 驱动（统计/大小写/排序/去重）
+  subTool: { type: String, default: 'stats' }
 })
-
-const TOOLS = [
-  { key: 'stats', label: '统计', icon: Pilcrow },
-  { key: 'case', label: '大小写', icon: CaseSensitive },
-  { key: 'sort', label: '排序', icon: ArrowDownAZ },
-  { key: 'dedupe', label: '去重', icon: ListChecks }
-]
 
 const CASE_OPTIONS = [
   { key: 'upper', label: '大写' },
@@ -117,7 +102,13 @@ const CASE_OPTIONS = [
 const caseSecondaryActions = CASE_OPTIONS
   .filter((option) => option.key !== 'upper')
 
-const tool = ref('stats')
+const tool = ref(props.subTool)
+watch(
+  () => props.subTool,
+  (next) => {
+    if (next && next !== tool.value) setTool(next)
+  }
+)
 const input = ref('')
 const dedupeSummary = ref(null)
 const { output, statusMessage, hasError, reset, setSuccess, setError } = useToolResult()

@@ -134,6 +134,47 @@ export const NAV_GROUPS = [
 
 export const NAV_ITEMS = NAV_GROUPS.flatMap((group) => group.items)
 
+// 子工具导航：由左侧 contextual-nav 承载的第二级入口，页面内不再重复渲染
+export const SUB_TOOLS = {
+  json: [
+    { key: 'json', label: 'JSON' },
+    { key: 'yaml', label: 'YAML' },
+    { key: 'csv', label: 'CSV' },
+    { key: 'sql', label: 'SQL' },
+    { key: 'xml', label: 'XML' }
+  ],
+  time: [
+    { key: 'current', label: '当前时间' },
+    { key: 'convert', label: '时间转换' },
+    { key: 'cron', label: 'Cron' },
+    { key: 'timezone', label: '多时区' }
+  ],
+  encode: [
+    { key: 'base64', label: 'Base64' },
+    { key: 'url', label: 'URL' },
+    { key: 'jwt', label: 'JWT' },
+    { key: 'hash', label: 'Hash' },
+    { key: 'base', label: '进制' },
+    { key: 'unicode', label: 'Unicode' }
+  ],
+  text: [
+    { key: 'stats', label: '统计' },
+    { key: 'case', label: '大小写' },
+    { key: 'sort', label: '排序' },
+    { key: 'dedupe', label: '去重' }
+  ],
+  generator: [
+    { key: 'uuid', label: 'UUID' },
+    { key: 'password', label: '随机密码' },
+    { key: 'lorem', label: 'Lorem' },
+    { key: 'qr', label: '二维码' }
+  ]
+}
+
+export const DEFAULT_SUB_TOOL = Object.fromEntries(
+  Object.entries(SUB_TOOLS).map(([tabKey, subs]) => [tabKey, subs[0].key])
+)
+
 export function getShortcutSortValue(shortcut) {
   return shortcut === 0 ? 10 : shortcut
 }

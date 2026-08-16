@@ -1,20 +1,20 @@
 <template>
   <div class="json-tab tool-page">
     <div class="toolbar tool-command-bar">
-      <div class="mode-toggle tool-segmented" role="radiogroup" aria-label="数据格式" @keydown="handleSegmentedKeydown">
-        <button
-          v-for="item in MODES"
-          :key="item.key"
-          role="radio"
-          :aria-checked="mode === item.key"
-          :class="{ active: mode === item.key }"
-          @click="setMode(item.key)"
-        >{{ item.label }}</button>
-      </div>
-      <button class="primary" @click="runPrimaryAction">{{ primaryAction.label }}</button>
-      <OverflowMenu :items="secondaryActions" @select="runSecondaryAction" />
+      <button
+        v-for="action in modeActions"
+        :key="action.key"
+        :class="{ primary: action.primary }"
+        @click="runAction(action.key)"
+      >{{ action.label }}</button>
+      <button
+        v-if="mode === 'json'"
+        :aria-expanded="jsonPathOpen"
+        aria-controls="jsonpath-bar"
+        @click="jsonPathOpen = !jsonPathOpen"
+      >JSONPath 查询</button>
     </div>
-    <div v-if="mode === 'json'" class="jsonpath-bar">
+    <div v-if="mode === 'json' && jsonPathOpen" id="jsonpath-bar" class="jsonpath-bar">
       <label for="jsonpath-expression">JSONPath</label>
       <input
         id="jsonpath-expression"
@@ -22,7 +22,9 @@
         type="text"
         spellcheck="false"
         placeholder="$.items[0].name 或 $..id"
+        @keydown.enter="runAction('jsonpath')"
       />
+      <button class="primary" @click="runAction('jsonpath')">查询</button>
     </div>
 
     <div class="content tool-workspace tool-grid-split">
@@ -96,7 +98,7 @@
 </template>
 
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import {
   formatJSON,
   minifyJSON,
@@ -118,47 +120,57 @@ import {
   minifyXML
 } from '../utils/formatHelper.js'
 import { queryJSONPath } from '../utils/jsonPathHelper.js'
-import { handleSegmentedKeydown } from '../utils/segmentedControl.js'
 import EditorWithLineNumbers from './EditorWithLineNumbers.vue'
-import OverflowMenu from './OverflowMenu.vue'
 import { useCopyToast } from '../composables/useCopyToast.js'
 import { useToolResult } from '../composables/useToolResult.js'
 
-defineProps({
-  fontSize: { type: Number, default: 14 }
+const props = defineProps({
+  fontSize: { type: Number, default: 14 },
+  // 子工具由左侧 nav 驱动（JSON/YAML/CSV/SQL/XML）
+  subTool: { type: String, default: 'json' }
 })
 
-const mode = ref('json')
+const mode = ref(props.subTool)
+watch(
+  () => props.subTool,
+  (next) => {
+    if (next && next !== mode.value) setMode(next)
+  }
+)
+
 const input = ref('')
 const jsonPathExpression = ref('$')
+const jsonPathOpen = ref(false)
 const jsonPathMatches = ref([])
 const tablePreview = ref(null)
 const { output, statusMessage, hasError, reset, setSuccess, setError } = useToolResult()
 const { copyMessage, copyToClipboard } = useCopyToast()
 
-const MODES = [
-  { key: 'json', label: 'JSON' },
-  { key: 'yaml', label: 'YAML' },
-  { key: 'csv', label: 'CSV' },
-  { key: 'sql', label: 'SQL' },
-  { key: 'xml', label: 'XML' }
-]
-
 const ACTIONS = {
-  json: {
-    primary: { key: 'format', label: '格式化' },
-    secondary: [
-      { key: 'minify', label: '压缩' },
-      { key: 'validate', label: '校验' },
-      { key: 'unescape', label: '去除转义' },
-      { key: 'to-yaml', label: '转 YAML' },
-      { key: 'jsonpath', label: 'JSONPath 查询' }
-    ]
-  },
-  yaml: { primary: { key: 'to-json', label: '转 JSON' }, secondary: [{ key: 'validate-yaml', label: '校验' }] },
-  csv: { primary: { key: 'csv-to-json', label: 'CSV 转 JSON' }, secondary: [{ key: 'json-to-csv', label: 'JSON 转 CSV' }, { key: 'preview-csv', label: '表格预览' }] },
-  sql: { primary: { key: 'format-sql', label: '格式化' }, secondary: [{ key: 'minify-sql', label: '压缩' }] },
-  xml: { primary: { key: 'format-xml', label: '格式化' }, secondary: [{ key: 'minify-xml', label: '压缩' }] }
+  json: [
+    { key: 'format', label: '格式化', primary: true },
+    { key: 'minify', label: '压缩' },
+    { key: 'validate', label: '校验' },
+    { key: 'unescape', label: '去除转义' },
+    { key: 'to-yaml', label: '转 YAML' }
+  ],
+  yaml: [
+    { key: 'to-json', label: '转 JSON', primary: true },
+    { key: 'validate-yaml', label: '校验' }
+  ],
+  csv: [
+    { key: 'csv-to-json', label: 'CSV 转 JSON', primary: true },
+    { key: 'json-to-csv', label: 'JSON 转 CSV' },
+    { key: 'preview-csv', label: '表格预览' }
+  ],
+  sql: [
+    { key: 'format-sql', label: '格式化', primary: true },
+    { key: 'minify-sql', label: '压缩' }
+  ],
+  xml: [
+    { key: 'format-xml', label: '格式化', primary: true },
+    { key: 'minify-xml', label: '压缩' }
+  ]
 }
 
 const inputTitle = computed(() => `${mode.value.toUpperCase()} 输入`)
@@ -178,22 +190,13 @@ const inputPlaceholder = computed(() =>
     xml: '在此粘贴 XML 内容...'
   }[mode.value])
 )
-const primaryAction = computed(() => ACTIONS[mode.value].primary)
-const secondaryActions = computed(() => ACTIONS[mode.value].secondary)
+const modeActions = computed(() => ACTIONS[mode.value])
 const hasResult = computed(() => Boolean(output.value || tablePreview.value || jsonPathMatches.value.length || statusMessage.value))
 const resultStatus = computed(() => {
   if (hasError.value) return '错误'
   if (hasResult.value) return '就绪'
   return input.value ? '选择操作' : '等待输入'
 })
-
-function runPrimaryAction() {
-  runAction(primaryAction.value.key)
-}
-
-function runSecondaryAction(action) {
-  runAction(action)
-}
 
 function runAction(action) {
   const handlers = {

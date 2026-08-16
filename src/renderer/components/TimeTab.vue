@@ -1,18 +1,7 @@
 <template>
-  <div class="time-tab">
-    <div class="time-navigation tool-segmented" role="radiogroup" aria-label="时间工具" @keydown="handleSegmentedKeydown">
-      <button
-        v-for="section in TIME_SECTIONS"
-        :key="section.key"
-        role="radio"
-        :aria-checked="activeSection === section.key"
-        :class="{ active: activeSection === section.key }"
-        @click="activeSection = section.key"
-      >{{ section.label }}</button>
-    </div>
-
+  <div :class="['time-tab', { 'time-grid': isWide }]">
     <!-- 实时时间显示区 -->
-    <div v-show="activeSection === 'current'" class="live-section tool-panel">
+    <div v-show="isWide || activeSection === 'current'" id="time-section-current" class="live-section tool-panel">
       <div class="live-row">
         <div class="live-item">
           <span class="live-label">当前时间</span>
@@ -34,7 +23,7 @@
     </div>
 
     <!-- 时间戳转日期 -->
-    <div v-show="activeSection === 'convert'" class="convert-section tool-panel">
+    <div v-show="isWide || activeSection === 'convert'" id="time-section-convert" class="convert-section tool-panel section-convert-ts">
       <div class="section-header tool-panel-header">时间戳转日期</div>
       <div class="convert-content">
         <div class="convert-row">
@@ -76,7 +65,7 @@
     </div>
 
     <!-- 日期转时间戳 -->
-    <div v-show="activeSection === 'convert'" class="convert-section tool-panel">
+    <div v-show="isWide || activeSection === 'convert'" class="convert-section tool-panel section-convert-date">
       <div class="section-header tool-panel-header">日期转时间戳</div>
       <div class="convert-content">
         <div class="convert-row">
@@ -108,7 +97,7 @@
       </div>
     </div>
 
-    <div v-show="activeSection === 'cron'" class="convert-section tool-panel">
+    <div v-show="isWide || activeSection === 'cron'" id="time-section-cron" class="convert-section tool-panel section-cron">
       <div class="section-header tool-panel-header">Cron 表达式解释</div>
       <div class="convert-content">
         <div class="convert-row">
@@ -137,7 +126,7 @@
       </div>
     </div>
 
-    <div v-show="activeSection === 'timezone'" class="convert-section tool-panel">
+    <div v-show="isWide || activeSection === 'timezone'" id="time-section-timezone" class="convert-section tool-panel section-timezone">
       <div class="section-header tool-panel-header">多时区对照</div>
       <div class="convert-content">
         <div class="convert-row">
@@ -179,7 +168,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, watch, nextTick, onMounted, onUnmounted } from 'vue'
 import { useCopyToast } from '../composables/useCopyToast.js'
 import { handleSegmentedKeydown } from '../utils/segmentedControl.js'
 import {
@@ -194,17 +183,34 @@ import {
   getAvailableTimezonePresets
 } from '../utils/timeHelper.js'
 
-defineProps({
-  fontSize: { type: Number, default: 14 }
+const props = defineProps({
+  fontSize: { type: Number, default: 14 },
+  // 子工具由左侧 nav 驱动（当前时间/时间转换/Cron/多时区）
+  subTool: { type: String, default: 'current' }
 })
 
-const TIME_SECTIONS = [
-  { key: 'current', label: '当前时间' },
-  { key: 'convert', label: '时间转换' },
-  { key: 'cron', label: 'Cron' },
-  { key: 'timezone', label: '多时区' }
-]
-const activeSection = ref('current')
+const activeSection = ref(props.subTool)
+
+// 宽屏（窗口 ≥1270px，扣除左侧 nav 后内容区约 ≥1100px）四任务区双列并排；
+// 窄屏维持一次只显示一个子任务
+const WIDE_WINDOW_WIDTH = 1270
+const isWide = ref(false)
+function updateWideState() {
+  isWide.value = window.innerWidth >= WIDE_WINDOW_WIDTH
+}
+
+watch(
+  () => props.subTool,
+  (next) => {
+    if (!next || next === activeSection.value) return
+    activeSection.value = next
+    if (isWide.value) {
+      nextTick(() => {
+        document.getElementById(`time-section-${next}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      })
+    }
+  }
+)
 
 // 显示模式
 const displayMode = ref('second')
@@ -326,6 +332,8 @@ function removeTimezone(row) {
 
 // 启动定时器
 onMounted(() => {
+  updateWideState()
+  window.addEventListener('resize', updateWideState)
   if (initialCron.success) {
     cronDescription.value = initialCron.description
     cronRuns.value = initialCron.formattedRuns
@@ -339,6 +347,7 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
+  window.removeEventListener('resize', updateWideState)
   if (timer) clearInterval(timer)
 })
 </script>
@@ -353,13 +362,40 @@ onUnmounted(() => {
   gap: 12px;
 }
 
-.time-navigation {
-  position: sticky;
-  top: 0;
-  z-index: 5;
-  flex: none;
-  align-self: flex-start;
-  background: var(--bg-secondary);
+/* 宽屏双列 dashboard：左列当前时间 + 时间戳互转，右列 Cron + 多时区，消除大面积空白 */
+.time-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+}
+
+.time-grid > .tool-panel {
+  min-width: 0;
+}
+
+.time-grid .live-section {
+  grid-column: 1;
+  grid-row: 1;
+}
+
+.time-grid .section-convert-ts {
+  grid-column: 1;
+  grid-row: 2;
+}
+
+.time-grid .section-convert-date {
+  grid-column: 1;
+  grid-row: 3;
+}
+
+.time-grid .section-cron {
+  grid-column: 2;
+  grid-row: 1 / 3;
+}
+
+.time-grid .section-timezone {
+  grid-column: 2;
+  grid-row: 3;
 }
 
 /* 实时时间显示区 */

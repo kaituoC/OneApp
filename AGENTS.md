@@ -223,8 +223,8 @@ Windows 暂不支持 Agent Workshop 的本地 CLI 检测与进程组管理，渲
 
 ### 主要组件
 
-- `App.vue`：根组件，管理 active tab、顶部一级分组、条件化左侧工具导航、分组最近工具记忆、主题、字号、最近文件和快捷键；macOS 数字直达使用 `Cmd+1-9/0`，Windows/Linux 使用 `Ctrl+1-9/0`，全平台循环切换使用 `Ctrl+Tab` / `Ctrl+Shift+Tab`，不得拦截 macOS `Cmd+Tab`。
-- `Header.vue`：顶部一级工作台分组导航。含多工具的当前分组由 `App.vue` 渲染左侧上下文工具导航；单工具分组不得保留空白侧栏。窄宽度下顶部入口可横向查看，并通过图标、label、title 或 accessible name 保持可理解。
+- `App.vue`：根组件，管理 active tab、顶部一级分组、恒定左侧两级工具导航（一级工具 + 子工具，单工具分组同样渲染，会话级子工具选择不持久化）、分组最近工具记忆、主题、字号、最近文件和快捷键；macOS 数字直达使用 `Cmd+1-9/0`，Windows/Linux 使用 `Ctrl+1-9/0`，全平台循环切换使用 `Ctrl+Tab` / `Ctrl+Shift+Tab`，不得拦截 macOS `Cmd+Tab`。
+- `Header.vue`：顶部一级工作台分组导航。所有分组均由 `App.vue` 渲染左侧上下文工具导航（含子工具二级条目）；单工具分组显示单项 + 分组描述，不保留空白侧栏、不产生宽度跳变。窄宽度下顶部入口可横向查看，并通过图标、label、title 或 accessible name 保持可理解。
 - `StatusBar.vue`：底部状态栏，必须覆盖全部一级工具名称。
 - `EditorTab.vue`：统一编辑器，使用 `useEditorFile`，按 mode 渲染 Markdown / HTML / 纯文本工作流。
 - `EditorWithLineNumbers.vue`：带同步行号的复用 textarea。
@@ -232,11 +232,11 @@ Windows 暂不支持 Agent Workshop 的本地 CLI 检测与进程组管理，渲
 - `MarkdownPreview.vue` / `HtmlPreview.vue`：Markdown 与 HTML 预览。
 - `JsonTab.vue`：数据工具合集，提供 JSON / YAML / CSV / SQL / XML 子工具、JSONPath 查询和 CSV 表格预览。
 - `DiffTab.vue`：文本对比工具。
-- `TextTab.vue`：文本处理工具，页面内横向子工具栏，支持统计、转换、排序和去重。
+- `TextTab.vue`：文本处理工具，子工具（统计、转换、排序、去重）由左侧两级导航切换，页内无横向子工具栏。
 - `RegexTab.vue`：正则测试器，匹配由 `useRegexMatcher` 和 `workers/regex.worker.js` 执行。
-- `EncodeTab.vue`：编码工具合集，页面内横向子工具栏。
-- `GeneratorTab.vue`：生成器合集，页面内横向子工具栏，支持 UUID、随机密码、Lorem 和二维码。
-- `TimeTab.vue`：当前时间、时间转换、Cron、多时区四个子工具；页面生命周期内保留切换状态，Cron 初始提供默认表达式的解释与未来执行时间。
+- `EncodeTab.vue`：编码工具合集，6 个子工具由左侧两级导航切换。
+- `GeneratorTab.vue`：生成器合集，子工具（UUID、随机密码、Lorem、二维码）由左侧两级导航切换。
+- `TimeTab.vue`：当前时间、时间转换、Cron、多时区四个子工具，由左侧导航驱动；宽屏（窗口 ≥1270px）双列 grid 并排，窄屏单列切换；页面生命周期内保留切换状态，Cron 初始提供默认表达式的解释与未来执行时间。
 - `AgentWorkshopTab.vue`：Agent 研讨室，仅根据现有状态派生准备、运行、结果三阶段并渲染配置、进度和 Markdown 时间线；不得借 UI 调整修改 IPC、编排和记录语义。
 - `SettingsTab.vue`：以常用设置、最近文件、快捷键、关于四个分区组织工作目录、主题、字号、更新检查与说明。
 

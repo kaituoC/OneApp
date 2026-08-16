@@ -11,7 +11,7 @@ OneApp 是一个基于 Electron + Vue 3 的桌面开发工具应用，集成：
 - 文本对比：并排 / 统一 diff，滚动同步与差异统计
 - 文本处理：统计、大小写/命名风格转换、按行排序、按行去重
 - 生成器：UUID v4 单个/批量生成、随机密码、Lorem 占位文本、二维码 PNG 生成
-- 时间工具：当前时间、时间戳互转、多格式输出、标准 5 位 Cron 表达式解释、多时区对照
+- 时间工具：实时当前时间概览、时间戳互转、多格式输出、标准 5 位 Cron 表达式解释、多时区对照
 - 正则测试器：`/pattern/flags` 输入、Web Worker 实时匹配、捕获组高亮、速查抽屉
 - 编码工具合集：Base64、URL、JWT、Hash、进制、Unicode
 - Agent 研讨室：多个本地 AI agent 以只读方式研讨本地仓库、交叉评审并输出实现方案
@@ -236,7 +236,7 @@ Windows 暂不支持 Agent Workshop 的本地 CLI 检测与进程组管理，渲
 - `RegexTab.vue`：正则测试器，匹配由 `useRegexMatcher` 和 `workers/regex.worker.js` 执行。
 - `EncodeTab.vue`：编码工具合集，6 个子工具由 context-bar 导航条切换。
 - `GeneratorTab.vue`：生成器合集，子工具（UUID、随机密码、Lorem、二维码）由 context-bar 导航条切换。
-- `TimeTab.vue`：当前时间、时间转换、Cron、多时区四个子工具，由 context-bar 导航条驱动；宽屏（窗口 ≥1270px）双列 grid 并排，窄屏单列切换；页面生命周期内保留切换状态，Cron 初始提供默认表达式的解释与未来执行时间。
+- `TimeTab.vue`：时间转换（含常驻实时当前时间概览）、Cron、多时区三个子工具，由 context-bar 导航条驱动；宽屏（窗口 ≥1270px）双列 grid 并排，窄屏单列切换；页面生命周期内保留切换状态，Cron 初始提供默认表达式的解释与未来执行时间。
 - `AgentWorkshopTab.vue`：Agent 研讨室，仅根据现有状态派生准备、运行、结果三阶段并渲染配置、进度和 Markdown 时间线；不得借 UI 调整修改 IPC、编排和记录语义。
 - `SettingsTab.vue`：以常用设置、最近文件、快捷键、关于四个分区组织工作目录、主题、字号、更新检查与说明。
 

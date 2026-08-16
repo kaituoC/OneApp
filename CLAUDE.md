@@ -197,7 +197,7 @@ electron-vite 构建三个独立的 bundle：
 - **composables/useRegexMatcher.js**：封装正则匹配 Worker 的生命周期——完整输入签名、输入变化立即失效旧结果、丢弃乱序响应、超时（1.5s）`terminate` 兜底、重建待命 Worker、组件卸载释放，杜绝灾难性回溯冻结 UI
 - **workers/regex.worker.js**：子线程内调用 `regexHelper.runRegex` 执行匹配，postMessage 回传位置数组
 - **EncodeTab.vue**：编码工具合集，6 个子工具（Base64 / URL / JWT / Hash / 进制 / Unicode）由 context-bar 导航条切换；编解码类用「左源右果 + ⇄ 方向」实时计算，Hash 异步（generation 计数防过期响应），进制四框联动，纯逻辑全在 `encodeHelper.js`
-- **TimeTab.vue**：按当前时间、时间转换、Cron、多时区四个子工具组织，子工具由 context-bar 导航条驱动；宽屏（窗口 ≥1270px）四任务区双列 grid 并排（左列当前时间 + 时间戳互转，右列 Cron + 多时区），窄屏单列切换；使用 `v-show` 保留页面生命周期内状态，Cron 首次进入已有合法默认表达式的解释与未来时间
+- **TimeTab.vue**：按时间转换（含常驻实时当前时间概览）、Cron、多时区三个子工具组织，子工具由 context-bar 导航条驱动；宽屏（窗口 ≥1270px）任务区双列 grid 并排（左列实时概览 + 时间戳互转，右列 Cron + 多时区），窄屏单列切换；使用 `v-show` 保留页面生命周期内状态，Cron 首次进入已有合法默认表达式的解释与未来时间
 - **AgentWorkshopTab.vue**：Agent 研讨室标签，仅从现有前端状态派生「准备 / 运行 / 结果」三阶段；准备阶段展示配置与启动，运行/结果阶段展示进度和 Markdown 时间线；经 `window.electronAPI.agentWorkshop` 调用主进程，订阅 `agent-discussion:event` 事件流（卸载时取消订阅），用 `activeRunId` 区分本会话运行与恢复查看的旧记录，不改变 IPC、编排和持久化语义
 - **SettingsTab.vue**：以常用设置、最近文件、快捷键、关于四个分区组织平台感知快捷键、electron-store 持久化、GitHub Release 更新检查与统一消息弹窗结果展示
 

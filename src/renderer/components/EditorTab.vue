@@ -22,6 +22,9 @@
         <Save :size="15" aria-hidden="true" />
         保存
       </button>
+      <button v-if="dataToolTarget" @click="openInDataTool" title="在数据工具中打开当前文件内容">
+        在数据工具中打开
+      </button>
       <OverflowMenu
         v-if="mode === 'markdown'"
         label="更多"
@@ -82,6 +85,7 @@
 import { ref, computed, watch, nextTick } from 'vue'
 import { FolderOpen, Save } from 'lucide-vue-next'
 import { useEditorFile } from '../composables/useEditorFile.js'
+import { useSendTo } from '../composables/useSendTo.js'
 import { saveFile as dialogSaveFile } from '../utils/fileHelper.js'
 
 let _marked = null
@@ -132,6 +136,24 @@ const { editorContent, currentFilePath, mode, openFileDialog: baseOpenFileDialog
     refreshTree: () => fileTreeRef.value?.refresh(),
     isActive: computed(() => props.isActive)
   })
+
+const { sendTo } = useSendTo()
+
+const DATA_TOOL_MAP = {
+  json: 'json', xml: 'xml', sql: 'sql',
+  yaml: 'yaml', yml: 'yaml', csv: 'csv'
+}
+
+const dataToolTarget = computed(() => {
+  if (!currentFilePath.value) return null
+  const ext = currentFilePath.value.split('.').pop()?.toLowerCase()
+  return DATA_TOOL_MAP[ext] || null
+})
+
+function openInDataTool() {
+  if (!dataToolTarget.value) return
+  sendTo('json', editorContent.value, dataToolTarget.value)
+}
 
 const editableExtensions = []
 

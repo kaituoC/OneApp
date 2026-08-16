@@ -143,11 +143,12 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, watch, onUnmounted } from 'vue'
+import { ref, reactive, computed, watch, nextTick, onUnmounted } from 'vue'
 import { BookOpen, CircleAlert, Copy } from 'lucide-vue-next'
 import EditorWithLineNumbers from './EditorWithLineNumbers.vue'
 import { useRegexMatcher } from '../composables/useRegexMatcher.js'
 import { useCopyToast } from '../composables/useCopyToast.js'
+import { usePendingInput } from '../composables/useSendTo.js'
 
 defineProps({
   fontSize: { type: Number, default: 14 }
@@ -202,6 +203,16 @@ const pattern = ref('(\\d{3})-(\\d{4})')
 const text = ref('电话 400-1234，备用 987-6543')
 const flagState = reactive(Object.fromEntries(FLAGS.map(f => [f, f === 'g'])))
 const flagsString = computed(() => FLAGS.filter(f => flagState[f]).join(''))
+
+const pendingInput = usePendingInput()
+watch(pendingInput, (val) => {
+  if (val && val.tabKey === 'regex') {
+    nextTick(() => {
+      text.value = val.content
+      pendingInput.value = null
+    })
+  }
+})
 
 const patternInputRef = ref(null)
 const showCheatsheet = ref(false)

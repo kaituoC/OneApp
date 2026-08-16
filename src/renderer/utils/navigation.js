@@ -46,20 +46,12 @@ export const NAV_GROUPS = [
         summary: 'Cron / 时区',
         shortcut: 3,
         icon: Clock3
-      },
-      {
-        key: 'encode',
-        label: '编码',
-        description: 'Base64 / URL / JWT / Hash',
-        summary: 'Base64 / JWT',
-        shortcut: 4,
-        icon: SquareCode
       }
     ]
   },
   {
     key: 'inspect',
-    label: '文本调试',
+    label: '文本工具',
     items: [
       {
         key: 'diff',
@@ -72,8 +64,8 @@ export const NAV_GROUPS = [
       {
         key: 'text',
         label: '文本处理',
-        description: '统计、转换、排序、去重',
-        summary: '统计 / 去重',
+        description: '大小写、排序、去重',
+        summary: '转换 / 去重',
         shortcut: 6,
         icon: Pilcrow
       },
@@ -84,6 +76,14 @@ export const NAV_GROUPS = [
         summary: '匹配 / 捕获组',
         shortcut: 7,
         icon: Regex
+      },
+      {
+        key: 'encode',
+        label: '编码',
+        description: 'Base64 / URL / JWT / Hash',
+        summary: 'Base64 / JWT',
+        shortcut: 4,
+        icon: SquareCode
       }
     ]
   },
@@ -158,7 +158,6 @@ export const SUB_TOOLS = {
     { key: 'unicode', label: 'Unicode' }
   ],
   text: [
-    { key: 'stats', label: '统计' },
     { key: 'case', label: '大小写' },
     { key: 'sort', label: '排序' },
     { key: 'dedupe', label: '去重' }

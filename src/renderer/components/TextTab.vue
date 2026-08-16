@@ -13,16 +13,13 @@
         <template v-else-if="tool === 'dedupe'">
           <button class="primary" @click="runDedupe">按行去重</button>
         </template>
-        <template v-else>
-          <span class="toolbar-note">实时统计</span>
-        </template>
       </div>
 
       <div class="content">
         <div class="panel tool-panel">
           <div class="panel-header tool-panel-header">
             <span class="tool-panel-title">输入文本</span>
-            <span class="tool-panel-meta">{{ stats.characters.toLocaleString() }} 字符</span>
+            <span class="tool-panel-meta">{{ stats.characters.toLocaleString() }} 字符 · {{ stats.words.toLocaleString() }} 词 · {{ stats.lines.toLocaleString() }} 行</span>
           </div>
           <EditorWithLineNumbers
             v-model="input"
@@ -35,33 +32,26 @@
           <div class="panel-header tool-panel-header">
             <span class="tool-panel-title">{{ outputTitle }}</span>
             <span class="tool-panel-actions">
-              <span :class="['tool-status-chip', hasError ? 'error' : output || tool === 'stats' ? 'success' : '']" role="status" aria-live="polite">
+              <span :class="['tool-status-chip', hasError ? 'error' : output ? 'success' : '']" role="status" aria-live="polite">
                 {{ statusChip }}
               </span>
-              <button v-if="tool !== 'stats'" @click="copyResult" :disabled="!output || hasError">复制</button>
+              <button @click="copyResult" :disabled="!output || hasError">复制</button>
+              <OverflowMenu v-if="output && !hasError" label="发送到" :items="sendTargets" @select="handleSendTo" />
               <button @click="clearAll" :disabled="!input && !output">清空</button>
             </span>
           </div>
 
-          <div v-if="tool === 'stats'" class="stats-grid">
-            <div v-for="item in statItems" :key="item.key" class="stat-row">
-              <span class="stat-label">{{ item.label }}</span>
-              <strong class="stat-value">{{ item.value.toLocaleString() }}</strong>
-            </div>
+          <EditorWithLineNumbers
+            v-model="output"
+            :font-size="fontSize"
+            readonly
+            :class="{ 'error-output': hasError }"
+          />
+          <div v-if="dedupeSummary && tool === 'dedupe'" class="result-summary">
+            原始 {{ dedupeSummary.originalLines.toLocaleString() }} 行 ·
+            保留 {{ dedupeSummary.remainingLines.toLocaleString() }} 行 ·
+            移除 {{ dedupeSummary.removedLines.toLocaleString() }} 行
           </div>
-          <template v-else>
-            <EditorWithLineNumbers
-              v-model="output"
-              :font-size="fontSize"
-              readonly
-              :class="{ 'error-output': hasError }"
-            />
-            <div v-if="dedupeSummary && tool === 'dedupe'" class="result-summary">
-              原始 {{ dedupeSummary.originalLines.toLocaleString() }} 行 ·
-              保留 {{ dedupeSummary.remainingLines.toLocaleString() }} 行 ·
-              移除 {{ dedupeSummary.removedLines.toLocaleString() }} 行
-            </div>
-          </template>
         </div>
       </div>
 
@@ -72,11 +62,12 @@
 </template>
 
 <script setup>
-import { computed, ref, watch } from 'vue'
+import { computed, ref, watch, nextTick } from 'vue'
 import EditorWithLineNumbers from './EditorWithLineNumbers.vue'
 import OverflowMenu from './OverflowMenu.vue'
 import { useCopyToast } from '../composables/useCopyToast.js'
 import { useToolResult } from '../composables/useToolResult.js'
+import { useSendTo, getSendTargets, usePendingInput } from '../composables/useSendTo.js'
 import {
   getTextStats,
   convertTextCase,
@@ -84,10 +75,11 @@ import {
   dedupeLines
 } from '../utils/textHelper.js'
 
+const VALID_TOOLS = ['case', 'sort', 'dedupe']
+
 const props = defineProps({
   fontSize: { type: Number, default: 14 },
-  // 子工具由左侧 nav 驱动（统计/大小写/排序/去重）
-  subTool: { type: String, default: 'stats' }
+  subTool: { type: String, default: 'case' }
 })
 
 const CASE_OPTIONS = [
@@ -102,11 +94,12 @@ const CASE_OPTIONS = [
 const caseSecondaryActions = CASE_OPTIONS
   .filter((option) => option.key !== 'upper')
 
-const tool = ref(props.subTool)
+const tool = ref(VALID_TOOLS.includes(props.subTool) ? props.subTool : 'case')
 watch(
   () => props.subTool,
   (next) => {
-    if (next && next !== tool.value) setTool(next)
+    const value = VALID_TOOLS.includes(next) ? next : 'case'
+    if (value !== tool.value) setTool(value)
   }
 )
 const input = ref('')
@@ -114,21 +107,44 @@ const dedupeSummary = ref(null)
 const { output, statusMessage, hasError, reset, setSuccess, setError } = useToolResult()
 const { copyMessage, copyToClipboard } = useCopyToast()
 
-const stats = computed(() => getTextStats(input.value))
-const statItems = computed(() => [
-  { key: 'characters', label: '字符数', value: stats.value.characters },
-  { key: 'words', label: '字数', value: stats.value.words },
-  { key: 'lines', label: '行数', value: stats.value.lines },
-  { key: 'nonEmptyLines', label: '非空行数', value: stats.value.nonEmptyLines },
-  { key: 'bytes', label: 'UTF-8 字节数', value: stats.value.bytes }
-])
+const { sendTo } = useSendTo()
+const sendTargets = computed(() => getSendTargets('text', tool.value))
 
-const outputTitle = computed(() => (tool.value === 'stats' ? '统计结果' : '输出结果'))
-const statusChip = computed(() => {
-  if (hasError.value) return '错误'
-  if (tool.value === 'stats') return '实时'
-  return output.value ? '就绪' : '待处理'
+function handleSendTo(key) {
+  const [tabKey, subKey] = key.split('/')
+  sendTo(tabKey, output.value, subKey || undefined)
+}
+
+const pendingInput = usePendingInput()
+watch(pendingInput, (val) => {
+  if (val && val.tabKey === 'text') {
+    nextTick(() => {
+      input.value = val.content
+      pendingInput.value = null
+    })
+  }
 })
+
+const stats = ref({ characters: 0, words: 0, lines: 0, nonEmptyLines: 0, bytes: 0 })
+let debounceTimer = null
+watch(input, (val) => {
+  if (!debounceTimer) stats.value = getTextStats(val)
+  clearTimeout(debounceTimer)
+  debounceTimer = setTimeout(() => {
+    stats.value = getTextStats(val)
+    debounceTimer = null
+  }, 150)
+}, { immediate: true })
+
+const outputTitle = '输出结果'
+const statusChip = ref('待处理')
+watch([hasError, output], () => {
+  if (hasError.value) {
+    statusChip.value = '错误'
+  } else {
+    statusChip.value = output.value ? '就绪' : '待处理'
+  }
+}, { immediate: true })
 
 function setTool(nextTool) {
   tool.value = nextTool
@@ -190,11 +206,6 @@ function clearAll() {
   overflow: hidden;
 }
 
-.toolbar-note {
-  color: var(--text-muted);
-  font-size: 12px;
-}
-
 .content {
   flex: 1;
   display: flex;
@@ -209,36 +220,6 @@ function clearAll() {
   display: flex;
   flex-direction: column;
   min-width: 0;
-}
-
-.stats-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-  gap: 0;
-  padding: 12px;
-}
-
-.stat-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  min-height: 88px;
-  padding: 14px;
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-sm);
-  background: var(--surface-subtle);
-}
-
-.stat-label {
-  color: var(--text-secondary);
-  font-size: 13px;
-}
-
-.stat-value {
-  color: var(--text-primary);
-  font-family: var(--font-mono);
-  font-size: 18px;
 }
 
 .result-summary {

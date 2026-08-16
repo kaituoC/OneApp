@@ -47,6 +47,7 @@
               {{ resultStatus }}
             </span>
             <button @click="copyResult" :disabled="!output || hasError">复制</button>
+            <OverflowMenu v-if="output && !hasError" label="发送到" :items="sendTargets" @select="handleSendTo" />
             <button @click="clearAll" :disabled="!input && !hasResult">清空</button>
           </span>
         </div>
@@ -98,7 +99,7 @@
 </template>
 
 <script setup>
-import { computed, ref, watch } from 'vue'
+import { computed, ref, watch, nextTick } from 'vue'
 import {
   formatJSON,
   minifyJSON,
@@ -121,8 +122,10 @@ import {
 } from '../utils/formatHelper.js'
 import { queryJSONPath } from '../utils/jsonPathHelper.js'
 import EditorWithLineNumbers from './EditorWithLineNumbers.vue'
+import OverflowMenu from './OverflowMenu.vue'
 import { useCopyToast } from '../composables/useCopyToast.js'
 import { useToolResult } from '../composables/useToolResult.js'
+import { useSendTo, getSendTargets, usePendingInput } from '../composables/useSendTo.js'
 
 const props = defineProps({
   fontSize: { type: Number, default: 14 },
@@ -145,6 +148,24 @@ const jsonPathMatches = ref([])
 const tablePreview = ref(null)
 const { output, statusMessage, hasError, reset, setSuccess, setError } = useToolResult()
 const { copyMessage, copyToClipboard } = useCopyToast()
+
+const { sendTo } = useSendTo()
+const sendTargets = computed(() => getSendTargets('json', props.subTool))
+
+function handleSendTo(key) {
+  const [tabKey, subKey] = key.split('/')
+  sendTo(tabKey, output.value, subKey || undefined)
+}
+
+const pendingInput = usePendingInput()
+watch(pendingInput, (val) => {
+  if (val && val.tabKey === 'json') {
+    nextTick(() => {
+      input.value = val.content
+      pendingInput.value = null
+    })
+  }
+})
 
 const ACTIONS = {
   json: [

@@ -78,7 +78,7 @@
 </template>
 
 <script setup>
-import { computed, ref, watch, onMounted, onUnmounted } from 'vue'
+import { computed, provide, ref, watch, onMounted, onUnmounted } from 'vue'
 import Header from './components/Header.vue'
 import EditorTab from './components/EditorTab.vue'
 import JsonTab from './components/JsonTab.vue'
@@ -105,6 +105,7 @@ import {
   isCycleNavigationEvent,
   isNumericNavigationEvent
 } from './utils/navigation.js'
+import { SEND_TO_KEY, PENDING_INPUT_KEY, provideSendTo } from './composables/useSendTo.js'
 
 const activeTab = ref('editor')
 const currentFile = ref('')
@@ -141,6 +142,15 @@ function setActiveTab(tabKey) {
     }
   }
 }
+
+const { sendTo, pendingInput } = provideSendTo(
+  setActiveTab,
+  (tabKey, subKey) => {
+    activeSubToolByTab.value = { ...activeSubToolByTab.value, [tabKey]: subKey }
+  }
+)
+provide(SEND_TO_KEY, { sendTo })
+provide(PENDING_INPUT_KEY, pendingInput)
 
 // context-bar 导航条选择负载：{ key, subKey? }；子工具选择同时激活对应一级工具
 function handleNavSelect({ key, subKey }) {

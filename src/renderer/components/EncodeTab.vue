@@ -25,6 +25,7 @@
                 <Copy :size="13" aria-hidden="true" />
                 复制
               </button>
+              <OverflowMenu v-if="b64Result.success" label="发送到" :items="sendTargets" @select="handleSendTo" />
             </div>
             <div v-if="!b64Input" class="tool-empty-state encode-empty">输入{{ b64Dir === 'encode' ? '文本' : ' Base64' }}后实时显示结果</div>
             <textarea v-else :value="b64Result.success ? b64Result.result : ''" class="io" readonly spellcheck="false"></textarea>
@@ -56,6 +57,7 @@
                 <Copy :size="13" aria-hidden="true" />
                 复制
               </button>
+              <OverflowMenu v-if="urlResult.success" label="发送到" :items="sendTargets" @select="handleSendTo" />
             </div>
             <div v-if="!urlInput" class="tool-empty-state encode-empty">输入{{ urlDir === 'encode' ? '文本' : ' URL 编码' }}后实时显示结果</div>
             <textarea v-else :value="urlResult.success ? urlResult.result : ''" class="io" readonly spellcheck="false"></textarea>
@@ -169,9 +171,11 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, watch } from 'vue'
+import { ref, reactive, computed, watch, nextTick } from 'vue'
 import { ArrowLeftRight, Copy } from 'lucide-vue-next'
+import OverflowMenu from './OverflowMenu.vue'
 import { useCopyToast } from '../composables/useCopyToast.js'
+import { useSendTo, getSendTargets, usePendingInput } from '../composables/useSendTo.js'
 import {
   base64Encode,
   base64Decode,
@@ -198,6 +202,33 @@ watch(
   }
 )
 const { copyMessage, copyToClipboard: copy } = useCopyToast()
+
+const { sendTo } = useSendTo()
+const sendTargets = computed(() => getSendTargets('encode', tool.value))
+
+const encodeOutput = computed(() => {
+  if (tool.value === 'base64') return b64Result.value.success ? b64Result.value.result : ''
+  if (tool.value === 'url') return urlResult.value.success ? urlResult.value.result : ''
+  if (tool.value === 'unicode') return uniResult.value.success ? uniResult.value.result : ''
+  return ''
+})
+
+function handleSendTo(key) {
+  const [tabKey, subKey] = key.split('/')
+  if (encodeOutput.value) sendTo(tabKey, encodeOutput.value, subKey || undefined)
+}
+
+const pendingInput = usePendingInput()
+watch(pendingInput, (val) => {
+  if (val && val.tabKey === 'encode') {
+    nextTick(() => {
+      if (val.subKey === 'base64') b64Input.value = val.content
+      else if (val.subKey === 'url') urlInput.value = val.content
+      else if (val.subKey === 'unicode') uniInput.value = val.content
+      pendingInput.value = null
+    })
+  }
+})
 // 把当前结果搬入输入框并翻转方向（自然完成往返），3 个编解码工具共用
 function makeSwap(inputRef, dirRef, resultRef) {
   return () => {

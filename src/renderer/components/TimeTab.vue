@@ -1,7 +1,7 @@
 <template>
   <div :class="['time-tab', { 'time-grid': isWide }]">
-    <!-- 实时时间显示区 -->
-    <div v-show="isWide || activeSection === 'current'" id="time-section-current" class="live-section tool-panel">
+    <!-- 实时时间显示区：随时间转换子任务常驻顶部（原独立「当前时间」子工具并入） -->
+    <div v-show="isWide || activeSection === 'convert'" id="time-section-convert" class="live-section tool-panel">
       <div class="live-row">
         <div class="live-item">
           <span class="live-label">当前时间</span>
@@ -23,7 +23,7 @@
     </div>
 
     <!-- 时间戳转日期 -->
-    <div v-show="isWide || activeSection === 'convert'" id="time-section-convert" class="convert-section tool-panel section-convert-ts">
+    <div v-show="isWide || activeSection === 'convert'" class="convert-section tool-panel section-convert-ts">
       <div class="section-header tool-panel-header">时间戳转日期</div>
       <div class="convert-content">
         <div class="convert-row">
@@ -185,14 +185,13 @@ import {
 
 const props = defineProps({
   fontSize: { type: Number, default: 14 },
-  // 子工具由左侧 nav 驱动（当前时间/时间转换/Cron/多时区）
-  subTool: { type: String, default: 'current' }
+  // 子工具由 context-bar 导航条驱动（时间转换含实时概览/Cron/多时区）
+  subTool: { type: String, default: 'convert' }
 })
 
 const activeSection = ref(props.subTool)
 
-// 宽屏（窗口 ≥1270px，扣除左侧 nav 后内容区约 ≥1100px）四任务区双列并排；
-// 窄屏维持一次只显示一个子任务
+// 宽屏（窗口 ≥1270px）任务区双列并排；窄屏维持一次只显示一个子任务
 const WIDE_WINDOW_WIDTH = 1270
 const isWide = ref(false)
 function updateWideState() {

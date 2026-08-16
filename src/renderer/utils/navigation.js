@@ -144,7 +144,7 @@ export const SUB_TOOLS = {
     { key: 'xml', label: 'XML' }
   ],
   time: [
-    { key: 'current', label: '当前时间' },
+    // 实时当前时间概览常驻「时间转换」页顶部，不再单独占用于工具入口
     { key: 'convert', label: '时间转换' },
     { key: 'cron', label: 'Cron' },
     { key: 'timezone', label: '多时区' }

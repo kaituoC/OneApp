@@ -6,6 +6,24 @@
 
 ---
 
+## [1.27.0] - 2026-08-16
+
+### 🎨 工具导航移入顶部 context-bar
+- 移除左侧导航列，工具与子工具导航整合进 context-bar 横向导航条：固定段展示当前分组全部工具 chips（图标 + 名称），竖线分隔后动态段跟随展示激活工具的子工具 chips。
+- chips 仅常驻图标与名称，完整说明与快捷键信息保留在悬停 tooltip；主内容区宽度净增约 184px，单工具分组不再渲染空白侧栏。
+- 窄窗口下导航条横向滚动兜底，优先保护主内容区可用宽度。
+- 编辑器文件树顶层目录与根标题左对齐（缩进基线调整）；顶部分组入口移除冗余副标题描述。
+
+### ♿ 可访问性与交互
+- 导航 chips 复用 segmented control 键盘导航（方向键 / Home / End）与 radiogroup 语义，交互区显式 no-drag，不影响窗口拖拽。
+- 工具切换、子工具会话级记忆、Cmd+数字直达与 Ctrl+Tab 循环等既有交互行为保持不变。
+
+### 🧪 测试与文档
+- 同步 README / CLAUDE.md / AGENTS.md 导航描述；OpenSpec change `move-tool-nav-to-context-bar` 归档，delta 合并至 `contextual-tool-navigation`、`workbench-shell`、`tool-surface-refresh` specs。
+- 全量 295 个单测与 Electron 生产构建通过。
+
+---
+
 ## [1.26.0] - 2026-08-16
 
 ### 🎨 导航收敛与 UI 一致性

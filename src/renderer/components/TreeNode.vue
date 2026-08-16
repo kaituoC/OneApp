@@ -1,12 +1,9 @@
 <template>
-  <div :class="['tree-node', { 'has-parent': depth > 0 }]">
+  <div class="tree-node">
     <button
       type="button"
       :class="['node-row', { 'is-dir': item.isDirectory, active: !item.isDirectory && activePath === item.path }]"
-      :style="{
-        paddingLeft: `${depth * 18 + 8}px`,
-        '--branch-start': `${Math.max(depth - 1, 0) * 18 + 15}px`
-      }"
+      :style="{ paddingLeft: `${depth * 18 + 2}px` }"
       :title="item.path"
       :aria-expanded="item.isDirectory ? expanded : undefined"
       :aria-current="!item.isDirectory && activePath === item.path ? 'page' : undefined"
@@ -25,11 +22,10 @@
     <div
       v-if="item.isDirectory && expanded"
       class="node-children"
-      :style="{ '--guide-offset': `${depth * 18 + 15}px` }"
     >
-      <div v-if="loading" class="node-hint" :style="{ paddingLeft: `${(depth + 1) * 18 + 8}px` }">加载中...</div>
-      <div v-else-if="error" class="node-hint node-error" :style="{ paddingLeft: `${(depth + 1) * 18 + 8}px` }">读取失败</div>
-      <div v-else-if="filteredChildren.length === 0" class="node-hint" :style="{ paddingLeft: `${(depth + 1) * 18 + 8}px` }">（空）</div>
+      <div v-if="loading" class="node-hint" :style="{ paddingLeft: `${(depth + 1) * 18 + 2}px` }">加载中...</div>
+      <div v-else-if="error" class="node-hint node-error" :style="{ paddingLeft: `${(depth + 1) * 18 + 2}px` }">读取失败</div>
+      <div v-else-if="filteredChildren.length === 0" class="node-hint" :style="{ paddingLeft: `${(depth + 1) * 18 + 2}px` }">（空）</div>
       <TreeNode
         v-for="child in filteredChildren"
         :key="child.path"
@@ -100,10 +96,10 @@ async function loadChildren() {
 
 <style scoped>
 .node-row {
-  position: relative;
   width: 100%;
   display: flex;
   align-items: center;
+  justify-content: flex-start;
   gap: 4px;
   min-height: 26px;
   padding-top: 3px;
@@ -119,28 +115,6 @@ async function loadChildren() {
   background: transparent;
   border: 1px solid transparent;
   text-align: left;
-}
-
-.tree-node.has-parent > .node-row::before {
-  position: absolute;
-  top: 50%;
-  left: var(--branch-start);
-  width: 10px;
-  content: '';
-  border-top: 1px solid var(--border-subtle);
-}
-
-.node-children {
-  position: relative;
-}
-
-.node-children::before {
-  position: absolute;
-  top: 0;
-  bottom: 12px;
-  left: var(--guide-offset);
-  content: '';
-  border-left: 1px solid var(--border-subtle);
 }
 
 .node-row:hover {

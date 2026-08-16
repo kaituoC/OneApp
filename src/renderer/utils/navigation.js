@@ -134,7 +134,7 @@ export const NAV_GROUPS = [
 
 export const NAV_ITEMS = NAV_GROUPS.flatMap((group) => group.items)
 
-// 子工具导航：由左侧 contextual-nav 承载的第二级入口，页面内不再重复渲染
+// 子工具导航：由 context-bar 导航条承载的第二级入口，页面内不再重复渲染
 export const SUB_TOOLS = {
   json: [
     { key: 'json', label: 'JSON' },

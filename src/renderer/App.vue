@@ -2,33 +2,15 @@
   <div class="app-container">
     <Header :active-group="activeGroup" @group-change="handleGroupChange" />
     <section class="workbench-shell">
-      <aside class="contextual-nav">
-        <div class="contextual-nav-header">
-          <span>{{ activeGroupLabel }}</span>
-          <span>{{ activeGroupTools.length }} 个工具</span>
-        </div>
-        <ToolMenu
-          :items="activeNavTools"
-          :active="activeTab"
-          :active-sub="activeSubTool"
-          label="当前分组工具"
-          show-description
-          show-shortcut
-          @select="handleNavSelect"
-        />
-      </aside>
       <section class="workbench-main">
       <div class="context-bar">
-        <div class="context-title">
-          <component :is="activeTool.icon" class="context-icon" :size="18" aria-hidden="true" />
-          <div>
-            <div class="context-name">{{ activeTool.label }}</div>
-            <div class="context-desc" :title="activeContext">{{ activeContext }}</div>
-          </div>
-        </div>
-        <div class="context-meta">
-          <span class="meta-chip">{{ shortcutHint }}</span>
-        </div>
+        <ContextNav
+          :tools="activeNavTools"
+          :active="activeTab"
+          :active-sub="activeSubTool"
+          :group-label="activeGroupLabel"
+          @select="handleNavSelect"
+        />
       </div>
       <main class="content-area">
         <EditorTab
@@ -109,7 +91,7 @@ import GeneratorTab from './components/GeneratorTab.vue'
 import AgentWorkshopTab from './components/AgentWorkshopTab.vue'
 import SettingsTab from './components/SettingsTab.vue'
 import StatusBar from './components/StatusBar.vue'
-import ToolMenu from './components/ToolMenu.vue'
+import ContextNav from './components/ContextNav.vue'
 import {
   IS_MAC,
   TAB_BY_KEY,
@@ -120,7 +102,6 @@ import {
   SUB_TOOLS,
   DEFAULT_SUB_TOOL,
   getFirstTabInGroup,
-  formatShortcut,
   isCycleNavigationEvent,
   isNumericNavigationEvent
 } from './utils/navigation.js'
@@ -136,11 +117,9 @@ const recentTabByGroup = ref({})
 // 会话级子工具选择，不持久化（与 recentTabByGroup 的持久化范围区分）
 const activeSubToolByTab = ref({ ...DEFAULT_SUB_TOOL })
 
-const activeTool = computed(() => TAB_BY_KEY[activeTab.value] || TAB_BY_KEY.editor)
-const shortcutHint = computed(() => formatShortcut(activeTool.value))
 const activeGroup = computed(() => TAB_TO_GROUP_KEY[activeTab.value] || 'workspace')
 const activeGroupTools = computed(() => GROUP_BY_KEY[activeGroup.value] || [])
-// 左侧 nav 两级条目：子工具并入对应工具条目，页面内不再重复第三层导航
+// context-bar 导航条两级条目：子工具并入对应工具条目，页面内不再重复第三层导航
 const activeNavTools = computed(() =>
   activeGroupTools.value.map((item) =>
     SUB_TOOLS[item.key] ? { ...item, children: SUB_TOOLS[item.key] } : item
@@ -150,11 +129,6 @@ const activeSubTool = computed(() => activeSubToolByTab.value[activeTab.value] |
 const activeGroupLabel = computed(() =>
   NAV_GROUPS.find((item) => item.key === activeGroup.value)?.label || ''
 )
-const activeContext = computed(() => {
-  if (activeTab.value === 'editor') return currentFile.value || workDir.value || activeTool.value.description
-  if (activeTab.value === 'agent') return 'AI · 本地仓库只读研讨'
-  return activeTool.value.description
-})
 function setActiveTab(tabKey) {
   const item = TAB_BY_KEY[tabKey]
   if (!item) return
@@ -168,7 +142,7 @@ function setActiveTab(tabKey) {
   }
 }
 
-// 左侧 nav 选择负载：{ key, subKey? }；子工具选择同时激活对应一级工具
+// context-bar 导航条选择负载：{ key, subKey? }；子工具选择同时激活对应一级工具
 function handleNavSelect({ key, subKey }) {
   setActiveTab(key)
   if (subKey) {
@@ -287,95 +261,15 @@ onUnmounted(() => {
     var(--bg-primary);
 }
 
-.contextual-nav {
-  flex: 0 0 168px;
-  min-width: 168px;
-  display: flex;
-  flex-direction: column;
-  background: linear-gradient(180deg, var(--chrome-bg), var(--chrome-bg-muted));
-  border-right: 1px solid var(--border-color);
-}
-
-.contextual-nav-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  min-height: 42px;
-  padding: 0 12px;
-  color: var(--text-secondary);
-  border-bottom: 1px solid var(--border-subtle);
-  font-size: 12px;
-  font-weight: 700;
-}
-
-.contextual-nav-header span:last-child {
-  color: var(--text-faint);
-  font-size: 10px;
-  font-weight: 500;
-}
-
 .context-bar {
   height: 40px;
   flex: none;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 16px;
   padding: 0 18px;
   border-bottom: 1px solid var(--border-color);
   background: var(--topbar-bg);
   -webkit-app-region: drag;
-}
-
-.context-title {
-  min-width: 0;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.context-title > div {
-  min-width: 0;
-}
-
-.context-icon {
-  flex: none;
-  color: var(--accent);
-}
-
-.context-name {
-  color: var(--text-primary);
-  font-size: 13px;
-  font-weight: 700;
-  line-height: 1.1;
-}
-
-.context-desc {
-  max-width: min(680px, 52vw);
-  margin-top: 1px;
-  color: var(--text-muted);
-  font-size: 11px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.context-meta {
-  flex: none;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  -webkit-app-region: no-drag;
-}
-
-.meta-chip {
-  color: var(--text-muted);
-  background: var(--surface-subtle);
-  border: 1px solid var(--border-subtle);
-  border-radius: 999px;
-  padding: 3px 8px;
-  font-family: var(--font-mono);
-  font-size: 11px;
 }
 
 .content-area {
@@ -384,30 +278,9 @@ onUnmounted(() => {
   min-height: 0;
 }
 
-@media (max-width: 1080px) {
-  .context-desc {
-    max-width: min(520px, 44vw);
-  }
-}
-
-@media (max-width: 760px) {
-  .contextual-nav {
-    flex-basis: 148px;
-    min-width: 148px;
-  }
-}
-
 @media (max-width: 820px) {
   .context-bar {
     padding: 0 12px;
-  }
-
-  .context-meta {
-    display: none;
-  }
-
-  .context-desc {
-    max-width: 48vw;
   }
 }
 </style>

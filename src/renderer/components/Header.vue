@@ -2,11 +2,10 @@
   <header class="workbench-header">
     <div v-if="isMac" class="window-controls-space" aria-hidden="true"></div>
 
-    <div class="brand" aria-label="OneApp Developer Workbench">
+    <div class="brand" aria-label="OneApp">
       <component :is="WORKBENCH_ICON" class="brand-icon" :size="18" aria-hidden="true" />
       <div class="brand-copy">
         <div class="brand-name">OneApp</div>
-        <div class="brand-subtitle">Developer Workbench</div>
       </div>
     </div>
 
@@ -46,8 +45,8 @@ function hasFeaturedItem(group) {
 
 <style scoped>
 .workbench-header {
-  height: 56px;
-  min-height: 56px;
+  height: 46px;
+  min-height: 46px;
   display: flex;
   align-items: stretch;
   gap: 8px;
@@ -74,13 +73,6 @@ function hasFeaturedItem(group) {
   color: var(--text-primary);
   font-size: 13px;
   font-weight: 700;
-  line-height: 1.1;
-}
-
-.brand-subtitle {
-  margin-top: 2px;
-  color: var(--text-muted);
-  font-size: 10px;
   line-height: 1.1;
 }
 
@@ -140,7 +132,6 @@ function hasFeaturedItem(group) {
 
 @media (max-width: 920px) {
   .brand { min-width: auto; }
-  .brand-subtitle { display: none; }
 }
 
 @media (max-width: 700px) {

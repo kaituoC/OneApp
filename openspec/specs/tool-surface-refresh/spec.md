@@ -129,7 +129,7 @@ Diff 工具 SHALL 仅在用户发起对比或结果态下的明确源文本操�
 
 #### Scenario: Encode 子导航不固定抢占空间
 - **WHEN** Encode 工具的横向空间不足
-- **THEN** 子工具 navigation 由左侧上下文 navigation 承载并在窄宽度下随之收窄，主转换区域保持可读
+- **THEN** 子工具 navigation 由 context-bar 横向导航条承载并支持横向滚动，主转换区域保持可读
 
 #### Scenario: Agent Workshop 配置栏可适配窄宽度
 - **WHEN** Agent Workshop 的左侧配置栏与 timeline 区域在窄宽度下冲突
@@ -149,15 +149,15 @@ Text Processing SHALL follow the shared tool surface pattern used by other first
 
 ### Requirement: Generator tool surface
 
-Generator SHALL follow the shared tool surface pattern used by other first-level tools while presenting UUID, password, Lorem and QR-code sub-tools through the left contextual navigation as a compact generation workflow.
+Generator SHALL follow the shared tool surface pattern used by other first-level tools while presenting UUID, password, Lorem and QR-code sub-tools through the context-bar tool navigation as a compact generation workflow.
 
 #### Scenario: Generator uses shared surface
 - **WHEN** the Generator tool is active
-- **THEN** the system displays a command area, configuration panel, output panel, status feedback, and copy feedback using the shared tool surface styles, with sub-tool switching provided by the left contextual navigation
+- **THEN** the system displays a command area, configuration panel, output panel, status feedback, and copy feedback using the shared tool surface styles, with sub-tool switching provided by the context-bar tool navigation
 
 #### Scenario: Generator sub-tools are navigable
 - **WHEN** the Generator tool is active
-- **THEN** UUID、随机密码、Lorem 和二维码子工具在左侧导航可发现、可切换，并且切换不会丢失无关一级工具状态
+- **THEN** UUID、随机密码、Lorem 和二维码子工具在 context-bar 导航条可发现、可切换，并且切换不会丢失无关一级工具状态
 
 #### Scenario: Generator adapts to narrow width
 - **WHEN** the Generator tool does not have enough horizontal space for a comfortable configuration and output layout
@@ -247,9 +247,9 @@ Editor SHALL 在不改变文件打开、保存、mode 推断、预览和导出�
 
 Encode 工具 SHALL 将 Base64、URL、JWT、Hash、进制和 Unicode 子工具呈现为一致的结构化转换 surface，保留现有计算结果，并改善子导航、输入输出、错误状态与复制反馈。
 
-#### Scenario: 子工具导航由左侧导航承载
+#### Scenario: 子工具导航由 context-bar 导航条承载
 - **WHEN** 用户打开 Encode 工具
-- **THEN** 六个子工具入口在左侧上下文 navigation 中可发现、可切换，页面主体不再重复子导航控件，转换区不被持续挤压
+- **THEN** 六个子工具入口在 context-bar 横向导航条中可发现、可切换，页面主体不再重复子导航控件，转换区不被持续挤压
 
 #### Scenario: 双向转换面板一致
 - **WHEN** 用户使用 Base64、URL 或 Unicode 子工具
@@ -421,7 +421,7 @@ Time SHALL 将当前时间、时间转换、Cron 和多时区组织为四个可�
 
 #### Scenario: 默认显示当前时间概览
 - **WHEN** 用户打开 Time
-- **THEN** 当前时间与时间戳作为默认概览突出显示，并提供复制操作及可通过左侧导航访问的四个子任务入口
+- **THEN** 当前时间与时间戳作为默认概览突出显示，并提供复制操作及可通过 context-bar 导航条访问的四个子任务入口
 
 #### Scenario: 切换子工具保留输入
 - **WHEN** 用户在转换、Cron 与时区之间切换后返回

@@ -6,6 +6,23 @@
 
 ---
 
+## [1.26.0] - 2026-08-16
+
+### 🎨 导航收敛与 UI 一致性
+- 全局导航收敛为两层：顶部一级分组 + 左侧「工具 + 子工具」两级导航；所有分组（含单工具分组）恒定渲染左侧导航，切换分组不再产生内容宽度跳变。
+- 数据 / 文本 / 编码 / 生成 / 时间五个页面的页内第三层导航（segmented、横向子工具栏）全部移除，子工具统一在左侧导航切换。
+- 数据工具页高频操作（格式化 / 压缩 / 校验 / 去除转义等）平铺为一排主按钮，取消「更多」折叠；JSONPath 查询条默认折叠、按需展开。
+- context bar 收紧为 40px，移除与设置页重复的主题 / 字号 chips，快捷键提示改为状态栏展示。
+- 时间工具宽屏（窗口 ≥1270px）改为双列 dashboard：左列当前时间 + 时间戳互转，右列 Cron 解释 + 多时区对照；窄屏保持单列切换。
+
+### ♿ 可访问性
+- 左侧导航子条目补充 `aria-current`；JSONPath 折叠按钮补充 `aria-controls` 关联。
+
+### 🧪 测试与文档
+- 新增 `SUB_TOOLS` / `DEFAULT_SUB_TOOL` 导航元数据测试；同步 CLAUDE.md / AGENTS.md / README 中导航与组件描述；OpenSpec change `workbench-nav-consolidation` 归档并合并 delta 至 `workbench-shell`、`tool-surface-refresh` specs。
+
+---
+
 ## [1.25.0] - 2026-08-15
 
 ### 🎨 工作台导航重构

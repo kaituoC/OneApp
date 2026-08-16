@@ -2,18 +2,19 @@
   <div class="app-container">
     <Header :active-group="activeGroup" @group-change="handleGroupChange" />
     <section class="workbench-shell">
-      <aside v-if="hasContextualTools" class="contextual-nav">
+      <aside class="contextual-nav">
         <div class="contextual-nav-header">
           <span>{{ activeGroupLabel }}</span>
           <span>{{ activeGroupTools.length }} 个工具</span>
         </div>
         <ToolMenu
-          :items="activeGroupTools"
+          :items="activeNavTools"
           :active="activeTab"
+          :active-sub="activeSubTool"
           label="当前分组工具"
           show-description
           show-shortcut
-          @select="setActiveTab"
+          @select="handleNavSelect"
         />
       </aside>
       <section class="workbench-main">
@@ -27,8 +28,6 @@
         </div>
         <div class="context-meta">
           <span class="meta-chip">{{ shortcutHint }}</span>
-          <span class="meta-chip">{{ currentTheme === 'dark' ? '深色' : '浅色' }}</span>
-          <span class="meta-chip">{{ editorFontSize }}px</span>
         </div>
       </div>
       <main class="content-area">
@@ -43,6 +42,7 @@
         <JsonTab
           v-show="activeTab === 'json'"
           :font-size="editorFontSize"
+          :sub-tool="activeSubToolByTab.json"
         />
         <DiffTab
           v-show="activeTab === 'diff'"
@@ -52,10 +52,12 @@
         <TextTab
           v-show="activeTab === 'text'"
           :font-size="editorFontSize"
+          :sub-tool="activeSubToolByTab.text"
         />
         <TimeTab
           v-show="activeTab === 'time'"
           :font-size="editorFontSize"
+          :sub-tool="activeSubToolByTab.time"
         />
         <RegexTab
           v-show="activeTab === 'regex'"
@@ -64,10 +66,12 @@
         <EncodeTab
           v-show="activeTab === 'encode'"
           :font-size="editorFontSize"
+          :sub-tool="activeSubToolByTab.encode"
         />
         <GeneratorTab
           v-show="activeTab === 'generator'"
           :font-size="editorFontSize"
+          :sub-tool="activeSubToolByTab.generator"
         />
         <AgentWorkshopTab
           v-show="activeTab === 'agent'"
@@ -113,6 +117,8 @@ import {
   TAB_TO_GROUP_KEY,
   GROUP_BY_KEY,
   NAV_GROUPS,
+  SUB_TOOLS,
+  DEFAULT_SUB_TOOL,
   getFirstTabInGroup,
   formatShortcut,
   isCycleNavigationEvent,
@@ -127,15 +133,23 @@ const editorFontSize = ref(14)
 const recentFiles = ref([])
 const updateCheckOnLaunch = ref(false)
 const recentTabByGroup = ref({})
+// 会话级子工具选择，不持久化（与 recentTabByGroup 的持久化范围区分）
+const activeSubToolByTab = ref({ ...DEFAULT_SUB_TOOL })
 
 const activeTool = computed(() => TAB_BY_KEY[activeTab.value] || TAB_BY_KEY.editor)
 const shortcutHint = computed(() => formatShortcut(activeTool.value))
 const activeGroup = computed(() => TAB_TO_GROUP_KEY[activeTab.value] || 'workspace')
 const activeGroupTools = computed(() => GROUP_BY_KEY[activeGroup.value] || [])
+// 左侧 nav 两级条目：子工具并入对应工具条目，页面内不再重复第三层导航
+const activeNavTools = computed(() =>
+  activeGroupTools.value.map((item) =>
+    SUB_TOOLS[item.key] ? { ...item, children: SUB_TOOLS[item.key] } : item
+  )
+)
+const activeSubTool = computed(() => activeSubToolByTab.value[activeTab.value] || '')
 const activeGroupLabel = computed(() =>
   NAV_GROUPS.find((item) => item.key === activeGroup.value)?.label || ''
 )
-const hasContextualTools = computed(() => activeGroupTools.value.length > 1)
 const activeContext = computed(() => {
   if (activeTab.value === 'editor') return currentFile.value || workDir.value || activeTool.value.description
   if (activeTab.value === 'agent') return 'AI · 本地仓库只读研讨'
@@ -151,6 +165,14 @@ function setActiveTab(tabKey) {
       ...recentTabByGroup.value,
       [groupKey]: tabKey
     }
+  }
+}
+
+// 左侧 nav 选择负载：{ key, subKey? }；子工具选择同时激活对应一级工具
+function handleNavSelect({ key, subKey }) {
+  setActiveTab(key)
+  if (subKey) {
+    activeSubToolByTab.value = { ...activeSubToolByTab.value, [key]: subKey }
   }
 }
 
@@ -293,7 +315,7 @@ onUnmounted(() => {
 }
 
 .context-bar {
-  height: 56px;
+  height: 40px;
   flex: none;
   display: flex;
   align-items: center;
@@ -323,16 +345,16 @@ onUnmounted(() => {
 
 .context-name {
   color: var(--text-primary);
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 700;
   line-height: 1.1;
 }
 
 .context-desc {
   max-width: min(680px, 52vw);
-  margin-top: 3px;
+  margin-top: 1px;
   color: var(--text-muted);
-  font-size: 12px;
+  font-size: 11px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -365,10 +387,6 @@ onUnmounted(() => {
 @media (max-width: 1080px) {
   .context-desc {
     max-width: min(520px, 44vw);
-  }
-
-  .context-meta .meta-chip:nth-child(n + 2) {
-    display: none;
   }
 }
 

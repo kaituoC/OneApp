@@ -1,13 +1,5 @@
 <template>
   <div class="generator-tab tool-page">
-    <ToolMenu
-      :items="TOOLS"
-      :active="tool"
-      orientation="horizontal"
-      label="生成器工具"
-      @select="setTool"
-    />
-
     <section class="work-area tool-workspace" :style="{ fontSize: fontSize + 'px' }">
       <div class="toolbar tool-command-bar">
         <button class="primary" @click="runGenerate">生成</button>
@@ -121,10 +113,9 @@
 </template>
 
 <script setup>
-import { computed, reactive, ref } from 'vue'
+import { computed, reactive, ref, watch } from 'vue'
 import { FileText, KeyRound, QrCode, Shuffle } from 'lucide-vue-next'
 import EditorWithLineNumbers from './EditorWithLineNumbers.vue'
-import ToolMenu from './ToolMenu.vue'
 import { useCopyToast } from '../composables/useCopyToast.js'
 import { useToolResult } from '../composables/useToolResult.js'
 import {
@@ -134,8 +125,10 @@ import {
   generateQrCode
 } from '../utils/generatorHelper.js'
 
-defineProps({
-  fontSize: { type: Number, default: 14 }
+const props = defineProps({
+  fontSize: { type: Number, default: 14 },
+  // 子工具由左侧 nav 驱动（UUID/随机密码/Lorem/二维码）
+  subTool: { type: String, default: 'uuid' }
 })
 
 const TOOLS = [
@@ -151,7 +144,13 @@ const LOREM_LIMITS = {
   paragraphs: 50
 }
 
-const tool = ref('uuid')
+const tool = ref(props.subTool)
+watch(
+  () => props.subTool,
+  (next) => {
+    if (next && next !== tool.value) setTool(next)
+  }
+)
 const uuidCount = ref(1)
 const passwordOptions = reactive({
   length: 16,

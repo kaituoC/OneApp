@@ -184,20 +184,20 @@ electron-vite 构建三个独立的 bundle：
 
 ### 核心组件
 
-- **App.vue**：根组件，管理顶部一级分组、条件化左侧工具导航、分组最近工具记忆、主题、字号、最近文件与键盘快捷键（macOS `Cmd+1-9/0`、Windows/Linux `Ctrl+1-9/0`，全平台 `Ctrl+Tab` / `Ctrl+Shift+Tab` 循环；不拦截 macOS `Cmd+Tab`）
+- **App.vue**：根组件，管理顶部一级分组、恒定左侧两级工具导航（一级工具 + 子工具，单工具分组同样渲染）、分组最近工具记忆、会话级子工具选择（`activeSubToolByTab`，不持久化）、主题、字号、最近文件与键盘快捷键（macOS `Cmd+1-9/0`、Windows/Linux `Ctrl+1-9/0`，全平台 `Ctrl+Tab` / `Ctrl+Shift+Tab` 循环；不拦截 macOS `Cmd+Tab`）
 - **EditorWithLineNumbers.vue**：可复用的 textarea，带同步行号列
 - **EditorTab.vue**：统一编辑器标签，按文件后缀驱动 `mode`（markdown / html），多态预览（`MarkdownPreview` / `HtmlPreview`）、上下文工具栏（markdown 模式额外含导出 HTML/PDF、语法介绍）、滚动同步（markdown 双向 / html 单向），使用 `useEditorFile` composable
-- **JsonTab.vue**：数据工具合集，提供 JSON / YAML / CSV / SQL / XML 子工具；JSON 子工具支持 JSONPath 查询结果列表和完整 JSON 输出，CSV 子工具支持 CSV ⇄ JSON 与只读表格预览，SQL / XML 子工具支持格式化与压缩
+- **JsonTab.vue**：数据工具合集，提供 JSON / YAML / CSV / SQL / XML 子工具（子工具由左侧导航切换，页内无第三层导航）；JSON 主操作（格式化/压缩/校验/去除转义/转 YAML）平铺为一排主按钮，JSONPath 查询条按需展开；CSV 子工具支持 CSV ⇄ JSON 与只读表格预览，SQL / XML 子工具支持格式化与压缩
 - **composables/useEditorFile.js**：编辑器共用逻辑——打开/新建/保存/快捷键，后缀→mode 派生，Ctrl+S/N 成对绑定/解绑
 - **FileTree.vue / TreeNode.vue**：可复用的懒加载目录树，被 EditorTab 使用，通过 `editableExtensions` prop 按 mode 过滤显示文件类型
 - **DiffTab.vue**：并排/统一差异视图，带滚动同步，使用 diff-match-patch 库
-- **TextTab.vue**：文本处理工具，页面内横向子工具栏切换统计、大小写/命名风格转换、排序和去重，纯逻辑在 `textHelper.js`
-- **GeneratorTab.vue**：生成器合集，页面内横向子工具栏切换 UUID、随机密码、Lorem 和二维码，纯逻辑在 `generatorHelper.js`
+- **TextTab.vue**：文本处理工具，子工具（统计、大小写/命名风格转换、排序、去重）由左侧两级导航切换，页内无横向子工具栏，纯逻辑在 `textHelper.js`
+- **GeneratorTab.vue**：生成器合集，子工具（UUID、随机密码、Lorem、二维码）由左侧两级导航切换，页内无横向子工具栏，纯逻辑在 `generatorHelper.js`
 - **RegexTab.vue**：正则测试器，结构化 `/pattern/flags` 输入、实时匹配、编辑/高亮预览双区、捕获组多色、匹配结果列表（与预览双向 hover 联动）、右侧速查抽屉；结果区分隔条支持指针和键盘调节，匹配经 `useRegexMatcher` 在 Web Worker 中执行
 - **composables/useRegexMatcher.js**：封装正则匹配 Worker 的生命周期——完整输入签名、输入变化立即失效旧结果、丢弃乱序响应、超时（1.5s）`terminate` 兜底、重建待命 Worker、组件卸载释放，杜绝灾难性回溯冻结 UI
 - **workers/regex.worker.js**：子线程内调用 `regexHelper.runRegex` 执行匹配，postMessage 回传位置数组
-- **EncodeTab.vue**：编码工具合集，页面内横向工具栏切换 6 个子工具（Base64 / URL / JWT / Hash / 进制 / Unicode）；编解码类用「左源右果 + ⇄ 方向」实时计算，Hash 异步（generation 计数防过期响应），进制四框联动，纯逻辑全在 `encodeHelper.js`
-- **TimeTab.vue**：按当前时间、时间转换、Cron、多时区四个子工具组织；使用 `v-show` 保留页面生命周期内状态，Cron 首次进入已有合法默认表达式的解释与未来时间
+- **EncodeTab.vue**：编码工具合集，6 个子工具（Base64 / URL / JWT / Hash / 进制 / Unicode）由左侧两级导航切换；编解码类用「左源右果 + ⇄ 方向」实时计算，Hash 异步（generation 计数防过期响应），进制四框联动，纯逻辑全在 `encodeHelper.js`
+- **TimeTab.vue**：按当前时间、时间转换、Cron、多时区四个子工具组织，子工具由左侧导航驱动；宽屏（窗口 ≥1270px）四任务区双列 grid 并排（左列当前时间 + 时间戳互转，右列 Cron + 多时区），窄屏单列切换；使用 `v-show` 保留页面生命周期内状态，Cron 首次进入已有合法默认表达式的解释与未来时间
 - **AgentWorkshopTab.vue**：Agent 研讨室标签，仅从现有前端状态派生「准备 / 运行 / 结果」三阶段；准备阶段展示配置与启动，运行/结果阶段展示进度和 Markdown 时间线；经 `window.electronAPI.agentWorkshop` 调用主进程，订阅 `agent-discussion:event` 事件流（卸载时取消订阅），用 `activeRunId` 区分本会话运行与恢复查看的旧记录，不改变 IPC、编排和持久化语义
 - **SettingsTab.vue**：以常用设置、最近文件、快捷键、关于四个分区组织平台感知快捷键、electron-store 持久化、GitHub Release 更新检查与统一消息弹窗结果展示
 

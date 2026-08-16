@@ -1,15 +1,6 @@
 <template>
   <div class="encode-tab">
-    <!-- 上方工具模式栏 -->
-    <ToolMenu
-      :items="TOOLS"
-      :active="tool"
-      orientation="horizontal"
-      label="编码工具"
-      @select="tool = $event"
-    />
-
-    <!-- 右侧工作区 -->
+    <!-- 工作区：子工具切换由左侧 nav 驱动 -->
     <section class="work-area tool-workspace" :style="{ fontSize: fontSize + 'px' }">
       <!-- Base64 -->
       <div v-show="tool === 'base64'" class="pane">
@@ -179,8 +170,7 @@
 
 <script setup>
 import { ref, reactive, computed, watch } from 'vue'
-import { ArrowLeftRight, Binary, Copy, FileCode2, Hash, KeyRound, Languages, Link } from 'lucide-vue-next'
-import ToolMenu from './ToolMenu.vue'
+import { ArrowLeftRight, Copy } from 'lucide-vue-next'
 import { useCopyToast } from '../composables/useCopyToast.js'
 import {
   base64Encode,
@@ -194,19 +184,19 @@ import {
   unicodeUnescape
 } from '../utils/encodeHelper.js'
 
-defineProps({
-  fontSize: { type: Number, default: 14 }
+const props = defineProps({
+  fontSize: { type: Number, default: 14 },
+  // 子工具由左侧 nav 驱动（Base64/URL/JWT/Hash/进制/Unicode）
+  subTool: { type: String, default: 'base64' }
 })
 
-const TOOLS = [
-  { key: 'base64', label: 'Base64', icon: FileCode2 },
-  { key: 'url', label: 'URL', icon: Link },
-  { key: 'jwt', label: 'JWT', icon: KeyRound },
-  { key: 'hash', label: 'Hash', icon: Hash },
-  { key: 'base', label: '进制', icon: Binary },
-  { key: 'unicode', label: 'Unicode', icon: Languages }
-]
-const tool = ref('base64')
+const tool = ref(props.subTool)
+watch(
+  () => props.subTool,
+  (next) => {
+    if (next && next !== tool.value) tool.value = next
+  }
+)
 const { copyMessage, copyToClipboard: copy } = useCopyToast()
 // 把当前结果搬入输入框并翻转方向（自然完成往返），3 个编解码工具共用
 function makeSwap(inputRef, dirRef, resultRef) {

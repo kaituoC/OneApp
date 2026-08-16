@@ -5,6 +5,8 @@ import {
   TAB_KEYS,
   GROUP_BY_KEY,
   TAB_TO_GROUP_KEY,
+  SUB_TOOLS,
+  DEFAULT_SUB_TOOL,
   CYCLE_SHORTCUTS,
   getFirstTabInGroup,
   getNavigationTooltip,
@@ -100,5 +102,25 @@ describe('navigation metadata', () => {
     expect(isCycleNavigationEvent({ key: 'Tab', ctrlKey: true })).toBe(true)
     expect(isCycleNavigationEvent({ key: 'Tab', ctrlKey: true, shiftKey: true })).toBe(true)
     expect(isCycleNavigationEvent({ key: 'Tab', metaKey: true })).toBe(false)
+  })
+
+  it('子工具导航覆盖五个多子工具入口，key 唯一且 label 非空', () => {
+    expect(Object.keys(SUB_TOOLS).sort()).toEqual(['encode', 'generator', 'json', 'text', 'time'])
+
+    for (const [tabKey, subs] of Object.entries(SUB_TOOLS)) {
+      expect(subs.length).toBeGreaterThan(1)
+      const keys = subs.map((sub) => sub.key)
+      expect(new Set(keys).size).toBe(keys.length)
+      for (const sub of subs) {
+        expect(sub.key).toBeTruthy()
+        expect(sub.label).toBeTruthy()
+      }
+      expect(DEFAULT_SUB_TOOL[tabKey]).toBe(subs[0].key)
+    }
+
+    // 子工具入口均挂在真实存在的一级工具上
+    for (const tabKey of Object.keys(SUB_TOOLS)) {
+      expect(NAV_ITEMS.some((item) => item.key === tabKey)).toBe(true)
+    }
   })
 })

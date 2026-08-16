@@ -1,25 +1,38 @@
 <template>
-  <nav :class="['tool-menu', orientation === 'horizontal' ? 'tool-menu-horizontal' : 'tool-menu-vertical']" :aria-label="label || undefined">
-    <button
-      v-for="item in items"
-      :key="item.key"
-      type="button"
-      :class="['menu-item', { active: item.key === active }]"
-      :aria-current="item.key === active ? 'page' : undefined"
-      :title="showDescription ? getNavigationTooltip(item) : item.label"
-      @click="$emit('select', item.key)"
-    >
-      <component :is="item.icon" :size="15" aria-hidden="true" />
-      <span class="menu-item-copy">
-        <span>{{ item.label }}</span>
-        <span v-if="showDescription && (item.summary || item.description)" class="menu-item-summary">
-          {{ item.summary || item.description }}
+  <nav class="tool-menu tool-menu-vertical" :aria-label="label || undefined">
+    <template v-for="item in items" :key="item.key">
+      <button
+        type="button"
+        :class="['menu-item', { active: item.key === active }]"
+        :aria-current="item.key === active ? 'page' : undefined"
+        :title="showDescription ? getNavigationTooltip(item) : item.label"
+        @click="emitSelect(item.key)"
+      >
+        <component :is="item.icon" :size="15" aria-hidden="true" />
+        <span class="menu-item-copy">
+          <span>{{ item.label }}</span>
+          <span v-if="showDescription && (item.summary || item.description)" class="menu-item-summary">
+            {{ item.summary || item.description }}
+          </span>
         </span>
-      </span>
-      <span v-if="showShortcut && Number.isInteger(item.shortcut)" class="menu-item-shortcut">
-        {{ formatShortcut(item) }}
-      </span>
-    </button>
+        <span v-if="showShortcut && Number.isInteger(item.shortcut)" class="menu-item-shortcut">
+          {{ formatShortcut(item) }}
+        </span>
+      </button>
+      <button
+        v-for="sub in item.children || []"
+        :key="`${item.key}-${sub.key}`"
+        type="button"
+        :class="['menu-item', 'menu-item-sub', { active: item.key === active && sub.key === activeSub }]"
+        :aria-current="item.key === active && sub.key === activeSub ? 'true' : undefined"
+        :title="`${item.label} · ${sub.label}`"
+        @click="emitSelect(item.key, sub.key)"
+      >
+        <span class="menu-item-copy">
+          <span>{{ sub.label }}</span>
+        </span>
+      </button>
+    </template>
   </nav>
 </template>
 
@@ -29,12 +42,17 @@ import { formatShortcut, getNavigationTooltip } from '../utils/navigation.js'
 defineProps({
   items: { type: Array, required: true },
   active: { type: [String, Number], default: '' },
+  activeSub: { type: String, default: '' },
   label: { type: String, default: '' },
-  orientation: { type: String, default: 'vertical' },
   showDescription: { type: Boolean, default: false },
   showShortcut: { type: Boolean, default: false }
 })
-defineEmits(['select'])
+const emit = defineEmits(['select'])
+
+// 负载统一为 { key, subKey? }，子工具选择同时携带一级工具 key
+function emitSelect(key, subKey) {
+  emit('select', subKey ? { key, subKey } : { key })
+}
 </script>
 
 <style scoped>
@@ -49,16 +67,6 @@ defineEmits(['select'])
   width: 168px;
   flex-shrink: 0;
   padding: 8px;
-}
-
-.tool-menu-horizontal {
-  flex-direction: row;
-  align-items: center;
-  width: 100%;
-  overflow-x: auto;
-  border-bottom: 1px solid var(--border-color);
-  padding: 4px 10px;
-  background: var(--bg-secondary);
 }
 
 .menu-item {
@@ -76,13 +84,15 @@ defineEmits(['select'])
   font-size: 13px;
 }
 
-.menu-item > svg {
-  flex: none;
+.menu-item-sub {
+  min-height: 28px;
+  margin-left: 23px;
+  padding: 4px 8px;
+  font-size: 12px;
 }
 
-.tool-menu-horizontal .menu-item {
-  min-height: 28px;
-  padding: 4px 9px;
+.menu-item > svg {
+  flex: none;
 }
 
 .menu-item:hover {

@@ -1,13 +1,5 @@
 <template>
   <div class="settings-tab tool-page-scroll">
-    <header class="settings-hero">
-      <div>
-        <h2>设置</h2>
-        <p>工作目录、界面偏好、最近文件和快捷键。</p>
-      </div>
-      <span class="version-pill">v{{ version }}</span>
-    </header>
-
     <div class="settings-navigation tool-segmented" role="radiogroup" aria-label="设置分区" @keydown="handleSegmentedKeydown">
       <button
         v-for="section in SETTING_SECTIONS"
@@ -69,6 +61,7 @@
       <h3 class="section-title">快捷键说明</h3>
       <table class="shortcut-table">
         <tbody>
+          <tr><td>{{ SHORTCUT_MODIFIER }}+K</td><td>搜索工具</td></tr>
           <tr><td>{{ SHORTCUT_MODIFIER }}+N</td><td>新建文件</td></tr>
           <tr><td>{{ SHORTCUT_MODIFIER }}+O</td><td>打开文件</td></tr>
           <tr><td>{{ SHORTCUT_MODIFIER }}+S</td><td>保存文件</td></tr>

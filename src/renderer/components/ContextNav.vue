@@ -1,55 +1,19 @@
 <template>
-  <div
-    ref="navRef"
-    :class="['context-nav', { 'fade-left': !scrollAtStart, 'fade-right': !scrollAtEnd }]"
-  >
-    <div
-      class="nav-segment"
-      role="radiogroup"
-      :aria-label="`${groupLabel}工具`"
-      @keydown="handleSegmentedKeydown"
-    >
-      <button
-        v-for="item in tools"
-        :key="item.key"
-        type="button"
-        role="radio"
-        :class="['nav-chip', { active: item.key === active }]"
-        :aria-checked="item.key === active ? 'true' : 'false'"
-        :title="getNavigationTooltip(item)"
-        @click="emitSelect(item.key)"
-      >
-        <component :is="item.icon" :size="14" aria-hidden="true" />
-        <span class="nav-chip-label">{{ item.label }}</span>
+  <div ref="navRef" :class="['context-nav', { 'fade-left': !scrollAtStart, 'fade-right': !scrollAtEnd }]">
+    <div class="nav-segment" role="radiogroup" :aria-label="`${groupLabel}工具`" @keydown="handleSegmentedKeydown">
+      <button v-for="item in tools" :key="item.id" type="button" role="radio"
+        :class="['nav-chip', { active: item.key === active && (!item.subKey || item.subKey === activeSub) }]"
+        :aria-checked="item.key === active && (!item.subKey || item.subKey === activeSub)"
+        :title="getNavigationTooltip(item)" @click="emitSelect(item.key, item.subKey)">
+        <span>{{ item.label }}</span>
       </button>
     </div>
-    <template v-if="subTools.length > 0">
-      <div class="nav-divider" aria-hidden="true"></div>
-      <div
-        class="nav-segment"
-        role="radiogroup"
-        :aria-label="`${activeToolLabel}子工具`"
-        @keydown="handleSegmentedKeydown"
-      >
-        <button
-          v-for="sub in subTools"
-          :key="sub.key"
-          type="button"
-          role="radio"
-          :class="['nav-chip', 'nav-chip-sub', { active: sub.key === activeSub }]"
-          :aria-checked="sub.key === activeSub ? 'true' : 'false'"
-          :title="`${activeToolLabel} · ${sub.label}`"
-          @click="emitSelect(active, sub.key)"
-        >
-          <span class="nav-chip-label">{{ sub.label }}</span>
-        </button>
-      </div>
-    </template>
+    <span class="nav-note">切换工具，保留草稿</span>
   </div>
 </template>
 
 <script setup>
-import { computed, ref, onMounted, onUnmounted } from 'vue'
+import { ref, watch, nextTick, onMounted, onUnmounted } from 'vue'
 import { handleSegmentedKeydown } from '../utils/segmentedControl.js'
 import { getNavigationTooltip } from '../utils/navigation.js'
 
@@ -61,10 +25,6 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['select'])
-
-const activeTool = computed(() => props.tools.find((item) => item.key === props.active))
-const activeToolLabel = computed(() => activeTool.value?.label || '')
-const subTools = computed(() => activeTool.value?.children || [])
 
 // 负载统一为 { key, subKey? }，与 handleNavSelect 语义一致
 function emitSelect(key, subKey) {
@@ -93,6 +53,8 @@ function onScroll() {
     updateScrollState()
   })
 }
+
+watch(() => props.tools, () => nextTick(updateScrollState))
 
 onMounted(() => {
   const el = navRef.value
@@ -170,9 +132,6 @@ onUnmounted(() => {
   cursor: pointer;
 }
 
-.nav-chip > svg {
-  flex: none;
-}
 
 .nav-chip:hover {
   color: var(--text-primary);
@@ -185,28 +144,6 @@ onUnmounted(() => {
   background: var(--accent-soft);
 }
 
-.nav-chip-sub {
-  min-height: 24px;
-  padding: 2px 9px;
-  font-size: 12px;
-  font-weight: 400;
-  color: var(--text-muted);
-}
-
-.nav-chip-sub.active {
-  border-color: transparent;
-}
-
-.nav-chip-label {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.nav-divider {
-  flex: none;
-  width: 1px;
-  height: 16px;
-  background: var(--border-subtle);
-}
+.nav-note { margin-left:auto;color:var(--text-muted);font-size:11px;white-space:nowrap;padding-right:8px; }
+@media(max-width:900px){.nav-note{display:none}}
 </style>

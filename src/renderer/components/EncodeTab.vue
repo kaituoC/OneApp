@@ -175,7 +175,7 @@ import { ref, reactive, computed, watch, nextTick } from 'vue'
 import { ArrowLeftRight, Copy } from 'lucide-vue-next'
 import OverflowMenu from './OverflowMenu.vue'
 import { useCopyToast } from '../composables/useCopyToast.js'
-import { useSendTo, getSendTargets, usePendingInput } from '../composables/useSendTo.js'
+import { useRegisterInput, useSendTo, getSendTargets, usePendingInput } from '../composables/useSendTo.js'
 import {
   base64Encode,
   base64Decode,
@@ -333,6 +333,7 @@ function onBaseInput(key, e) {
   }
   baseError.value = r.success ? '' : r.error
 }
+useRegisterInput('encode', sub => ({ base64: b64Input.value, url: urlInput.value, unicode: uniInput.value })[sub] || '')
 </script>
 
 <style scoped>

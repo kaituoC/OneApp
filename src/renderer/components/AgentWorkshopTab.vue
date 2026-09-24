@@ -25,15 +25,6 @@
     <!-- 左栏：配置 / 进度 -->
     <aside class="aw-left">
       <section v-if="workshopStage === 'prepare'" class="aw-block">
-        <div class="aw-block-title">本地仓库</div>
-        <div class="aw-repo">
-          <code class="aw-repo-path" :title="config.repoDir">{{ config.repoDir || '未选择目录' }}</code>
-          <button class="aw-btn" :disabled="running" @click="chooseRepo">选择目录</button>
-        </div>
-        <p v-if="repoWarning" class="aw-warn">{{ repoWarning }}</p>
-      </section>
-
-      <section v-if="workshopStage === 'prepare'" class="aw-block">
         <div class="aw-block-title">
           Agent 检测
           <button class="aw-link" :disabled="detecting || running" @click="detect">
@@ -67,8 +58,8 @@
         <p v-if="loggedOutHint" class="aw-warn">{{ loggedOutHint }}</p>
       </section>
 
-      <section v-if="workshopStage === 'prepare'" class="aw-block">
-        <div class="aw-block-title">网络 / 代理</div>
+      <details v-if="workshopStage === 'prepare'" class="aw-block aw-connection">
+        <summary class="aw-block-title">连接设置 · 网络 / 代理</summary>
         <label class="aw-toggle-row">
           <input
             type="checkbox"
@@ -96,21 +87,13 @@
           <span>ALL_PROXY</span>
         </label>
         <p v-if="proxyMessage" class="aw-hint" :class="{ 'aw-warn': !proxyValidation.ok || proxySaveError }">{{ proxyMessage }}</p>
-      </section>
+      </details>
 
       <section v-if="workshopStage === 'prepare'" class="aw-block">
         <div class="aw-block-title">主持 Agent</div>
         <select v-model="moderatorModel" class="aw-select" :disabled="running || config.selectedAgents.length === 0">
           <option v-for="id in config.selectedAgents" :key="id" :value="id">{{ AGENTS[id].name }}</option>
         </select>
-      </section>
-
-      <section v-if="workshopStage === 'prepare'" class="aw-block aw-start-block">
-        <div class="aw-estimate">预计调用 {{ callCount }} 次 agent</div>
-        <button class="aw-btn aw-btn-primary" :disabled="!startValidation.ok || starting" :title="startValidation.reason || ''" @click="start">
-          {{ starting ? '启动中…' : '开始研讨' }}
-        </button>
-        <p v-if="!startValidation.ok" class="aw-hint">{{ startValidation.reason }}</p>
       </section>
 
       <section v-if="workshopStage !== 'prepare'" class="aw-block aw-progress-block">
@@ -160,13 +143,31 @@
       </div>
 
       <div v-if="workshopStage === 'prepare'" class="aw-idea tool-panel">
+      <section v-if="workshopStage === 'prepare'" class="aw-block">
+        <div class="aw-block-title">本地仓库</div>
+        <div class="aw-repo">
+          <code class="aw-repo-path" :title="config.repoDir">{{ config.repoDir || '未选择目录' }}</code>
+          <button class="aw-btn" :disabled="running" @click="chooseRepo">选择目录</button>
+        </div>
+        <p v-if="repoWarning" class="aw-warn">{{ repoWarning }}</p>
+      </section>
+
         <div class="aw-block-title">你的想法 / 初始方案</div>
         <textarea
           v-model="idea"
           class="aw-textarea"
           placeholder="描述你想让多个 Agent 研讨的需求或初始方案……"
         ></textarea>
-        <p class="aw-cost-note">提示：研讨会真实调用本地 Codex / ClaudeCode CLI，需已登录，并可能消耗对应服务用量。</p>
+        <p class="aw-cost-note">研讨会调用已登录的本地 Codex / ClaudeCode CLI，并消耗对应服务用量。</p>
+      <section v-if="workshopStage === 'prepare'" class="aw-block aw-start-block">
+        <div class="aw-estimate">预计调用 {{ callCount }} 次 agent</div>
+        <button class="aw-btn aw-btn-primary" :disabled="!startValidation.ok || starting" :title="startValidation.reason || ''" @click="start">
+          {{ starting ? '启动中…' : '开始研讨' }}
+        </button>
+        <p v-if="!startValidation.ok" class="aw-hint">{{ startValidation.reason }}</p>
+      </section>
+
+
       </div>
 
       <div v-else class="aw-timeline">
@@ -940,4 +941,20 @@ onUnmounted(() => {
     gap: 6px;
   }
 }
+.stage-prepare .aw-left{order:2;width:285px;min-width:250px;background:transparent;border:0;padding:12px 0 12px 24px;}
+.stage-prepare .aw-right{order:1;padding:18px 0;min-width:0;}
+.aw-idea{padding:24px;}
+.aw-idea .aw-block{padding:0 0 20px;}
+.aw-idea .aw-start-block{padding:20px 0 0;border-top:1px solid var(--border-color);margin-top:20px;position:static;}
+.aw-connection summary{cursor:pointer;}
+.aw-stage-bar{background:transparent;justify-content:flex-start;border:0;}
+@media(max-width:900px){.stage-prepare .aw-left{width:240px;min-width:240px;padding-left:16px}.aw-idea{padding:18px}}
+.aw-layout.stage-prepare{flex-direction:row;}
+.stage-prepare .aw-right{flex:1;}
+.aw-idea .aw-textarea{height:clamp(90px,18vh,170px);min-height:90px;}
+.aw-idea>.aw-block{background:transparent;border:0;box-shadow:none;}
+.aw-idea>.aw-start-block{display:flex;flex-wrap:wrap;align-items:center;gap:10px;border-top:1px solid var(--border-color);}
+.aw-start-block .aw-btn-primary{width:auto;margin-left:auto;min-width:120px;}
+.aw-start-block .aw-hint{width:100%;}
+@media(max-height:650px){.stage-prepare .aw-right{padding:8px 0}.aw-idea{padding:14px}.aw-idea .aw-block{padding-bottom:10px}.aw-idea .aw-start-block{padding-top:10px;margin-top:10px}.aw-cost-note{font-size:11px;}}
 </style>

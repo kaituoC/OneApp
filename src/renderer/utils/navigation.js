@@ -12,7 +12,7 @@ import {
   WandSparkles
 } from 'lucide-vue-next'
 
-export const NAV_GROUPS = [
+const ORIGINAL_GROUPS = [
   {
     key: 'workspace',
     label: '工作区',
@@ -132,6 +132,19 @@ export const NAV_GROUPS = [
   }
 ]
 
+// 保留原 tab key 与数字快捷键，分类仅影响查找路径。
+const originalItems = Object.fromEntries(ORIGINAL_GROUPS.flatMap(g => g.items).map(i => [i.key, i]))
+export const NAV_GROUPS = [
+  { key: 'workspace', label: '编辑器', items: [originalItems.editor] },
+  { key: 'transform', label: '数据', items: [originalItems.json] },
+  { key: 'inspect', label: '文本', items: [originalItems.text, originalItems.diff, originalItems.regex] },
+  { key: 'encoding', label: '编码', items: [originalItems.encode] },
+  { key: 'time', label: '时间', items: [originalItems.time] },
+  { key: 'generate', label: '生成', items: [originalItems.generator] },
+  { key: 'ai', label: '研讨室', items: [originalItems.agent] },
+  { key: 'system', label: '设置', utility: true, items: [originalItems.settings] }
+]
+
 export const NAV_ITEMS = NAV_GROUPS.flatMap((group) => group.items)
 
 // 子工具导航：由 context-bar 导航条承载的第二级入口，页面内不再重复渲染
@@ -234,4 +247,38 @@ export function isCycleNavigationEvent(event) {
     !event?.altKey &&
     event?.key === 'Tab'
   )
+}
+
+export function getGroupEntries(groupKey) {
+  return (GROUP_BY_KEY[groupKey] || []).flatMap(item =>
+    item.key !== 'text' && SUB_TOOLS[item.key]
+      ? SUB_TOOLS[item.key].map(sub => ({ ...item, id: `${item.key}/${sub.key}`, label: sub.label, subKey: sub.key }))
+      : [{ ...item, id: item.key }]
+  )
+}
+
+const SEARCH_ALIASES = {
+  json: '格式化 压缩 校验 去除转义 JSONPath YAML', yaml: 'JSON 转换 校验',
+  csv: '表格 JSON 转换', sql: '格式化 压缩', xml: '格式化 压缩',
+  base64: '编码 解码', url: '编码 解码', unicode: '转义 编码 解码',
+  jwt: 'token 解码', hash: '摘要 md5 sha', base: '二进制 十六进制',
+  convert: '日期 时间戳 秒 毫秒', cron: '定时 表达式', timezone: '城市 世界时间',
+  case: '大小写 命名风格', sort: '排序', dedupe: '去重', qr: '二维码 PNG'
+}
+export const SEARCH_ENTRIES = NAV_ITEMS.flatMap(item =>
+  (SUB_TOOLS[item.key] || [{ key: '', label: item.label }]).map(sub => ({
+    ...item, id: `${item.key}/${sub.key}`, subKey: sub.key || undefined,
+    label: sub.label, searchTerms: `${sub.label} ${SEARCH_ALIASES[sub.key] || ''}`, groupLabel: NAV_GROUPS.find(g => g.key === TAB_TO_GROUP_KEY[item.key]).label,
+    keywords: `${item.label} ${item.description} ${sub.label} ${SEARCH_ALIASES[sub.key] || ''}`
+  }))
+)
+export function searchTools(query) {
+  const words = query.toLowerCase().trim().split(/\s+/).filter(Boolean)
+  const matches = SEARCH_ENTRIES.filter(item => words.every(w => item.keywords.toLowerCase().includes(w)))
+  const score = item => item.label.toLowerCase() === query.trim().toLowerCase() ? 3 : words.every(w => item.searchTerms.toLowerCase().includes(w)) ? 2 : 1
+  return matches.sort((a, b) => score(b) - score(a))
+}
+export function resolveGroupTab(groupKey, recent = {}) {
+  const key = recent[groupKey]
+  return TAB_TO_GROUP_KEY[key] === groupKey ? key : getFirstTabInGroup(groupKey)
 }

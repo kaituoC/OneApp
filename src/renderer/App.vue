@@ -1,9 +1,11 @@
 <template>
   <div class="app-container">
-    <Header :active-group="activeGroup" @group-change="handleGroupChange" />
+    <Header :active-group="activeGroup" :theme="currentTheme" @group-change="handleGroupChange" @search="searchRef.open()" @toggle-theme="currentTheme = currentTheme === 'dark' ? 'light' : 'dark'" />
+    <ToolSearch ref="searchRef" @select="handleNavSelect" />
+    <TransferDialog :request="transferRequest" @choose="confirmTransfer" />
     <section class="workbench-shell">
       <section class="workbench-main">
-      <div class="context-bar">
+      <div v-if="activeNavTools.length > 1" class="context-bar">
         <ContextNav
           :tools="activeNavTools"
           :active="activeTab"
@@ -11,6 +13,11 @@
           :group-label="activeGroupLabel"
           @select="handleNavSelect"
         />
+      </div>
+      <div class="tool-heading">
+        <span class="tool-heading-icon"><component :is="activeItem.icon" :size="23" /></span>
+        <div><h1>{{ activeToolLabel }}</h1><p>{{ activeItem.description }}</p></div>
+        <span class="heading-shortcut">{{ formatShortcut(activeItem) }}</span>
       </div>
       <main class="content-area">
         <EditorTab
@@ -35,6 +42,7 @@
           v-show="activeTab === 'text'"
           :font-size="editorFontSize"
           :sub-tool="activeSubToolByTab.text"
+          @select-sub-tool="activeSubToolByTab.text = $event"
         />
         <TimeTab
           v-show="activeTab === 'time'"
@@ -79,6 +87,8 @@
 
 <script setup>
 import { computed, provide, ref, watch, onMounted, onUnmounted } from 'vue'
+import TransferDialog from './components/TransferDialog.vue'
+import ToolSearch from './components/ToolSearch.vue'
 import Header from './components/Header.vue'
 import EditorTab from './components/EditorTab.vue'
 import JsonTab from './components/JsonTab.vue'
@@ -93,15 +103,14 @@ import SettingsTab from './components/SettingsTab.vue'
 import StatusBar from './components/StatusBar.vue'
 import ContextNav from './components/ContextNav.vue'
 import {
+  getGroupEntries, resolveGroupTab, formatShortcut,
   IS_MAC,
   TAB_BY_KEY,
   TAB_KEYS,
   TAB_TO_GROUP_KEY,
-  GROUP_BY_KEY,
   NAV_GROUPS,
   SUB_TOOLS,
   DEFAULT_SUB_TOOL,
-  getFirstTabInGroup,
   isCycleNavigationEvent,
   isNumericNavigationEvent
 } from './utils/navigation.js'
@@ -119,13 +128,13 @@ const recentTabByGroup = ref({})
 const activeSubToolByTab = ref({ ...DEFAULT_SUB_TOOL })
 
 const activeGroup = computed(() => TAB_TO_GROUP_KEY[activeTab.value] || 'workspace')
-const activeGroupTools = computed(() => GROUP_BY_KEY[activeGroup.value] || [])
-// context-bar 导航条两级条目：子工具并入对应工具条目，页面内不再重复第三层导航
-const activeNavTools = computed(() =>
-  activeGroupTools.value.map((item) =>
-    SUB_TOOLS[item.key] ? { ...item, children: SUB_TOOLS[item.key] } : item
-  )
-)
+const searchRef = ref(null)
+const activeItem = computed(() => TAB_BY_KEY[activeTab.value])
+const activeToolLabel = computed(() => {
+  const sub = SUB_TOOLS[activeTab.value]?.find(s => s.key === activeSubToolByTab.value[activeTab.value])
+  return sub && activeTab.value !== 'text' ? sub.label : activeItem.value.label
+})
+const activeNavTools = computed(() => getGroupEntries(activeGroup.value))
 const activeSubTool = computed(() => activeSubToolByTab.value[activeTab.value] || '')
 const activeGroupLabel = computed(() =>
   NAV_GROUPS.find((item) => item.key === activeGroup.value)?.label || ''
@@ -143,13 +152,14 @@ function setActiveTab(tabKey) {
   }
 }
 
-const { sendTo, pendingInput } = provideSendTo(
+const sendToApi = provideSendTo(
   setActiveTab,
   (tabKey, subKey) => {
     activeSubToolByTab.value = { ...activeSubToolByTab.value, [tabKey]: subKey }
   }
 )
-provide(SEND_TO_KEY, { sendTo })
+const { pendingInput, transferRequest, confirmTransfer } = sendToApi
+provide(SEND_TO_KEY, sendToApi)
 provide(PENDING_INPUT_KEY, pendingInput)
 
 // context-bar 导航条选择负载：{ key, subKey? }；子工具选择同时激活对应一级工具
@@ -161,7 +171,7 @@ function handleNavSelect({ key, subKey }) {
 }
 
 function handleGroupChange(groupKey) {
-  const next = recentTabByGroup.value[groupKey] || getFirstTabInGroup(groupKey)
+  const next = resolveGroupTab(groupKey, recentTabByGroup.value)
   setActiveTab(next)
 }
 
@@ -215,6 +225,12 @@ function onFileOpen(filePath) {
 }
 
 function onKeydown(e) {
+  if ((e.metaKey || e.ctrlKey) && !e.altKey && e.key.toLowerCase() === 'k') {
+    e.preventDefault()
+    searchRef.value.open()
+    return
+  }
+  if (document.querySelector('dialog[open]')) return
   const num = Number(e.key)
   if (isNumericNavigationEvent(e, IS_MAC)) {
     const index = e.key === '0' ? 9 : num - 1
@@ -293,4 +309,12 @@ onUnmounted(() => {
     padding: 0 12px;
   }
 }
+.tool-heading {display:flex;align-items:center;gap:13px;padding:22px 28px 18px;flex:none;}
+.tool-heading-icon {display:grid;place-items:center;width:42px;height:42px;border-radius:10px;background:var(--accent-soft);color:var(--accent);}
+.tool-heading h1 {font-size:23px;line-height:1.3;font-weight:650;}
+.tool-heading p {font-size:12px;color:var(--text-muted);margin-top:4px;}
+.heading-shortcut {margin-left:auto;font-size:11px;color:var(--text-muted);}
+.content-area {margin:0 28px 22px;}
+.workbench-main {background:var(--bg-primary);}
+@media(max-width:900px){.tool-heading{padding:14px 16px}.content-area{margin:0 16px 14px}.tool-heading h1{font-size:20px}.tool-heading-icon{width:35px;height:35px}}
 </style>

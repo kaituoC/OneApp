@@ -55,24 +55,22 @@
       </aside>
 
       <div v-if="showEditor" :class="['editor-container', { 'with-preview': showPreview && mode !== 'plaintext' }]">
+        <div class="editor-pane-heading"><strong>编辑</strong><span :title="currentFilePath">{{ currentFilePath.split(/[\\/]/).pop() || '未命名文档' }}</span></div>
         <EditorWithLineNumbers
           ref="editorRef"
           v-model="editorContent"
           :font-size="fontSize"
-          @input="onContentChange"
+          @update:model-value="onContentChange"
           @scroll="onEditorScroll"
         />
       </div>
 
-      <component
-        :is="mode === 'html' ? HtmlPreview : MarkdownPreview"
-        v-if="showPreview && mode !== 'plaintext'"
-        ref="previewRef"
-        :content="editorContent"
-        :class="['preview-container', { 'full-width': !showEditor }]"
-      />
+      <section v-if="showPreview && mode !== 'plaintext'" :class="['preview-container', { 'full-width': !showEditor }]">
+        <div class="editor-pane-heading"><strong>预览</strong><span>{{ mode === 'html' ? 'HTML' : 'Markdown' }} · 实时更新</span></div>
+        <component :is="mode === 'html' ? HtmlPreview : MarkdownPreview" ref="previewRef" :content="editorContent" class="preview-content" />
+      </section>
 
-      <div v-if="!showEditor && !showPreview" class="empty-area">
+      <div v-if="!showEditor && (!showPreview || mode === 'plaintext')" class="empty-area">
         <span>点击工具栏按钮显示内容</span>
       </div>
     </div>
@@ -82,7 +80,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, nextTick } from 'vue'
+import { ref, computed, watch, nextTick, onUnmounted } from 'vue'
 import { FolderOpen, Save } from 'lucide-vue-next'
 import { useEditorFile } from '../composables/useEditorFile.js'
 import { useSendTo } from '../composables/useSendTo.js'
@@ -125,7 +123,7 @@ const editorRef = ref(null)
 const previewRef = ref(null)
 const showFileList = ref(true)
 const showEditor = ref(true)
-const showPreview = ref(false)
+const showPreview = ref(true)
 const showSyntaxHelp = ref(false)
 
 const { editorContent, currentFilePath, mode, openFileDialog: baseOpenFileDialog, openFromTree, newFile, saveFile, onContentChange } =
@@ -159,7 +157,7 @@ const editableExtensions = []
 
 function handleNewFile(type) {
   newFile(type)
-  showPreview.value = false
+  showPreview.value = type !== 'plaintext'
 }
 
 function handleMarkdownAction(action) {
@@ -247,6 +245,8 @@ watch([showPreview, mode], ([preview]) => {
   }
 }, { immediate: true })
 
+onUnmounted(() => previewScrollEl?.removeEventListener('scroll', onPreviewScroll))
+
 // ── Markdown 专属导出 ─────────────────────────────────────
 
 function getExportBaseName() {
@@ -332,6 +332,7 @@ async function exportPDF() {
 }
 
 .editor-container {
+  flex-direction: column;
   flex: 1;
   display: flex;
   min-width: 0;
@@ -340,12 +341,12 @@ async function exportPDF() {
 
 .editor-container.with-preview {
   flex: 1 1 50%;
-  min-width: 320px;
+  min-width: 220px;
 }
 
 .preview-container {
   flex: 1 1 50%;
-  min-width: 320px;
+  min-width: 220px;
   border-left: 1px solid var(--border-color);
   display: flex;
   flex-direction: column;
@@ -366,69 +367,9 @@ async function exportPDF() {
   font-size: 14px;
 }
 
-@media (max-width: 1040px) {
-  .content.has-preview.has-file-list.has-editor {
-    display: grid;
-    grid-template-columns: minmax(224px, 248px) minmax(360px, 1fr);
-    grid-template-rows: minmax(0, 1fr) minmax(220px, 38%);
-    overflow: hidden;
-  }
-
-  .content.has-preview.has-file-list.has-editor .file-list {
-    grid-row: 1 / 3;
-    height: 100%;
-  }
-
-  .content.has-preview.has-file-list.has-editor .editor-container.with-preview {
-    grid-column: 2;
-    grid-row: 1;
-    min-width: 0;
-  }
-
-  .content.has-preview.has-file-list.has-editor .preview-container {
-    grid-column: 2;
-    grid-row: 2;
-    min-width: 0;
-    border-left: none;
-    border-top: 1px solid var(--border-color);
-  }
-}
-
-@media (max-width: 860px) {
-  .toolbar {
-    gap: 6px;
-  }
-
-  .toolbar button {
-    padding-left: 9px;
-    padding-right: 9px;
-  }
-}
-
-@media (max-width: 760px) {
-  .content,
-  .content.has-preview.has-file-list.has-editor {
-    display: flex;
-    flex-direction: column;
-    overflow: auto;
-  }
-
-  .file-list {
-    flex: 0 0 220px;
-    min-width: 0;
-    border-right: none;
-    border-bottom: 1px solid var(--border-color);
-  }
-
-  .editor-container.with-preview,
-  .preview-container {
-    min-width: 0;
-    flex: 0 0 320px;
-  }
-
-  .preview-container {
-    border-left: none;
-    border-top: 1px solid var(--border-color);
-  }
-}
+.editor-pane-heading{display:flex;gap:12px;align-items:center;padding:12px 16px;border-bottom:1px solid var(--border-color);font-size:12px;background:var(--surface);min-height:44px;flex:none}
+.editor-pane-heading span{color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.content {border:1px solid var(--border-color);border-radius:10px;overflow-x:auto;}
+@media(max-width:900px){.file-list{flex-basis:210px;min-width:210px}.panel-toggles-label{display:none}.toolbar{gap:5px}.toolbar button{padding-left:8px;padding-right:8px}}
+.preview-content{flex:1;min-height:0;min-width:0;border-left:0;background:var(--surface);overflow:auto;}
 </style>

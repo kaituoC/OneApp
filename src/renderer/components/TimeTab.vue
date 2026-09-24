@@ -1,7 +1,7 @@
 <template>
-  <div :class="['time-tab', { 'time-grid': isWide }]">
+  <div class="time-tab">
     <!-- 实时时间显示区：随时间转换子任务常驻顶部（原独立「当前时间」子工具并入） -->
-    <div v-show="isWide || activeSection === 'convert'" id="time-section-convert" class="live-section tool-panel">
+    <div v-show="activeSection === 'convert'" id="time-section-convert" class="live-section tool-panel">
       <div class="live-row">
         <div class="live-item">
           <span class="live-label">当前时间</span>
@@ -22,8 +22,12 @@
       </div>
     </div>
 
+    <div v-show="activeSection === 'convert'" class="time-direction tool-segmented" role="radiogroup" aria-label="时间转换方向" @keydown="handleSegmentedKeydown">
+      <button role="radio" :aria-checked="direction === 'toDate'" :class="{active:direction === 'toDate'}" @click="direction = 'toDate'">时间戳 → 日期</button>
+      <button role="radio" :aria-checked="direction === 'toTimestamp'" :class="{active:direction === 'toTimestamp'}" @click="direction = 'toTimestamp'">日期 → 时间戳</button>
+    </div>
     <!-- 时间戳转日期 -->
-    <div v-show="isWide || activeSection === 'convert'" class="convert-section tool-panel section-convert-ts">
+    <div v-show="activeSection === 'convert' && direction === 'toDate'" class="convert-section tool-panel section-convert-ts">
       <div class="section-header tool-panel-header">时间戳转日期</div>
       <div class="convert-content">
         <div class="convert-row">
@@ -65,7 +69,7 @@
     </div>
 
     <!-- 日期转时间戳 -->
-    <div v-show="isWide || activeSection === 'convert'" class="convert-section tool-panel section-convert-date">
+    <div v-show="activeSection === 'convert' && direction === 'toTimestamp'" class="convert-section tool-panel section-convert-date">
       <div class="section-header tool-panel-header">日期转时间戳</div>
       <div class="convert-content">
         <div class="convert-row">
@@ -97,7 +101,7 @@
       </div>
     </div>
 
-    <div v-show="isWide || activeSection === 'cron'" id="time-section-cron" class="convert-section tool-panel section-cron">
+    <div v-show="activeSection === 'cron'" id="time-section-cron" class="convert-section tool-panel section-cron">
       <div class="section-header tool-panel-header">Cron 表达式解释</div>
       <div class="convert-content">
         <div class="convert-row">
@@ -126,7 +130,7 @@
       </div>
     </div>
 
-    <div v-show="isWide || activeSection === 'timezone'" id="time-section-timezone" class="convert-section tool-panel section-timezone">
+    <div v-show="activeSection === 'timezone'" id="time-section-timezone" class="convert-section tool-panel section-timezone">
       <div class="section-header tool-panel-header">多时区对照</div>
       <div class="convert-content">
         <div class="convert-row">
@@ -168,7 +172,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, nextTick, onMounted, onUnmounted } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useCopyToast } from '../composables/useCopyToast.js'
 import { handleSegmentedKeydown } from '../utils/segmentedControl.js'
 import {
@@ -191,25 +195,8 @@ const props = defineProps({
 
 const activeSection = ref(props.subTool)
 
-// 宽屏（窗口 ≥1270px）任务区双列并排；窄屏维持一次只显示一个子任务
-const WIDE_WINDOW_WIDTH = 1270
-const isWide = ref(false)
-function updateWideState() {
-  isWide.value = window.innerWidth >= WIDE_WINDOW_WIDTH
-}
-
-watch(
-  () => props.subTool,
-  (next) => {
-    if (!next || next === activeSection.value) return
-    activeSection.value = next
-    if (isWide.value) {
-      nextTick(() => {
-        document.getElementById(`time-section-${next}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-      })
-    }
-  }
-)
+const direction = ref('toDate')
+watch(() => props.subTool, next => { if (next) activeSection.value = next })
 
 // 显示模式
 const displayMode = ref('second')
@@ -272,6 +259,9 @@ function convertDateToTs() {
   }
 }
 
+watch([tsToDateInput, tsToDateUnit, tsToDateFormat], () => { tsToDateResult.value = '' }, { flush: 'sync' })
+watch(dateToTsInput, () => { dateToTsResultSecond.value = ''; dateToTsResultMs.value = '' }, { flush: 'sync' })
+
 // 复制功能
 const { copyMessage, copyToClipboard } = useCopyToast()
 
@@ -331,8 +321,6 @@ function removeTimezone(row) {
 
 // 启动定时器
 onMounted(() => {
-  updateWideState()
-  window.addEventListener('resize', updateWideState)
   if (initialCron.success) {
     cronDescription.value = initialCron.description
     cronRuns.value = initialCron.formattedRuns
@@ -346,7 +334,6 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
-  window.removeEventListener('resize', updateWideState)
   if (timer) clearInterval(timer)
 })
 </script>
@@ -359,42 +346,6 @@ onUnmounted(() => {
   overflow-y: auto;
   padding: 16px;
   gap: 12px;
-}
-
-/* 宽屏双列 dashboard：左列当前时间 + 时间戳互转，右列 Cron + 多时区，消除大面积空白 */
-.time-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  align-items: start;
-}
-
-.time-grid > .tool-panel {
-  min-width: 0;
-}
-
-.time-grid .live-section {
-  grid-column: 1;
-  grid-row: 1;
-}
-
-.time-grid .section-convert-ts {
-  grid-column: 1;
-  grid-row: 2;
-}
-
-.time-grid .section-convert-date {
-  grid-column: 1;
-  grid-row: 3;
-}
-
-.time-grid .section-cron {
-  grid-column: 2;
-  grid-row: 1 / 3;
-}
-
-.time-grid .section-timezone {
-  grid-column: 2;
-  grid-row: 3;
 }
 
 /* 实时时间显示区 */
@@ -646,4 +597,24 @@ onUnmounted(() => {
     min-width: 0;
   }
 }
+.time-tab{max-width:1100px;margin:0 auto;padding:0;gap:18px;}
+.time-direction{align-self:flex-start;flex:none;}
+.live-section{box-shadow:none;padding:10px 16px;flex:none;}
+.live-item{background:transparent;border:0;padding:4px;flex-wrap:wrap;gap:8px;}
+.live-value{font-size:16px;}
+.convert-section{flex:none;}
+.convert-content{padding:24px;gap:22px;}
+.convert-row{flex-wrap:wrap;}
+.convert-result{font-size:18px;overflow-wrap:anywhere;}
+.cron-run-list{background:var(--surface);border:0;gap:12px;}
+@media(max-width:900px){.time-tab{gap:10px}.live-row{gap:8px}.live-item{gap:6px}.live-value{font-size:13px}.live-label{min-width:auto}.convert-content{padding:16px;gap:14px}}
+.section-convert-ts .convert-content,.section-convert-date .convert-content{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:24px;align-items:start;}
+.section-convert-ts .convert-row:nth-child(1),.section-convert-ts .convert-row:nth-child(2){grid-column:1;}
+.section-convert-ts .convert-row:last-child{grid-column:2;grid-row:1 / 3;}
+.section-convert-ts .convert-row:last-child,.section-convert-date .convert-row:last-child{background:var(--accent-soft);padding:22px;border-radius:8px;min-height:170px;align-content:flex-start;}
+.section-convert-ts .convert-row:last-child .row-label,.section-convert-date .convert-row:last-child .row-label{width:100%;}
+.section-convert-ts .convert-result{min-width:0;width:100%;background:transparent;border:0;padding:0;}
+.section-convert-date .ts-results-inline{flex-direction:column;align-items:stretch;gap:16px;}
+.section-convert-ts .format-select{width:100%;min-width:0;}
+@media(max-width:900px){.section-convert-ts .convert-content,.section-convert-date .convert-content{gap:16px}.section-convert-ts .convert-row:last-child,.section-convert-date .convert-row:last-child{padding:16px}.live-ts-row{flex-wrap:wrap}}
 </style>

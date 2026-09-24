@@ -23,7 +23,7 @@
     </div>
 
     <!-- 树主体 -->
-    <div class="tree-body">
+    <div class="tree-body" tabindex="0" aria-label="文件目录，可上下左右滚动">
       <div v-if="!currentRoot" class="tree-hint tool-empty-state">
         请点击打开文件夹，或在设置中选择工作目录
       </div>
@@ -32,7 +32,7 @@
       <div v-else-if="filteredRootItems.length === 0" class="tree-hint tool-empty-state">
         此目录暂无可显示的内容
       </div>
-      <template v-else>
+      <div v-else class="tree-content">
         <TreeNode
           v-for="item in filteredRootItems"
           :key="item.path + '#' + treeVersion"
@@ -43,7 +43,7 @@
           :active-path="activePath"
           @open-file="$emit('open-file', $event)"
         />
-      </template>
+      </div>
     </div>
   </div>
 </template>
@@ -159,7 +159,9 @@ defineExpose({ refresh })
 
 .tree-body {
   flex: 1;
-  overflow-y: auto;
+  overflow: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
   min-height: 0;
   padding: 7px 6px 10px;
 }
@@ -174,4 +176,5 @@ defineExpose({ refresh })
 .tree-error {
   color: #e06c75;
 }
+.tree-content { width:max-content;min-width:100%; }
 </style>

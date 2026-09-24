@@ -1,9 +1,4 @@
-# contextual-tool-navigation Specification
-
-## Purpose
-contextual-tool-navigation 定义 workbench 的工具导航结构：顶部全局导航呈现一级分组，context-bar 横向导航条承载当前分组的工具与子工具入口，并保持与数字/循环快捷键的统一激活状态同步。
-
-## Requirements
+## MODIFIED Requirements
 
 ### Requirement: 顶部全局分组导航
 
@@ -53,6 +48,8 @@ contextual-tool-navigation 定义 workbench 的工具导航结构：顶部全局
 - **WHEN** 应用窗口宽度不足以同时容纳全部导航 chips
 - **THEN** 导航条允许横向滚动查看全部入口，主内容区不被挤压到不可用宽度，chips 保留 title 或 accessible name
 
+## ADDED Requirements
+
 ### Requirement: context-bar 直达任务导航
 
 应用 SHALL 在 context-bar 一行直接呈现当前分类的具体工具；仅有编辑器、研讨室或设置时不显示重复入口。数据、编码、时间、生成分类直接显示子工具；文本分类显示文本处理、文本对比和正则，文本处理内部操作通过模式选择器访问。
@@ -72,3 +69,11 @@ contextual-tool-navigation 定义 workbench 的工具导航结构：顶部全局
 #### Scenario: 子工具选择会话级记忆
 - **WHEN** 同一会话中切走再返回某分类
 - **THEN** 上次选中的工具和子工具保持激活
+
+## REMOVED Requirements
+
+### Requirement: context-bar 横向工具导航
+
+**Reason**: 用户已审定新的交互结构，替换旧布局约定；原有功能继续保留。
+**Migration**: 使用「context-bar 直达任务导航」需求，功能通过新入口继续访问。
+

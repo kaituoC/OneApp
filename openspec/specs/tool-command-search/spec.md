@@ -1,0 +1,18 @@
+# tool-command-search Specification
+
+## Purpose
+提供统一的工具名称与操作关键词搜索能力，让用户在不记忆分类层级的情况下快速定位现有工具，并让鼠标与键盘操作使用相同的导航和草稿状态。
+
+## Requirements
+
+### Requirement: 搜索直达工具
+
+应用 SHALL 提供工具搜索按钮及 Cmd/Ctrl+K 入口，按名称、说明和操作关键词查找全部工具与子工具，支持上下选择、Enter 打开、Escape 关闭和焦点恢复。
+
+#### Scenario: 搜索具体子工具
+- **WHEN** 用户搜索 JSONPath、解码或二维码
+- **THEN** 可以定位相应具体工具，选择后分类和子工具激活状态一致
+
+#### Scenario: 无结果与关闭
+- **WHEN** 搜索无匹配或用户按 Escape
+- **THEN** 无匹配时显示提示，关闭后焦点回到触发位置且不清空草稿

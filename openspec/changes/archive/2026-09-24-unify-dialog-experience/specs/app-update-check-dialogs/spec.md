@@ -1,10 +1,4 @@
-# app-update-check-dialogs Specification
-
-## Purpose
-
-app-update-check-dialogs 定义 OneApp 的应用级更新检查与统一消息弹窗能力：设置页可以检查 GitHub Releases 最新正式版本，简短信息与费用确认由主进程通过系统消息框展示并使用 OneApp 图标，长更新说明通过应用内详情弹窗完整展示。
-
-## Requirements
+## MODIFIED Requirements
 
 ### Requirement: GitHub Release 更新检查
 
@@ -29,22 +23,6 @@ OneApp SHALL let users check the latest public non-draft, non-prerelease GitHub 
 #### Scenario: 更新检查失败
 - **WHEN** GitHub Release 请求超时、受限流、返回非成功状态、返回数据缺失或版本号无法解析
 - **THEN** 系统通过统一消息弹窗展示清晰错误提示，并恢复检查按钮可用状态
-
-### Requirement: 可选启动更新检查
-
-OneApp SHALL provide a Settings preference for update checks on launch, default it to disabled, and limit successful automatic checks to at most once every 24 hours.
-
-#### Scenario: 默认不在启动时请求更新
-- **WHEN** 用户尚未启用启动检查更新偏好
-- **THEN** 应用启动后不得自动请求 GitHub Release
-
-#### Scenario: 启用后检查到新版本
-- **WHEN** 用户已启用启动检查更新偏好，距离上次成功检查已至少 24 小时，且应用启动后发现新版本
-- **THEN** 系统显示与手动检查等价的新版本提示和手动下载入口，并记录本次成功检查时间
-
-#### Scenario: 启用后检查失败或无需提示
-- **WHEN** 启动检查请求失败、未发现新版本，或距离上次成功检查不足 24 小时
-- **THEN** 系统不得显示错误弹窗或重复的新版本弹窗；仅在成功完成实际检查时记录检查时间
 
 ### Requirement: 统一应用消息弹窗
 

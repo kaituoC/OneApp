@@ -225,12 +225,12 @@ function onFileOpen(filePath) {
 }
 
 function onKeydown(e) {
+  if (document.querySelector('dialog[open]')) return
   if ((e.metaKey || e.ctrlKey) && !e.altKey && e.key.toLowerCase() === 'k') {
     e.preventDefault()
     searchRef.value.open()
     return
   }
-  if (document.querySelector('dialog[open]')) return
   const num = Number(e.key)
   if (isNumericNavigationEvent(e, IS_MAC)) {
     const index = e.key === '0' ? 9 : num - 1

@@ -117,6 +117,9 @@ export function createUpdateCheckResult({ currentVersion, release, platform, arc
     releaseUrl: release.html_url,
     publishedAt: release.published_at || '',
     notesSummary: summarizeReleaseNotes(release.body || ''),
+    notesMarkdown: String(release.body || ''),
+    platform,
+    arch,
     assetName: asset?.name || '',
     downloadUrl: asset?.browser_download_url || ''
   }

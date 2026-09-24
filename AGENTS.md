@@ -15,7 +15,7 @@ OneApp 是一个基于 Electron + Vue 3 的桌面开发工具应用，集成：
 - 正则测试器：`/pattern/flags` 输入、Web Worker 实时匹配、捕获组高亮、速查抽屉
 - 编码工具合集：Base64、URL、JWT、Hash、进制、Unicode
 - Agent 研讨室：多个本地 AI agent 以只读方式研讨本地仓库、交叉评审并输出实现方案
-- 设置与更新：设置页可检查 GitHub Releases 最新版本，应用级消息统一通过带 OneApp 图标的系统弹窗展示
+- 设置与更新：设置页可检查 GitHub Releases 最新版本，简短消息与研讨费用确认通过带 OneApp 图标的系统弹窗展示；更新详情、语法帮助、发送确认和搜索统一使用应用内 AppDialog
 
 ## 常用命令
 
@@ -278,6 +278,12 @@ Agent Workshop 的大型讨论记录不放在 electron-store 中，而是保存�
 - 深色 / 浅色主题通过 `<html data-theme="light">` 切换。
 - macOS 窗口使用 `titleBarStyle: 'hiddenInset'`，导航区域需要保留左侧约 78px 给红绿灯按钮。
 - UI 改造应优先复用全局 token 和共享样式，避免各页面重复发明按钮、面板和状态样式。
+
+### 弹窗约定
+
+- 简短结果、错误和研讨费用确认继续使用系统 `showMessageBox`；更新说明、语法帮助、发送确认和工具搜索等详情类弹窗使用 `AppDialog.vue`。
+- 详情正文完整保留并独立滚动，标题和操作区固定；Esc、关闭按钮、Tab 焦点循环和关闭后焦点恢复必须一致。已有 modal 时延后更新提示，不叠加搜索。
+- Release Markdown 经 `releaseNotes.js` 安全渲染，不嵌入远端媒体；外链仅允许 HTTPS，使用现有 `openExternal`。不得将完整说明压成摘要用于详情展示。
 
 ## 安全与边界
 

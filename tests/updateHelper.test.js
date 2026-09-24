@@ -49,6 +49,8 @@ describe('updateHelper release normalization', () => {
     expect(result.latestVersion).toBe('1.15.0')
     expect(result.releaseUrl).toContain('/v1.15.0')
     expect(result.notesSummary).toContain('新增检查更新功能')
+    expect(result.notesMarkdown).toBe('新增检查更新功能\n\n修复若干问题')
+    expect(result.platform).toBe('darwin')
     expect(result.assetName).toBe('OneApp-1.15.0-mac-arm64.dmg')
     expect(result.downloadUrl).toContain('.dmg')
   })

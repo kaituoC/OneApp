@@ -93,11 +93,13 @@
         </label>
       </div>
     </section>
+    <UpdateDialog :result="availableUpdate" @close="availableUpdate = null" />
   </div>
 </template>
 
 <script setup>
 import { computed, onUnmounted, ref } from 'vue'
+import UpdateDialog from './UpdateDialog.vue'
 import { chooseDirectory } from '../utils/fileHelper.js'
 import { CYCLE_SHORTCUTS, IS_MAC, SHORTCUT_MODIFIER } from '../utils/navigation.js'
 import { handleSegmentedKeydown } from '../utils/segmentedControl.js'
@@ -118,6 +120,7 @@ defineEmits(['clear-recent'])
 
 const isMac = IS_MAC
 const checkingUpdate = ref(false)
+const availableUpdate = ref(null)
 const activeSection = ref('general')
 const SETTING_SECTIONS = [
   { key: 'general', label: '常用设置' },
@@ -136,17 +139,6 @@ const recentFileItems = computed(() => props.recentFiles.map((path) => {
 async function chooseDir() {
   const dir = await chooseDirectory()
   if (dir) workDir.value = dir
-}
-
-function formatReleaseDate(value) {
-  if (!value) return '未知'
-  const date = new Date(value)
-  if (Number.isNaN(date.getTime())) return '未知'
-  return date.toLocaleDateString('zh-CN', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit'
-  })
 }
 
 async function checkUpdate() {
@@ -183,28 +175,7 @@ async function showUpdateResult(result, { showNoUpdate = false } = {}) {
     return
   }
 
-  const hasDownload = Boolean(result.downloadUrl)
-  const primaryLabel = hasDownload ? '下载更新' : '查看发布页'
-
-  const response = await window.electronAPI.showMessageBox({
-    type: 'info',
-    title: '发现新版本',
-    message: `发现新版本 v${result.latestVersion}`,
-    detail: [
-      `当前版本：v${result.currentVersion}`,
-      `发布日期：${formatReleaseDate(result.publishedAt)}`,
-      hasDownload ? `安装包：${result.assetName}` : '未找到适用于当前设备的安装包，可在发布页查看所有文件。',
-      '',
-      result.notesSummary
-    ].join('\n'),
-    buttons: [primaryLabel, '稍后'],
-    defaultId: 0,
-    cancelId: 1
-  })
-
-  if (response?.response === 0) {
-    window.electronAPI.openExternal(result.downloadUrl || result.releaseUrl)
-  }
+  availableUpdate.value = result
 }
 
 const unsubscribeUpdateAvailable = window.electronAPI.updates.onAvailable((result) => {

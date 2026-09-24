@@ -108,7 +108,6 @@ async function loadChildren() {
   cursor: pointer;
   font-size: 13px;
   white-space: nowrap;
-  overflow: hidden;
   user-select: none;
   border-radius: var(--radius-sm);
   color: var(--text-primary);
@@ -155,8 +154,7 @@ async function loadChildren() {
 }
 
 .node-name {
-  overflow: hidden;
-  text-overflow: ellipsis;
+  flex-shrink: 0;
 }
 
 .node-hint {

@@ -1,4 +1,4 @@
-import { inject, ref } from 'vue'
+import { inject, ref, onUnmounted } from 'vue'
 
 // 可接收文本输入的目标工具
 export const SEND_TARGETS = [
@@ -20,17 +20,48 @@ export const SEND_TO_KEY = Symbol('sendTo')
 export const PENDING_INPUT_KEY = Symbol('pendingInput')
 
 export function provideSendTo(setActiveTab, setSubTool) {
-  const pendingInput = ref(null) // { tabKey, subKey?, content }
-
-  function sendTo(tabKey, content, subKey) {
-    if (!content || content.length > 512 * 1024) return false
-    pendingInput.value = { tabKey, subKey: subKey || null, content }
-    setActiveTab(tabKey)
-    if (subKey) setSubTool(tabKey, subKey)
+  const pendingInput = ref(null)
+  const transferRequest = ref(null)
+  const inputReaders = new Map()
+  function registerInput(tabKey, read) {
+    inputReaders.set(tabKey, read)
+    return () => { if (inputReaders.get(tabKey) === read) inputReaders.delete(tabKey) }
+  }
+  function deliver(target, content) {
+    if (content.length > 512 * 1024) return false
+    setActiveTab(target.tabKey)
+    if (target.subKey) setSubTool(target.tabKey, target.subKey)
+    pendingInput.value = { ...target, content }
     return true
   }
+  function sendTo(tabKey, content, subKey) {
+    if (!content || content.length > 512 * 1024 || !SEND_TARGETS.some(t => t.tabKey === tabKey && (t.subKey || null) === (subKey || null))) return false
+    const target = { tabKey, subKey: subKey || null }
+    const existing = inputReaders.get(tabKey)?.(subKey) || ''
+    if (existing) {
+      transferRequest.value = { ...target, content, existing, label: SEND_TARGETS.find(t => t.tabKey === tabKey && (t.subKey || null) === (subKey || null))?.label }
+      return true
+    }
+    return deliver(target, content)
+  }
+  function confirmTransfer(action) {
+    const request = transferRequest.value
+    if (!request) return false
+    if (action === 'cancel') { transferRequest.value = null; return true }
+    if (!['replace', 'append'].includes(action)) return false
+    const existing = inputReaders.get(request.tabKey)?.(request.subKey) || ''
+    const content = action === 'append' ? existing + (existing ? '\n' : '') + request.content : request.content
+    if (!deliver(request, content)) return false
+    transferRequest.value = null
+    return true
+  }
+  return { sendTo, pendingInput, registerInput, transferRequest, confirmTransfer }
+}
 
-  return { sendTo, pendingInput }
+export function useRegisterInput(tabKey, read) {
+  const api = inject(SEND_TO_KEY, null)
+  const unregister = api?.registerInput?.(tabKey, read)
+  onUnmounted(() => unregister?.())
 }
 
 export function useSendTo() {

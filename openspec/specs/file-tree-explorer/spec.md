@@ -2,7 +2,9 @@
 
 ## Purpose
 TBD - created by archiving change add-file-tree-explorer. Update Purpose after archive.
+
 ## Requirements
+
 ### Requirement: Lazy-loaded directory tree
 
 系统 SHALL 在统一编辑器侧边栏提供一棵目录树，文件夹节点在首次展开时才读取其直接子项（懒加载），不一次性递归整个目录。
@@ -96,3 +98,14 @@ TBD - created by archiving change add-file-tree-explorer. Update Purpose after a
 - **WHEN** 用户查看折叠或展开的文件夹节点
 - **THEN** 展开控件和文件夹图标共同表达当前状态，当前文件或键盘焦点也具有清晰但不过度突兀的状态
 
+### Requirement: 文件目录独立双向滚动
+
+目录树 SHALL 保留完整文件名，不使用省略号截断节点名称。树主体在内容超出时独立上下、左右滚动，顶部打开文件夹、隐藏项切换和刷新控件保持可用；不得一次递归读取整个项目。
+
+#### Scenario: 长文件名
+- **WHEN** 展开的节点名称加缩进超过目录栏宽度
+- **THEN** 可以横向滚动查看完整名称，编辑和预览宽度不随名称扩张
+
+#### Scenario: 多文件
+- **WHEN** 文件数超过目录可显示高度
+- **THEN** 可以纵向滚动并打开最后一个文件，顶部控件不随树内容移出

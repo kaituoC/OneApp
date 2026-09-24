@@ -46,9 +46,26 @@ export function useEditorFile({ workDir, onFileOpen, onSaveStatus, refreshTree, 
     return loadFile(filePath)
   }
 
+  const drafts = new Map()
+  let savedContent = MARKDOWN_TEMPLATE
+  let loadSequence = 0
+  function rememberDraft() {
+    if (currentFilePath.value && editorContent.value !== savedContent) {
+      drafts.set(currentFilePath.value, { content: editorContent.value, savedContent })
+    } else if (currentFilePath.value) {
+      drafts.delete(currentFilePath.value)
+    }
+  }
   async function loadFile(filePath) {
+    const sequence = ++loadSequence
+    if (filePath === currentFilePath.value && editorContent.value !== savedContent) return true
     try {
-      editorContent.value = await readFile(filePath)
+      const cached = drafts.get(filePath)
+      const content = cached ? cached.content : await readFile(filePath)
+      if (sequence !== loadSequence) return false
+      rememberDraft()
+      editorContent.value = content
+      savedContent = cached ? cached.savedContent : content
       currentFilePath.value = filePath
       mode.value = modeFromPath(filePath)
       onFileOpen?.(filePath)
@@ -60,6 +77,8 @@ export function useEditorFile({ workDir, onFileOpen, onSaveStatus, refreshTree, 
   }
 
   function newFile(type = 'markdown') {
+    loadSequence++
+    rememberDraft()
     if (type === 'html') {
       editorContent.value = HTML_TEMPLATE
       mode.value = 'html'
@@ -71,14 +90,22 @@ export function useEditorFile({ workDir, onFileOpen, onSaveStatus, refreshTree, 
       mode.value = 'markdown'
     }
     currentFilePath.value = ''
+    savedContent = editorContent.value
     onSaveStatus?.('新文件')
   }
 
   async function saveFile() {
     try {
       if (currentFilePath.value) {
-        await writeFile(currentFilePath.value, editorContent.value)
-        onSaveStatus?.('已保存')
+        const path = currentFilePath.value, content = editorContent.value
+        await writeFile(path, content)
+        const cached = drafts.get(path)
+        if (cached && cached.content !== content) cached.savedContent = content
+        else drafts.delete(path)
+        if (currentFilePath.value === path) {
+          savedContent = content
+          onSaveStatus?.(editorContent.value === content ? '已保存' : '未保存')
+        }
         refreshTree?.()
       } else {
         const defaultName = mode.value === 'html' ? 'untitled.html'
@@ -86,12 +113,14 @@ export function useEditorFile({ workDir, onFileOpen, onSaveStatus, refreshTree, 
         const fileType = mode.value === 'html' ? { name: 'HTML', extensions: ['html'] }
           : mode.value === 'plaintext' ? { name: '文本文件', extensions: ['txt'] }
           : { name: 'Markdown', extensions: ['md'] }
-        const savedPath = await dialogSaveFile(editorContent.value, defaultName, fileType, workDir?.value)
-        if (savedPath) {
+        const content = editorContent.value, sequence = loadSequence
+        const savedPath = await dialogSaveFile(content, defaultName, fileType, workDir?.value)
+        if (savedPath && sequence === loadSequence) {
           currentFilePath.value = savedPath
+          savedContent = content
           mode.value = modeFromPath(savedPath)
           onFileOpen?.(savedPath)
-          onSaveStatus?.('已保存')
+          onSaveStatus?.(editorContent.value === content ? '已保存' : '未保存')
           refreshTree?.()
         }
       }
@@ -108,6 +137,7 @@ export function useEditorFile({ workDir, onFileOpen, onSaveStatus, refreshTree, 
   // isActive 为 false（非编辑器标签激活时）跳过，防止在其他标签误触发保存
   function handleKeydown(e) {
     if (isActive && !isActive.value) return
+    if (typeof document !== 'undefined' && document.querySelector('dialog[open]')) return
     const mod = e.ctrlKey || e.metaKey
     if (mod && e.key === 's') {
       e.preventDefault()

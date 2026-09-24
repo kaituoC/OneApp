@@ -46,8 +46,8 @@
             <span :class="['tool-status-chip', hasError ? 'error' : hasResult ? 'success' : '']" role="status" aria-live="polite">
               {{ resultStatus }}
             </span>
-            <button @click="copyResult" :disabled="!output || hasError">复制</button>
-            <OverflowMenu v-if="output && !hasError" label="发送到" :items="sendTargets" @select="handleSendTo" />
+            <button @click="copyResult" :disabled="!output || hasError || resultStale">复制</button>
+            <OverflowMenu v-if="output && !hasError && !resultStale" label="发送到" :items="sendTargets" @select="handleSendTo" />
             <button @click="clearAll" :disabled="!input && !hasResult">清空</button>
           </span>
         </div>
@@ -125,7 +125,7 @@ import EditorWithLineNumbers from './EditorWithLineNumbers.vue'
 import OverflowMenu from './OverflowMenu.vue'
 import { useCopyToast } from '../composables/useCopyToast.js'
 import { useToolResult } from '../composables/useToolResult.js'
-import { useSendTo, getSendTargets, usePendingInput } from '../composables/useSendTo.js'
+import { useRegisterInput, useSendTo, getSendTargets, usePendingInput } from '../composables/useSendTo.js'
 
 const props = defineProps({
   fontSize: { type: Number, default: 14 },
@@ -214,12 +214,15 @@ const inputPlaceholder = computed(() =>
 const modeActions = computed(() => ACTIONS[mode.value])
 const hasResult = computed(() => Boolean(output.value || tablePreview.value || jsonPathMatches.value.length || statusMessage.value))
 const resultStatus = computed(() => {
+  if (resultStale.value) return '待更新'
   if (hasError.value) return '错误'
   if (hasResult.value) return '就绪'
   return input.value ? '选择操作' : '等待输入'
 })
 
 function runAction(action) {
+  processedInput.value = input.value
+  processedExpression.value = action === 'jsonpath' ? jsonPathExpression.value : null
   const handlers = {
     format: doFormat,
     minify: doMinify,
@@ -240,11 +243,22 @@ function runAction(action) {
   handlers[action]?.()
 }
 
+const modeDrafts = new Map()
+const processedInput = ref('')
+const processedExpression = ref(null)
+const resultStale = computed(() => hasResult.value && (input.value !== processedInput.value || (processedExpression.value !== null && jsonPathExpression.value !== processedExpression.value)))
+function snapshotMode() {
+  return { input: input.value, output: output.value, statusMessage: statusMessage.value, hasError: hasError.value, jsonPathMatches: jsonPathMatches.value, tablePreview: tablePreview.value, expression: jsonPathExpression.value, processedInput: processedInput.value, processedExpression: processedExpression.value }
+}
+useRegisterInput('json', sub => sub === mode.value ? input.value : modeDrafts.get(sub)?.input || '')
 function setMode(nextMode) {
+  modeDrafts.set(mode.value, snapshotMode())
   mode.value = nextMode
-  reset()
-  jsonPathMatches.value = []
-  tablePreview.value = null
+  const saved = modeDrafts.get(nextMode) || {}
+  input.value = saved.input || ''; output.value = saved.output || ''; statusMessage.value = saved.statusMessage || ''; hasError.value = saved.hasError || false
+  jsonPathMatches.value = saved.jsonPathMatches || []; tablePreview.value = saved.tablePreview || null
+  jsonPathExpression.value = saved.expression || '$'; processedInput.value = saved.processedInput || ''
+  processedExpression.value = saved.processedExpression ?? null
 }
 
 function doFormat() {

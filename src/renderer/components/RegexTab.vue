@@ -148,7 +148,7 @@ import { BookOpen, CircleAlert, Copy } from 'lucide-vue-next'
 import EditorWithLineNumbers from './EditorWithLineNumbers.vue'
 import { useRegexMatcher } from '../composables/useRegexMatcher.js'
 import { useCopyToast } from '../composables/useCopyToast.js'
-import { usePendingInput } from '../composables/useSendTo.js'
+import { useRegisterInput, usePendingInput } from '../composables/useSendTo.js'
 
 defineProps({
   fontSize: { type: Number, default: 14 }
@@ -350,6 +350,7 @@ onUnmounted(() => {
   clearTimeout(debounceTimer)
   stopActiveResize?.()
 })
+useRegisterInput('regex', () => text.value)
 </script>
 
 <style scoped>

@@ -19,3 +19,6 @@ coverage/
 
 # 开发配置（国内镜像，国际用户自行配置）
 .npmrc
+
+# 本地 Review、交互原型与临时方案
+/doc_local/

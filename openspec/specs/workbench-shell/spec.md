@@ -3,18 +3,20 @@
 ## Purpose
 
 workbench-shell 定义 OneApp 刷新后的应用壳结构：通过顶部分组 navigation、context-bar 工具导航条、status bar、icon-assisted controls 和共享 theme token 承载全部一级工具，让核心入口更醒目，同时在窄宽度或 DevTools 占用空间时优先保护主工作区。
+
 ## Requirements
+
 ### Requirement: 分组 workbench navigation
 
-应用 SHALL 通过顶部全局 navigation 呈现六个一级工作台分组，并在 context-bar 横向导航条中呈现当前分组的工具及其子工具，而不是使用宽大的分组左侧一级 navigation 或拥挤的横向文字 tab bar。
+应用 SHALL 通过顶部全局 navigation 呈现七个一级任务分组，并提供独立设置入口，并在 context-bar 横向导航条中呈现当前分组的具体任务入口，而不是使用宽大的分组左侧一级 navigation 或拥挤的横向文字 tab bar。
 
 #### Scenario: 导航分组可见
 - **WHEN** 应用启动
-- **THEN** 顶部全局导航显示工作区、数据处理、文本调试、生成工具、AI 和系统设置分组
+- **THEN** 顶部全局导航显示编辑器、数据、文本、编码、时间、生成、研讨室；设置通过独立按钮进入
 
 #### Scenario: Agent Workshop 是 AI 入口
-- **WHEN** 用户查看 AI 分组
-- **THEN** Agent Workshop 作为 AI 分组下的醒目入口显示，而不是普通未分组工具标签
+- **WHEN** 用户查看研讨室入口
+- **THEN** Agent Workshop 通过研讨室一级入口直接进入
 
 #### Scenario: 生成器是生成工具入口
 - **WHEN** 用户查看生成工具分组
@@ -25,12 +27,12 @@ workbench-shell 定义 OneApp 刷新后的应用壳结构：通过顶部分组 n
 - **THEN** 主内容区切换到对应工具，并保留该工具现有 state model
 
 #### Scenario: 单工具分组直达内容
-- **WHEN** 用户切换到工作区、生成工具、AI 或系统等单工具分组
+- **WHEN** 用户切换到编辑器、研讨室或设置等单工具分组
 - **THEN** 不渲染任何侧栏或空白导航列，工具内容使用完整横向空间
 
 #### Scenario: 子工具在 context-bar 导航条呈现
-- **WHEN** 当前工具包含子工具（数据工具、文本处理、编码、生成器、时间）
-- **THEN** context-bar 导航条在当前工具之后呈现子工具入口，选择子工具同时激活对应工具并切换到该子工具，页面主体不再出现重复的第三层导航控件
+- **WHEN** 当前工具包含子工具（数据工具、编码、生成器、时间）
+- **THEN** context-bar 导航条直接呈现子工具入口，不重复父工具；文本处理操作通过页内模式选择器访问，选择子工具同时激活对应工具并切换到该子工具，页面主体不再出现重复的第三层导航控件
 
 ### Requirement: 键盘导航兼容性
 
@@ -54,11 +56,11 @@ workbench-shell 定义 OneApp 刷新后的应用壳结构：通过顶部分组 n
 
 ### Requirement: Context shell surface
 
-Workbench shell SHALL 围绕当前工具提供一致的 context 和 status surface。context bar 承载当前分组的工具导航（工具与子工具 chips），工具说明与快捷键信息保留在 chip 悬停 tooltip 中，不重复展示设置页已提供的主题与字号信息。
+Workbench shell SHALL 围绕当前工具提供一致的 context 和 status surface。context bar 承载当前分组的工具导航（工具与子工具 chips），页面标题呈现当前任务、说明与快捷键，chip tooltip 补充入口说明；顶栏提供独立主题按钮，字号在设置页调整。
 
 #### Scenario: 当前工具上下文可见
 - **WHEN** 任意一级工具处于激活状态
-- **THEN** context bar 的工具导航条以选中 chip 标示当前工具与子工具，当前编辑文件等 context detail 由 status area 展示
+- **THEN** 页面标题标示当前任务，多任务分类的工具导航条以选中 chip 标示具体任务，当前编辑文件等 context detail 由 status area 展示
 
 #### Scenario: Context bar 不重复设置项
 - **WHEN** 用户查看 context bar
@@ -75,18 +77,6 @@ Workbench shell SHALL 围绕当前工具提供一致的 context 和 status surfa
 #### Scenario: 时间工具摘要包含 Cron 和多时区能力
 - **WHEN** 用户查看时间工具导航说明或上下文摘要
 - **THEN** 系统可体现时间工具除日期与时间戳转换外，还包含 Cron 表达式解释和多时区对照能力
-
-### Requirement: Icon-assisted interaction model
-
-应用 SHALL 使用单一 icon library 提升导航和紧凑 command control 的可扫描性。
-
-#### Scenario: 导航入口包含图标
-- **WHEN** 用户查看主导航
-- **THEN** 每个一级导航入口都显示可识别 icon 和文字 label
-
-#### Scenario: 紧凑控件仍可理解
-- **WHEN** 某个命令主要通过图标表示
-- **THEN** 该控件包含 accessible label、title 或相邻文字来说明操作
 
 ### Requirement: 专业 theme system
 
@@ -132,3 +122,14 @@ Workbench shell SHALL 为每个一级工具定义唯一的主要纵向滚动区�
 - **WHEN** 顶部一级导航或 context-bar 工具导航因可用宽度收缩
 - **THEN** 每个入口仍可通过图标、可见 label、title 或 accessible name 获得完整工具名称、说明和快捷键信息
 
+### Requirement: 导航文字与图标协作
+
+应用 SHALL 使用单一 icon library 提升导航和紧凑 command control 的可扫描性。
+
+#### Scenario: 导航与任务标题清晰可辨
+- **WHEN** 用户查看主导航
+- **THEN** 一级导航入口显示文字 label，当前页面标题提供对应工具 icon；搜索、主题与设置使用可访问的图标按钮
+
+#### Scenario: 紧凑控件仍可理解
+- **WHEN** 某个命令主要通过图标表示
+- **THEN** 该控件包含 accessible label、title 或相邻文字来说明操作

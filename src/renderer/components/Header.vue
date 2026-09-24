@@ -11,7 +11,7 @@
 
     <nav class="global-nav" aria-label="主导航">
       <button
-        v-for="group in NAV_GROUPS"
+        v-for="group in NAV_GROUPS.filter(g => !g.utility)"
         :key="group.key"
         type="button"
         :class="['global-nav-item', { active: activeGroup === group.key, featured: hasFeaturedItem(group) }]"
@@ -24,17 +24,24 @@
         <span>{{ group.label }}</span>
       </button>
     </nav>
+    <div class="header-actions">
+      <button title="搜索工具 (Cmd/Ctrl+K)" aria-label="搜索工具" @click="$emit('search')"><Search :size="16" /><span>搜索工具</span><kbd>{{ isMac ? '⌘ K' : 'Ctrl K' }}</kbd></button>
+      <button :aria-label="theme === 'dark' ? '切换浅色主题' : '切换深色主题'" :title="theme === 'dark' ? '切换浅色主题' : '切换深色主题'" @click="$emit('toggle-theme')"><component :is="theme === 'dark' ? Sun : Moon" :size="17" /></button>
+      <button aria-label="设置" title="设置" :class="{ active: activeGroup === 'system' }" @click="$emit('group-change', 'system')"><Settings2 :size="17" /></button>
+    </div>
   </header>
 </template>
 
 <script setup>
+import { Search, Sun, Moon, Settings2 } from 'lucide-vue-next'
 import { IS_MAC, NAV_GROUPS, WORKBENCH_ICON } from '../utils/navigation.js'
 
 defineProps({
-  activeGroup: { type: String, required: true }
+  activeGroup: { type: String, required: true },
+  theme: { type: String, default: 'dark' }
 })
 
-defineEmits(['group-change'])
+defineEmits(['group-change', 'search', 'toggle-theme'])
 
 const isMac = IS_MAC
 
@@ -45,8 +52,8 @@ function hasFeaturedItem(group) {
 
 <style scoped>
 .workbench-header {
-  height: 46px;
-  min-height: 46px;
+  height: 60px;
+  min-height: 60px;
   display: flex;
   align-items: stretch;
   gap: 8px;
@@ -64,14 +71,14 @@ function hasFeaturedItem(group) {
   display: flex;
   align-items: center;
   gap: 8px;
-  min-width: 126px;
+  min-width: 105px;
 }
 
 .brand-icon { flex: none; color: var(--accent); }
 
 .brand-name {
   color: var(--text-primary);
-  font-size: 13px;
+  font-size: 17px;
   font-weight: 700;
   line-height: 1.1;
 }
@@ -100,7 +107,7 @@ function hasFeaturedItem(group) {
   background: transparent;
   border: 0;
   border-radius: 0;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 650;
   white-space: nowrap;
 }
@@ -124,7 +131,7 @@ function hasFeaturedItem(group) {
 
 .global-nav-item.active {
   color: var(--text-primary);
-  background: var(--accent-soft);
+  background: transparent;
 }
 
 .global-nav-item.active::after { background: var(--accent); }
@@ -139,4 +146,10 @@ function hasFeaturedItem(group) {
   .brand-copy { display: none; }
   .global-nav-item { padding: 0 8px; }
 }
+.global-nav { flex: 1; }
+.global-nav-item > svg { display: none; }
+.header-actions { display:flex;align-items:center;gap:6px;-webkit-app-region:no-drag;flex:none; }
+.header-actions button { padding:7px; min-height:32px; background:transparent; }
+.header-actions kbd { font-size:10px;color:var(--text-muted); }
+@media(max-width:1150px){.header-actions span,.header-actions kbd{display:none}.brand{min-width:auto}.global-nav-item{padding:0 9px}.workbench-header{gap:12px}}
 </style>

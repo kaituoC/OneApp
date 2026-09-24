@@ -35,6 +35,13 @@ npm test -- tests/jsonHelper.test.js # 运行单个测试文件
 
 ## 工作流程
 
+### 本地 Review 与临时产物
+
+- 仓库根目录的 `doc_local/` 用于存放需要用户 review、讨论或比较的本地临时产物，例如 HTML 交互原型、临时方案、设计草图、截图与验证记录。
+- 需要先展示方案、收集反馈或探索时，优先将产物放在 `doc_local/`，可按需求建立子目录；交付时提供具体路径及预览方式。
+- `doc_local/` 已加入 `.gitignore`，默认不提交，不作为应用运行或构建依赖，不使用强制添加绕过忽略规则。
+- 确认后需长期保留的结论应整理到正式文档或 OpenSpec；本地 Review 产物不能替代正式规格与实现。
+
 ### 分支管理
 
 - 每个需求必须创建新分支，在新分支上开发，不要直接在 `main` 分支上修改代码。
@@ -223,20 +230,22 @@ Windows 暂不支持 Agent Workshop 的本地 CLI 检测与进程组管理，渲
 
 ### 主要组件
 
-- `App.vue`：根组件，管理 active tab、顶部一级分组、context-bar 横向工具导航条（固定段渲染分组内工具、动态段渲染激活工具的子工具，单工具分组无侧栏直达内容，会话级子工具选择不持久化）、分组最近工具记忆、主题、字号、最近文件和快捷键；macOS 数字直达使用 `Cmd+1-9/0`，Windows/Linux 使用 `Ctrl+1-9/0`，全平台循环切换使用 `Ctrl+Tab` / `Ctrl+Shift+Tab`，不得拦截 macOS `Cmd+Tab`。
-- `Header.vue`：顶部一级工作台分组导航。工具与子工具入口由 `App.vue` 通过 `ContextNav.vue` 在 context-bar 横向导航条渲染（chips 仅图标 + 名称，说明与快捷键在 tooltip）。窄宽度下顶部入口与工具导航条均可横向查看，并通过图标、label、title 或 accessible name 保持可理解。
+- `ToolSearch.vue`：工具与操作关键词搜索，支持方向键、Enter、Esc 与焦点恢复。
+- `useSendTo.js` / `TransferDialog.vue`：跨工具发送保留原目标集合；目标已有输入时确认替换、追加或取消，长度上限继续生效。
+- `App.vue`：根组件，管理编辑器、数据、文本、编码、时间、生成、研讨室七类入口与独立设置；context-bar 直接显示具体任务，不重复父工具；维护最近工具、会话级子工具选择、主题、字号、最近文件和快捷键。macOS 使用 `Cmd+1-9/0`，Windows/Linux 使用 `Ctrl+1-9/0`；全平台 `Ctrl+Tab` / `Ctrl+Shift+Tab` 循环，`Cmd/Ctrl+K` 搜索；不拦截 macOS `Cmd+Tab`。
+- `Header.vue` / `ContextNav.vue`：顶部七类文字导航与直接任务 chips，设置、搜索和主题独立；窄宽度可横向查看，保留 tooltip、accessible name 与键盘操作。当前任务图标、标题和说明在页面标题展示。
 - `StatusBar.vue`：底部状态栏，必须覆盖全部一级工具名称。
-- `EditorTab.vue`：统一编辑器，使用 `useEditorFile`，按 mode 渲染 Markdown / HTML / 纯文本工作流。
+- `EditorTab.vue`：默认首个工具；Markdown/HTML 默认目录、编辑、预览左右三栏，各栏独立开关，目录支持上下和左右滚动。按后缀切换 Markdown/HTML/纯文本；保留打开、保存、新建、导出、语法帮助和预览联动。`useEditorFile` 保留已命名文件的未保存草稿，防止迟到的读取覆盖新选择。
 - `EditorWithLineNumbers.vue`：带同步行号的复用 textarea。
 - `FileTree.vue` / `TreeNode.vue`：懒加载目录树。
 - `MarkdownPreview.vue` / `HtmlPreview.vue`：Markdown 与 HTML 预览。
 - `JsonTab.vue`：数据工具合集，提供 JSON / YAML / CSV / SQL / XML 子工具、JSONPath 查询和 CSV 表格预览。
 - `DiffTab.vue`：文本对比工具。
-- `TextTab.vue`：文本处理工具，子工具（大小写、排序、去重）由 context-bar 导航条切换，页内无横向子工具栏；统计降级为输入面板常驻 meta 行。
+- `TextTab.vue`：文本处理通过页内模式选择器切换大小写、排序、去重，统计常驻输入面板；保留各模式结果，输入或配置变化后旧结果标记待更新。
 - `RegexTab.vue`：正则测试器，匹配由 `useRegexMatcher` 和 `workers/regex.worker.js` 执行。
 - `EncodeTab.vue`：编码工具合集，6 个子工具由 context-bar 导航条切换。
 - `GeneratorTab.vue`：生成器合集，子工具（UUID、随机密码、Lorem、二维码）由 context-bar 导航条切换。
-- `TimeTab.vue`：时间转换（含常驻实时当前时间概览）、Cron、多时区三个子工具，由 context-bar 导航条驱动；宽屏（窗口 ≥1270px）双列 grid 并排，窄屏单列切换；页面生命周期内保留切换状态，Cron 初始提供默认表达式的解释与未来执行时间。
+- `TimeTab.vue`：时间转换、Cron、多时区三个独立子任务，所有宽度仅呈现选中任务；时间转换包含实时概览和方向切换，保留秒/毫秒、全部格式与复制。各任务保留会话输入和结果，Cron 初始展示默认表达式解释及未来五次。
 - `AgentWorkshopTab.vue`：Agent 研讨室，仅根据现有状态派生准备、运行、结果三阶段并渲染配置、进度和 Markdown 时间线；不得借 UI 调整修改 IPC、编排和记录语义。
 - `SettingsTab.vue`：以常用设置、最近文件、快捷键、关于四个分区组织工作目录、主题、字号、更新检查与说明。
 

@@ -2,6 +2,7 @@
   <div class="text-tab tool-page">
     <section class="work-area tool-workspace" :style="{ fontSize: fontSize + 'px' }">
       <div class="toolbar tool-command-bar">
+        <label class="text-operation">处理方式 <select aria-label="文本处理方式" :value="tool" @change="emit('select-sub-tool', $event.target.value)"><option value="case">大小写 / 命名风格</option><option value="sort">排序</option><option value="dedupe">去重</option></select></label>
         <template v-if="tool === 'case'">
           <button class="primary" @click="runCase('upper')">大写</button>
           <OverflowMenu label="更多转换" :items="caseSecondaryActions" @select="runCase" />
@@ -33,10 +34,10 @@
             <span class="tool-panel-title">{{ outputTitle }}</span>
             <span class="tool-panel-actions">
               <span :class="['tool-status-chip', hasError ? 'error' : output ? 'success' : '']" role="status" aria-live="polite">
-                {{ statusChip }}
+                {{ resultStale ? '待更新' : statusChip }}
               </span>
-              <button @click="copyResult" :disabled="!output || hasError">复制</button>
-              <OverflowMenu v-if="output && !hasError" label="发送到" :items="sendTargets" @select="handleSendTo" />
+              <button @click="copyResult" :disabled="!output || hasError || resultStale">复制</button>
+              <OverflowMenu v-if="output && !hasError && !resultStale" label="发送到" :items="sendTargets" @select="handleSendTo" />
               <button @click="clearAll" :disabled="!input && !output">清空</button>
             </span>
           </div>
@@ -67,7 +68,7 @@ import EditorWithLineNumbers from './EditorWithLineNumbers.vue'
 import OverflowMenu from './OverflowMenu.vue'
 import { useCopyToast } from '../composables/useCopyToast.js'
 import { useToolResult } from '../composables/useToolResult.js'
-import { useSendTo, getSendTargets, usePendingInput } from '../composables/useSendTo.js'
+import { useRegisterInput, useSendTo, getSendTargets, usePendingInput } from '../composables/useSendTo.js'
 import {
   getTextStats,
   convertTextCase,
@@ -94,6 +95,7 @@ const CASE_OPTIONS = [
 const caseSecondaryActions = CASE_OPTIONS
   .filter((option) => option.key !== 'upper')
 
+const emit = defineEmits(['select-sub-tool'])
 const tool = ref(VALID_TOOLS.includes(props.subTool) ? props.subTool : 'case')
 watch(
   () => props.subTool,
@@ -146,10 +148,16 @@ watch([hasError, output], () => {
   }
 }, { immediate: true })
 
+const resultDrafts = new Map()
+const processedInput = ref('')
+const resultStale = computed(() => !!output.value && input.value !== processedInput.value)
+useRegisterInput('text', () => input.value)
 function setTool(nextTool) {
+  resultDrafts.set(tool.value, { output: output.value, status: statusMessage.value, error: hasError.value, summary: dedupeSummary.value, input: processedInput.value })
   tool.value = nextTool
-  reset()
-  dedupeSummary.value = null
+  const saved = resultDrafts.get(nextTool) || {}
+  output.value = saved.output || ''; statusMessage.value = saved.status || ''; hasError.value = saved.error || false
+  dedupeSummary.value = saved.summary || null; processedInput.value = saved.input || ''
 }
 
 function runCase(type) {
@@ -169,6 +177,7 @@ function runDedupe() {
 }
 
 function handleResult(result, successMessage) {
+  processedInput.value = input.value
   if (result.success) {
     setSuccess(result.result, successMessage)
   } else {

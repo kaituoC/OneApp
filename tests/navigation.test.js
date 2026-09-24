@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  getGroupEntries, resolveGroupTab, searchTools,
   NAV_GROUPS,
   NAV_ITEMS,
   TAB_KEYS,
@@ -73,20 +74,20 @@ describe('navigation metadata', () => {
   it('一级分组映射能够驱动顶部导航与左侧上下文工具导航', () => {
     const group = NAV_GROUPS.find((item) => item.key === 'generate')
 
-    expect(group.label).toBe('生成工具')
+    expect(group.label).toBe('生成')
     expect(group.items.map((item) => item.key)).toEqual(['generator'])
     expect(TAB_TO_GROUP_KEY).toMatchObject({
       json: 'transform',
-      time: 'transform',
-      encode: 'inspect',
+      time: 'time',
+      encode: 'encoding',
       diff: 'inspect',
       text: 'inspect',
       regex: 'inspect'
     })
-    expect(GROUP_BY_KEY.transform.map((item) => item.key)).toEqual(['json', 'time'])
-    expect(GROUP_BY_KEY.inspect.map((item) => item.key)).toEqual(['diff', 'text', 'regex', 'encode'])
+    expect(GROUP_BY_KEY.transform.map((item) => item.key)).toEqual(['json'])
+    expect(GROUP_BY_KEY.inspect.map((item) => item.key)).toEqual(['text', 'diff', 'regex'])
     expect(getFirstTabInGroup('transform')).toBe('json')
-    expect(getFirstTabInGroup('inspect')).toBe('diff')
+    expect(getFirstTabInGroup('inspect')).toBe('text')
     expect(getFirstTabInGroup('unknown')).toBe('editor')
   })
 
@@ -123,4 +124,15 @@ describe('navigation metadata', () => {
       expect(NAV_ITEMS.some((item) => item.key === tabKey)).toBe(true)
     }
   })
+})
+
+it('迁移旧分组记忆时不跳入其他分类，具体工具直接可达', () => {
+  expect(resolveGroupTab('transform', { transform: 'time' })).toBe('json')
+  expect(resolveGroupTab('inspect', { inspect: 'encode' })).toBe('text')
+  expect(resolveGroupTab('inspect', { inspect: 'regex' })).toBe('regex')
+  expect(getGroupEntries('transform').map(x => x.subKey)).toEqual(['json','yaml','csv','sql','xml'])
+  expect(searchTools('JSONPath').some(x => x.key === 'json' && x.subKey === 'json')).toBe(true)
+  expect(searchTools('解码').some(x => x.subKey === 'base64')).toBe(true)
+  expect(searchTools('二维码')[0].subKey).toBe('qr')
+  expect(searchTools('不存在的工具')).toHaveLength(0)
 })

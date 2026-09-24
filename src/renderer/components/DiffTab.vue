@@ -148,7 +148,7 @@ import { diffTextUnified, diffTextSplit, diffStats } from '../utils/diffHelper.j
 import { readFile, openFile } from '../utils/fileHelper.js'
 import { handleSegmentedKeydown } from '../utils/segmentedControl.js'
 import EditorWithLineNumbers from './EditorWithLineNumbers.vue'
-import { usePendingInput } from '../composables/useSendTo.js'
+import { useRegisterInput, usePendingInput } from '../composables/useSendTo.js'
 
 const props = defineProps({
   fontSize: { type: Number, default: 14 },
@@ -253,6 +253,7 @@ function onScrollRight() {
   leftContent.value.scrollLeft = rightContent.value.scrollLeft
   setTimeout(() => syncing = false, 50)
 }
+useRegisterInput('diff', () => textA.value)
 </script>
 
 <style scoped>

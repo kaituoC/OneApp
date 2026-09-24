@@ -3,7 +3,9 @@
 ## Purpose
 
 tool-surface-refresh 定义 OneApp 各一级工具页面在 workbench UI refresh 后的共享 surface、响应式布局和状态反馈规则，确保 Editor、JSON、Diff、Text Processing、Regex、Encode、Time、Agent Workshop 与 Settings 在视觉层级、输入输出结构和窄宽度行为上保持一致，同时不改变既有工具语义。
+
 ## Requirements
+
 ### Requirement: 共享 tool surface pattern
 
 所有一级工具 SHALL 使用共享的 visual pattern 呈现 command bar、panel、form control、status message 和 empty state，同时保留现有行为。
@@ -19,34 +21,6 @@ tool-surface-refresh 定义 OneApp 各一级工具页面在 workbench UI refresh
 #### Scenario: 现有工具语义保持不变
 - **WHEN** 用户执行格式化 JSON、比较文本、Regex match、Time 转换、Encode 文本、编辑文件或导出 Agent Workshop record 等现有工具操作
 - **THEN** 操作产生的功能结果与视觉刷新前一致
-
-### Requirement: Editor workbench surface
-
-Editor surface SHALL 保留 file tree、editor panel 和 preview panel workflow，同时用更紧凑、更清晰的方式呈现 layout control。
-
-#### Scenario: 空文档首次进入默认隐藏 Preview
-- **WHEN** 用户首次切换到 Editor，且当前是未编辑的新建空文档
-- **THEN** Editor 默认展示 file tree 和 editor panel，不默认展示 preview panel，以避免初始三栏布局挤压
-
-#### Scenario: Editor panel 可独立显示
-- **WHEN** 用户切换 file list、editor area 或 preview area 的可见性
-- **THEN** 对应 panel 的可见性发生变化，并且不会丢失当前编辑内容
-
-#### Scenario: File tree 不被压成窄竖条
-- **WHEN** file tree 可见且 Editor 横向空间不足
-- **THEN** file tree 保持可读最小宽度，或由用户主动收起；系统不得把 file tree 压缩成只剩 icon 的不可读竖条
-
-#### Scenario: Preview 可按内容或用户意图恢复
-- **WHEN** 用户打开已有 Markdown/HTML 文件、主动点击 Preview toggle，或当前内容适合预览
-- **THEN** Preview panel 可以重新显示，并继续支持滚动同步、Markdown/HTML preview 和导出能力
-
-#### Scenario: 纯文本模式隐藏预览控制
-- **WHEN** 当前编辑器模式为纯文本
-- **THEN** 刷新后的 command area 隐藏或禁用仅 preview 相关的控件
-
-#### Scenario: Markdown 和 HTML 预览仍可用
-- **WHEN** 当前编辑器模式支持预览
-- **THEN** 刷新后的 Editor surface 仍允许用户查看 rendered preview 并导出支持的格式
 
 ### Requirement: 数据与文本工具使用清晰的 input/output layout
 
@@ -117,7 +91,7 @@ Diff 工具 SHALL 仅在用户发起对比或结果态下的明确源文本操�
 
 ### Requirement: 多栏工具具备 responsive fallback
 
-双栏或多栏工具 SHALL 在横向空间不足时采用 stack、drawer、compact navigation 或其他 responsive fallback，避免固定宽度侧栏和多 panel 同时挤压主工作区。
+编辑器 SHALL 在支持的 800px 最小窗口保留目录、编辑、预览左右三栏及独立开关。其他双栏或多栏工具 SHALL 在横向空间不足时采用 stack、drawer、compact navigation 或其他 responsive fallback，避免固定宽度侧栏和多 panel 同时挤压主工作区。
 
 #### Scenario: JSON 和 Diff 双栏可降级
 - **WHEN** JSON 或 Diff 工具的可用宽度不足以舒适展示两个并排 panel
@@ -168,7 +142,7 @@ Generator SHALL follow the shared tool surface pattern used by other first-level
 Time 和 Settings SHALL 使用结构化 dashboard 或 settings layout，而不是普通堆叠控件。
 
 #### Scenario: Time dashboard 突出实时值
-- **WHEN** Time 工具处于激活状态
+- **WHEN** Time 的时间转换子任务处于激活状态
 - **THEN** 当前 datetime 和 timestamp 在视觉上被强调，并保留 copy action
 
 #### Scenario: 转换表单保持紧凑
@@ -213,35 +187,19 @@ Agent Workshop SHALL 使用面向 workflow 的 surface，让 setup、ready state
 
 ### Requirement: 统一响应式 workspace 策略
 
-多栏或带侧栏的工具 SHALL 在横向空间不足时按统一 responsive workspace 策略降级，优先保证主输入、主结果或 timeline 可读；除代码/文本编辑内容自身可横向滚动外，页面整体不得依赖不可控的横向滚动维持可用性。
+编辑器在支持的最小窗口维持三栏且允许用户手动收起面板；其他多栏或带侧栏的工具 SHALL 在横向空间不足时按统一 responsive workspace 策略降级，优先保证主输入、主结果或 timeline 可读；除代码/文本编辑内容自身可横向滚动外，页面整体不得依赖不可控的横向滚动维持可用性。
 
 #### Scenario: Wide 宽度保留高效并排
 - **WHEN** 主工作区宽度充足
 - **THEN** JSON、Diff、Text Processing、Regex、Encode 和 Agent Workshop 可保持并排或多栏布局，以支持快速比较和编辑
 
 #### Scenario: Medium 宽度收起次级区域
-- **WHEN** DevTools 或窗口尺寸导致横向空间减少
+- **WHEN** 编辑器以外的工具因 DevTools 或窗口尺寸导致横向空间减少
 - **THEN** 工具页优先收起或转移次级导航、quick reference、preview、配置栏等辅助区域，而不是把主输入或主结果压缩到不可读宽度
 
 #### Scenario: Compact 宽度改为上下结构
-- **WHEN** 可用宽度不足以舒适展示两个主要 panel
+- **WHEN** 编辑器以外的工具可用宽度不足以舒适展示两个主要 panel
 - **THEN** 对应工具切换为上下 stack、顶部 segmented 子导航或单 panel 切换，主要内容区域保持可读和可操作
-
-### Requirement: Editor 文件工作区 polish
-
-Editor SHALL 在不改变文件打开、保存、mode 推断、预览和导出语义的前提下，优化 file tree、editor panel 和 preview panel 的视觉与空间管理，使空文档和窄宽度场景更可用。
-
-#### Scenario: 空内容不默认占用 Preview 空间
-- **WHEN** 用户进入 Editor 且当前内容为空或仅为默认新建模板
-- **THEN** preview panel 默认不抢占横向空间，用户仍可通过显式 Preview control 打开
-
-#### Scenario: File tree 工具栏使用专业图标
-- **WHEN** 用户查看 file tree toolbar 或 tree node
-- **THEN** 打开目录、显示隐藏项、刷新、文件夹和文件等视觉元素使用与应用一致的 icon-assisted style，而不是 emoji 或难以理解的文本符号
-
-#### Scenario: File tree 保持可读
-- **WHEN** Editor 同时显示 file tree、editor 和 preview 且横向空间不足
-- **THEN** file tree 保持可读最小宽度或进入明确的收起状态，不得被压缩成只剩图标的竖条
 
 ### Requirement: Encode 工具结构化 polish
 
@@ -415,37 +373,13 @@ Generator SHALL 让配置区尺寸匹配 UUID、密码、Lorem 或二维码当�
 - **WHEN** 可用宽度不足以并排显示配置和结果
 - **THEN** 两区按“配置、生成、结果”顺序堆叠，主要生成动作在配置完成后可见
 
-### Requirement: Time 使用子工具导航
-
-Time SHALL 将时间转换（含当前时间概览）、Cron 和多时区组织为三个可切换子任务，宽宽度下以双列 grid 并排呈现全部任务区，窄宽度下一次呈现一个子任务，而不是在一个长页面中无序堆叠全部任务。
-
-#### Scenario: 时间转换页常驻当前时间概览
-- **WHEN** 用户打开 Time 或切换到时间转换子任务
-- **THEN** 当前时间与时间戳作为时间转换页顶部的常驻概览突出显示，提供秒/毫秒切换与复制操作，并可通过 context-bar 导航条访问时间转换、Cron、多时区三个子任务入口
-
-#### Scenario: 切换子工具保留输入
-- **WHEN** 用户在转换、Cron 与时区之间切换后返回
-- **THEN** 各子工具在本次页面生命周期内保留已有输入、选项和有效结果
-
-#### Scenario: 紧凑高度首屏可操作
-- **WHEN** Time 在 800×600 窗口显示任一子工具
-- **THEN** 当前任务的输入、主要操作和主要结果在首屏可访问，不必经过其他不相关工具段落
-
-#### Scenario: 宽屏双列并排
-- **WHEN** Time 可用内容宽度不小于约 1100px
-- **THEN** 当前时间概览与时间转换、Cron、多时区任务区以双列 grid 并排呈现，页面不出现大面积空白或不必要的整页滚动
-
-#### Scenario: 窄屏单列切换
-- **WHEN** Time 可用内容宽度小于约 1100px
-- **THEN** 页面一次仅显示当前选中的子任务区，当前时间概览随时间转换子任务呈现，切换子任务不丢失各区已有输入与结果
-
 ### Requirement: Agent Workshop 前端采用三阶段布局
 
 Agent Workshop SHALL 将现有状态映射为准备、运行和结果三阶段，保持当前阶段主要操作可见并消除重复入口，同时不改变后端行为。
 
 #### Scenario: 准备阶段主操作可见
 - **WHEN** 用户配置 repository、agents、moderator 和 idea
-- **THEN** 准备信息按任务顺序呈现，开始研讨操作固定在当前阶段的可见区域，不被长配置推到不可发现位置
+- **THEN** 仓库、想法与开始研讨集中在主区域，Agent/主持配置在辅助区，代理配置按需展开；所有连接检测和配置能力保留
 
 #### Scenario: 运行阶段突出进度和停止
 - **WHEN** discussion 正在运行
@@ -503,3 +437,74 @@ Settings SHALL 将高频界面设置、最近文件、快捷键和关于信息�
 - **WHEN** 用户在深色或浅色主题使用 18px 编辑字号
 - **THEN** 控件 label、panel 标题、状态和核心内容保持可读，不发生页面级不可控横向滚动
 
+### Requirement: Editor 默认三栏工作区
+
+Editor surface SHALL 保留 file tree、editor panel 和 preview panel workflow，同时用更紧凑、更清晰的方式呈现 layout control。
+
+#### Scenario: 默认文档首次进入显示 Preview
+- **WHEN** 用户首次切换到 Editor，且当前是默认 Markdown 文档
+- **THEN** Editor 默认从左到右展示 file tree、editor panel 和 preview panel，各栏可独立滚动
+
+#### Scenario: Editor panel 可独立显示
+- **WHEN** 用户切换 file list、editor area 或 preview area 的可见性
+- **THEN** 对应 panel 的可见性发生变化，并且不会丢失当前编辑内容
+
+#### Scenario: File tree 不被压成窄竖条
+- **WHEN** file tree 可见且 Editor 横向空间不足
+- **THEN** file tree 保持可读最小宽度，或由用户主动收起；系统不得把 file tree 压缩成只剩 icon 的不可读竖条
+
+#### Scenario: Preview 可按内容或用户意图恢复
+- **WHEN** 用户打开已有 Markdown/HTML 文件、主动点击 Preview toggle，或当前内容适合预览
+- **THEN** Preview panel 可以重新显示，并继续支持滚动同步、Markdown/HTML preview 和导出能力
+
+#### Scenario: 纯文本模式隐藏预览控制
+- **WHEN** 当前编辑器模式为纯文本
+- **THEN** 刷新后的 command area 隐藏或禁用仅 preview 相关的控件
+
+#### Scenario: Markdown 和 HTML 预览仍可用
+- **WHEN** 当前编辑器模式支持预览
+- **THEN** 刷新后的 Editor surface 仍允许用户查看 rendered preview 并导出支持的格式
+
+### Requirement: Time 独立任务与转换方向
+
+Time SHALL 提供时间转换、Cron、多时区三个独立子任务；所有宽度均仅呈现当前任务。时间转换通过方向选择切换时间戳转日期或日期转时间戳，保留当前时间概览、秒/毫秒、全部日期格式与复制能力。
+
+#### Scenario: 时间转换方向
+- **WHEN** 用户切换转换方向
+- **THEN** 显示对应输入与结果，各方向已有输入与结果保留
+
+#### Scenario: 子任务隔离
+- **WHEN** 用户选择 Cron 或多时区
+- **THEN** 仅显示该任务，保留原有解释、未来五次、城市增删与对照能力
+
+#### Scenario: 时间转换页常驻当前时间概览
+- **WHEN** 用户选择时间转换
+- **THEN** 页面顶部显示实时日期与时间戳，保留秒/毫秒切换和复制
+
+#### Scenario: 切换子工具保留输入
+- **WHEN** 用户在时间转换、Cron 和时区之间切换后返回
+- **THEN** 本次页面生命周期内各工具输入、选项与有效结果保持
+
+#### Scenario: 紧凑高度可操作
+- **WHEN** 时间工具以 800×600 窗口显示
+- **THEN** 当前任务主要操作可访问，不必经过不相关工具段落
+
+#### Scenario: 宽屏输入结果并排
+- **WHEN** 时间转换拥有足够宽度
+- **THEN** 输入与结果并排显示，Cron 和多时区仍由独立入口访问
+
+### Requirement: Editor 文件工作区可读性
+
+Editor SHALL 在不改变文件打开、保存、mode 推断、预览和导出语义的前提下，优化 file tree、editor panel 和 preview panel 的视觉与空间管理，使空文档和窄宽度场景更可用。
+
+#### Scenario: 空内容保留预览入口
+- **WHEN** 用户进入 Editor 且当前内容为空或仅为默认新建模板
+- **THEN** Markdown/HTML 默认保留三栏结构，用户可通过独立 Preview control 收起或恢复预览
+
+#### Scenario: File tree 工具栏使用专业图标
+- **WHEN** 用户查看 file tree toolbar 或 tree node
+- **THEN** 打开目录、显示隐藏项、刷新、文件夹和文件等视觉元素使用与应用一致的 icon-assisted style，而不是 emoji 或难以理解的文本符号
+
+#### Scenario: File tree 保持可读
+- **WHEN** Editor 同时显示 file tree、editor 和 preview 且横向空间不足
+- **THEN** file tree 保持可读最小宽度或进入明确的收起状态，不得被压缩成只剩图标的竖条

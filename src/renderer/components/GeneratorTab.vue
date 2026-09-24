@@ -84,9 +84,9 @@
               <span :class="['tool-status-chip', hasError ? 'error' : output ? 'success' : '']" role="status" aria-live="polite">
                 {{ statusChip }}
               </span>
-              <button v-if="tool === 'qr'" @click="downloadQrPng" :disabled="!qrImage || hasError">下载 PNG</button>
-              <button v-if="tool === 'qr'" @click="copyQrPng" :disabled="!qrImage || hasError">复制 PNG</button>
-              <button v-else @click="copyResult" :disabled="!output || hasError">复制</button>
+              <button v-if="tool === 'qr'" @click="downloadQrPng" :disabled="!qrImage || hasError || resultStale">下载 PNG</button>
+              <button v-if="tool === 'qr'" @click="copyQrPng" :disabled="!qrImage || hasError || resultStale">复制 PNG</button>
+              <button v-else @click="copyResult" :disabled="!output || hasError || resultStale">复制</button>
               <button @click="clearOutput" :disabled="!output && !statusMessage">清空</button>
             </span>
           </div>
@@ -180,14 +180,23 @@ const loremHint = computed(() => {
   if (loremOptions.mode === 'sentences') return '句数范围 1-200。'
   return '段数范围 1-50，每段包含 3 句。'
 })
+const generatedOptions = ref('')
+const currentOptions = computed(() => JSON.stringify(tool.value === 'uuid' ? uuidCount.value : tool.value === 'password' ? passwordOptions : tool.value === 'qr' ? qrOptions : loremOptions))
+const resultStale = computed(() => !!output.value && generatedOptions.value !== currentOptions.value)
 const statusChip = computed(() => {
+  if (resultStale.value) return '待更新'
   if (hasError.value) return '错误'
   return output.value ? '就绪' : '待生成'
 })
 
+const generatedDrafts = new Map()
+let requestId = 0
 function setTool(nextTool) {
+  requestId++
+  generatedDrafts.set(tool.value, { output: output.value, status: statusMessage.value, error: hasError.value, image: qrImage.value, options: generatedOptions.value })
   tool.value = nextTool
-  clearOutput()
+  const saved = generatedDrafts.get(nextTool) || {}
+  output.value = saved.output || ''; statusMessage.value = saved.status || ''; hasError.value = saved.error || false; qrImage.value = saved.image || ''; generatedOptions.value = saved.options || ''
 }
 
 async function runGenerate() {
@@ -200,13 +209,16 @@ async function runGenerate() {
     return
   }
   if (tool.value === 'qr') {
-    handleResult(await generateQrCode(qrOptions))
+    const id = ++requestId, options = JSON.stringify(qrOptions)
+    const result = await generateQrCode({ ...qrOptions })
+    if (id === requestId && tool.value === 'qr' && options === JSON.stringify(qrOptions)) handleResult(result)
     return
   }
   handleResult(generateLorem(loremOptions))
 }
 
 function handleResult(result) {
+  generatedOptions.value = currentOptions.value
   qrImage.value = ''
   if (result.success) {
     setSuccess(result.result, result.message)
@@ -247,6 +259,7 @@ async function copyQrPng() {
 }
 
 function clearOutput() {
+  requestId++
   reset()
   qrImage.value = ''
 }

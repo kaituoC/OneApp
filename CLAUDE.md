@@ -135,6 +135,12 @@ npm test -- tests/jsonHelper.test.js  # 运行单个测试文件
 - **OpenSpec 数据卫生**：`/opsx:archive` 会把 delta 合并进主 specs；若主 spec 残留 delta 头（`## ADDED`/`## REMOVED Requirements`）会阻塞归档，需先规范化为 `# 标题 / ## Purpose / ## Requirements` 结构。
 - **流程文档同步**：如果调整需求开发流程，必须同步更新 `AGENTS.md` 与 `CLAUDE.md`，避免 Codex 和 ClaudeCode 按不同流程执行。
 
+### 弹窗约定
+
+- 简短结果、错误和研讨费用确认继续使用系统 `showMessageBox`；更新说明、语法帮助、发送确认和工具搜索等详情类弹窗使用 `AppDialog.vue`。
+- 详情正文完整保留并独立滚动，标题和操作区固定；Esc、关闭按钮、Tab 焦点循环和关闭后焦点恢复必须一致。已有 modal 时延后更新提示，不叠加搜索。
+- Release Markdown 经 `releaseNotes.js` 安全渲染，不嵌入远端媒体；外链仅允许 HTTPS，使用现有 `openExternal`。不得将完整说明压成摘要用于详情展示。
+
 ## 架构
 
 ### 进程分离

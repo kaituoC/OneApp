@@ -1,6 +1,6 @@
 # AGENTS.md
 
-本文件为 Codex 在此代码库中工作时提供指引。内容以当前 OneApp 代码和 `CLAUDE.md` 的最新项目知识为基准，避免保留旧版标签数、组件名和功能描述。
+本文件是 Codex、Claude Code 等 AI agent 在此代码库中工作的统一指引。项目知识与开发规范统一维护于 `AGENTS.md`；`CLAUDE.md` 仅通过 `@AGENTS.md` 引入本文件，不重复维护正文。内容以当前 OneApp 代码为准，避免保留旧版标签数、组件名和功能描述。
 
 ## 项目概述
 
@@ -71,7 +71,7 @@ npm test -- tests/jsonHelper.test.js # 运行单个测试文件
 
 每个需求一条分支。完整流程是规格驱动开发（SDD），由 OpenSpec 工具全程串起；工程顺序为：explore → 建分支 → propose → apply → archive。按改动大小分级执行：新功能/较大需求走完整流程，小修复/文档类走简化流程。非自动推进模式下，外发动作（push / 创建 PR / 合并 PR / 打 tag / 发布）仍需用户明确请求；自动推进模式下，最终验证通过后可直接执行本地提交、push、创建 PR、合并 PR、打 tag 和发布 Release，但执行每个外发动作时必须明确告知用户。
 
-在 Codex 中对应的 OpenSpec 技能通常是 `$openspec-explore`、`$openspec-propose`、`$openspec-apply-change`、`$openspec-archive-change`；`CLAUDE.md` 中的 `/opsx:explore`、`/opsx:propose`、`/opsx:apply`、`/opsx:archive` 是同一流程在 Claude Code 下的入口名。
+在 Codex 中对应的 OpenSpec 技能通常是 `$openspec-explore`、`$openspec-propose`、`$openspec-apply-change`、`$openspec-archive-change`；`/opsx:explore`、`/opsx:propose`、`/opsx:apply`、`/opsx:archive` 是同一流程在 Claude Code 下的入口名。
 
 完整流程（新功能 / 较大需求）：
 
@@ -82,7 +82,7 @@ npm test -- tests/jsonHelper.test.js # 运行单个测试文件
 5. 自测（门禁，必做）：`npm test` 全部通过（环境相关用例如时区断言，注意区分 flaky 与真回归）+ `npm run build` 编译通过，必要时 `npm run dev` 手动验证。
 6. Code Review `/code-review`（high）：修复高优先级问题后复跑构建与测试。
 7. 归档 `/opsx:archive`：delta 合并进主 specs，change 移入 `archive/`；归档后运行 `openspec validate --specs --strict`。
-8. 文档收尾：同步 README / CLAUDE.md / AGENTS.md 等项目文档；不要在这里重复维护发布版本记录。
+8. 文档收尾：按需更新 README 等项目文档，项目知识与开发规范统一更新 `AGENTS.md`，保持 `CLAUDE.md` 仅引用本文件；不要在这里重复维护发布版本记录。
 9. 版本与 CHANGELOG：所有改动就绪后，根据语义化版本升级 `package.json` 版本号，并更新 `CHANGELOG.md`。
 10. 最终验证：版本、CHANGELOG、归档和文档都就绪后，再跑一次 `npm test` + `npm run build`。
 11. 提交：按主题分组 commit（feat / fix / test / docs / chore），message 末尾按规范署名；自动推进模式下最终验证通过后可直接本地提交，执行前需告知用户。
@@ -146,11 +146,11 @@ npm test -- tests/jsonHelper.test.js # 运行单个测试文件
 
 ### 贯穿全程的硬性约定
 
-- 沙箱：`npm run build` / `npm run dist` / `git push` / `gh` 等构建与网络命令在沙箱内常因证书或依赖解析（如 `vue/compiler-sfc`）失败；确认是沙箱限制后在沙箱外重试。`npm test` 多数可在沙箱内运行，但 `tests/safeMarkdown.test.js` 用 jsdom 环境，会加载 `parse5/dist/common/token.js` 等被沙箱 `*token*` 读取拒绝规则命中的文件而导致 worker 启动失败；跑含 DOM 环境的完整测试需在沙箱外执行。
-- 发布文案：GitHub Release 的标题与 notes 用中文，notes 取自 CHANGELOG 对应版本；未签名的 macOS 包需在 notes 提示用户「右键 → 打开」绕过 Gatekeeper。
+- 沙箱：`npm run build` / `npm run dist` / `git push` / `gh` 等构建与网络命令在沙箱内常因证书或依赖解析（如 `vue/compiler-sfc`）失败；确认是沙箱限制后在沙箱外重试（Claude Code 可通过 `/sandbox` 管理白名单）。`npm test` 多数可在沙箱内运行，但 `tests/safeMarkdown.test.js` 用 jsdom 环境，会加载 `parse5/dist/common/token.js` 等被沙箱 `*token*` 读取拒绝规则命中的文件而导致 worker 启动失败；跑含 DOM 环境的完整测试需在沙箱外执行。
+- 发布文案：GitHub Release 标题必须与 tag 完全一致，格式为 `vX.Y.Z`，不添加应用名、功能摘要或「发布」等文字；workflow 的 Release 步骤通过 `name: ${{ github.ref_name }}` 显式设置标题。更新内容全部写入描述（notes），使用中文，取自 `CHANGELOG.md` 对应版本段；未签名的 macOS 包需在 notes 提示用户「右键 → 打开」绕过 Gatekeeper。
 - 测试稳定性：环境相关用例（如 `timeHelper` 时区断言）在不同时区机器上可能失败，判断 flaky 时先排除环境因素，不要误判为本次回归。
 - OpenSpec 数据卫生：`/opsx:archive` 会把 delta 合并进主 specs；若主 spec 残留 delta 头（`## ADDED` / `## REMOVED Requirements`）会阻塞归档，需先规范化为 `# 标题 / ## Purpose / ## Requirements` 结构。
-- 流程文档同步：如果调整需求开发流程，必须同步更新 `AGENTS.md` 与 `CLAUDE.md`，避免 Codex 和 ClaudeCode 按不同流程执行。
+- 流程文档维护：如果调整需求开发流程，统一更新 `AGENTS.md`；`CLAUDE.md` 只保留 `@AGENTS.md` 引用，文件名大小写必须与实际路径一致，避免 Codex 和 Claude Code 按不同流程执行。
 
 ### 文档语言与术语
 
@@ -190,7 +190,7 @@ ipcMain.handle('read-file', async (event, filePath) => { ... })
 
 普通 IPC handler 统一返回 `{ success, content/error }` 风格，方便错误处理。
 
-Agent 研讨室额外使用事件型 IPC：主进程通过 `webContents.send('agent-discussion:event', ...)` 推送进度和消息；preload 只暴露 `electronAPI.agentWorkshop.onEvent(cb)`，订阅函数必须返回取消订阅能力，不能暴露通用 channel 监听器。
+Agent 研讨室额外使用事件型 IPC：主进程通过 `webContents.send('agent-discussion:event', ...)` 推送阶段、调用、消息、失败与完成事件；preload 只暴露 `electronAPI.agentWorkshop.onEvent(cb)`，订阅函数必须返回取消订阅能力，不能暴露通用 channel 监听器。
 
 ## 关键目录与模块
 
@@ -199,34 +199,34 @@ Agent 研讨室额外使用事件型 IPC：主进程通过 `webContents.send('ag
 `electron/agentWorkshop/`：
 
 - `adapters.js`：Codex / ClaudeCode 只读调用参数构造
-- `detection.js`：登录 shell 解析 CLI 路径、版本和登录态
+- `detection.js`：登录 shell 解析 CLI 路径、版本，通过 `claude auth status` / `codex login status` 探测登录态
 - `runner.js`：spawn、超时、取消、进程组终止、输出截断、显式子进程 `env` 注入
 - `gitSafety.js`：`git status --short` 快照和咨询式比较
 - `records.js`：userData 下 JSON 讨论记录读写
-- `orchestrator.js`：三阶段研讨流程状态机，依赖注入，便于单测
-- `ipc.js`：IPC handlers 与事件发射，由 `main.js` 注册；含代理配置读写校验与按需 `test-agent-connection`，与正式研讨调用共用同一套代理 env 派生
+- `orchestrator.js`：三阶段研讨流程状态机，依赖注入，便于单测；第二轮仅第一轮成功的 agent 子集进入
+- `ipc.js`：IPC handlers 与事件发射，由 `main.js` 注册；start 在主进程侧通过 `validateStartParams` 复核、运行互斥及 try/catch/finally 异常兜底；含代理配置读写校验与按需 `test-agent-connection`，与正式研讨调用共用同一套 `buildAgentEnvironment` 代理 env 派生，连接测试同样受运行互斥保护且不写入研讨记录
 
 `electron/appDialogs.js`：应用级消息弹窗图标路径解析、GitHub latest Release 检查与更新结果归一化支撑逻辑；`main.js` 通过 IPC 暴露给 preload。
 
-Windows 暂不支持 Agent Workshop 的本地 CLI 检测与进程组管理，渲染层通过 `AgentWorkshopTab.vue` 显示「暂不支持」。
+Windows 暂不支持 Agent Workshop 的本地 CLI 检测与进程组管理，渲染层通过 `AgentWorkshopTab.vue` 的 `navigator.platform` 门控显示「暂不支持」。
 
 ### 渲染工具函数
 
 `src/renderer/utils/` 中核心逻辑尽量保持纯函数、可单测：
 
-- `jsonHelper.js`：JSON 格式化、压缩、校验、反转义
-- `csvHelper.js`：CSV ⇄ JSON 转换、CSV 表格预览和 CSV 错误归一化
-- `formatHelper.js`：SQL / XML 格式化、压缩和 XML 结构错误归一化
-- `jsonPathHelper.js`：JSONPath 查询、匹配路径和值摘要归一化
-- `diffHelper.js`：统一 diff、并排 diff、差异统计
-- `timeHelper.js`：日期格式化、解析、时间戳互转、Cron 解析与未来时间计算、多时区对照
-- `fileHelper.js`：文件相关 IPC 封装与路径校验
-- `regexHelper.js`：正则编译和匹配，返回捕获组、位置、截断信息
-- `encodeHelper.js`：Base64、URL、JWT、Hash、进制、Unicode 纯逻辑
-- `textHelper.js`：文本统计、大小写/命名风格转换、按行排序、按行去重纯逻辑
-- `updateHelper.js`：语义化版本解析/比较、GitHub Release 响应归一化和更新说明摘要
-- `agentWorkshopHelper.js`：Agent Workshop 进程无关逻辑、配置校验、代理配置归一化/校验与 `buildAgentEnvironment` 代理 env 派生、prompt 构造、Markdown 导出
-- `safeMarkdown.js`：`marked` + `DOMPurify` 安全渲染，供 Agent Workshop 时间线 `v-html` 使用
+- `jsonHelper.js`：formatJSON、minifyJSON、validateJSON、unescapeJSON、jsonToYAML、yamlToJSON、validateYAML — 均返回 `{ success, result/error }`，包含行/列错误位置
+- `csvHelper.js`：CSV ⇄ JSON 转换、CSV 表格预览和 CSV 错误归一化，基于 PapaParse，返回 `{ success, result/table/error }`
+- `formatHelper.js`：SQL / XML 格式化、压缩和 XML 结构错误归一化，基于 sql-formatter 与 fast-xml-parser
+- `jsonPathHelper.js`：JSONPath 查询、匹配路径和值摘要归一化，基于 jsonpath-plus
+- `diffHelper.js`：diffTextUnified（git 风格）、diffTextSplit（并排对比）、diffStats — 使用 diff-match-patch 库
+- `timeHelper.js`：formatDate、parseDate、timestampToDate、dateToTimestamp、Cron 解析与未来执行时间计算、多时区对照
+- `fileHelper.js`：IPC 封装，包含路径校验
+- `regexHelper.js`：runRegex — 编译正则并执行匹配，返回 `{ success, matches/error }`，含捕获组位置/命名、命中计数与海量匹配截断；被 Web Worker 引用且可独立单元测试
+- `encodeHelper.js`：编码工具合集纯逻辑——base64Encode/Decode（TextEncoder 处理 UTF-8）、urlEncode/Decode、decodeJWT（三段拆分 + exp/iat/nbf 转可读时间，不验签）、hashAll（MD5 via js-md5 + SHA-1/256/512 via crypto.subtle，异步）、convertBase（BigInt 四进制联动）、unicodeEscape/Unescape（`\u` / `\u{}` / HTML 实体三格式），均返回 `{ success, result/error }`
+- `textHelper.js`：文本处理纯逻辑——getTextStats（字符/字数/行数/非空行/UTF-8 字节）、convertTextCase（大小写与命名风格转换）、sortLines、dedupeLines，供 TextTab 与单测复用
+- `updateHelper.js`：语义化版本解析/比较、GitHub Release 响应归一化和更新说明摘要，供 Settings 更新检查与主进程 IPC 支撑逻辑复用
+- `agentWorkshopHelper.js`：Agent 研讨室与进程无关的纯逻辑——常量/状态枚举、就绪态与配置派生（readyAgents、三态 agentCardState、moderator 默认与回退、validateStart、主进程侧 validateStartParams）、代理配置（DEFAULT_PROXY_CONFIG、normalizeProxyConfig、validateProxyConfig，及 `PROXY_ENV_MAP` 表驱动的 `buildAgentEnvironment`——启用时按开关注入大小写 `HTTP(S)_PROXY`/`ALL_PROXY`，关闭时清理继承的代理变量）、调用次数估算（2n+1）、三阶段 prompt 构造（含只读/plan-only/不反问约束）、minimal 仓库上下文、研讨记录 Markdown 导出；渲染进程与主进程双向 import、可单测
+- `safeMarkdown.js`：`marked` 解析 + `DOMPurify` 消毒的安全 Markdown 渲染（剥离 `<script>`/`on*`/`javascript:`，外链补 `target=_blank`+`rel=noopener`），供 Agent 研讨室时间线 `v-html` 使用；测试在 jsdom 环境下运行
 
 ### 主要组件
 
@@ -237,17 +237,23 @@ Windows 暂不支持 Agent Workshop 的本地 CLI 检测与进程组管理，渲
 - `StatusBar.vue`：底部状态栏，必须覆盖全部一级工具名称。
 - `EditorTab.vue`：默认首个工具；Markdown/HTML 默认目录、编辑、预览左右三栏，各栏独立开关，目录支持上下和左右滚动。按后缀切换 Markdown/HTML/纯文本；保留打开、保存、新建、导出、语法帮助和预览联动。`useEditorFile` 保留已命名文件的未保存草稿，防止迟到的读取覆盖新选择。
 - `EditorWithLineNumbers.vue`：带同步行号的复用 textarea。
-- `FileTree.vue` / `TreeNode.vue`：懒加载目录树。
+- `FileTree.vue` / `TreeNode.vue`：可复用的懒加载目录树，被 EditorTab 使用，支持 `editableExtensions` prop 过滤文件类型；当前统一编辑器传入空数组，不按编辑模式过滤。
 - `MarkdownPreview.vue` / `HtmlPreview.vue`：Markdown 与 HTML 预览。
-- `JsonTab.vue`：数据工具合集，提供 JSON / YAML / CSV / SQL / XML 子工具、JSONPath 查询和 CSV 表格预览。
-- `DiffTab.vue`：文本对比工具。
+- `JsonTab.vue`：数据工具合集，提供 JSON / YAML / CSV / SQL / XML 子工具（子工具由 context-bar 导航条切换，页内无第三层导航）；JSON 主操作（格式化/压缩/校验/去除转义/转 YAML）平铺为一排主按钮，JSONPath 查询条按需展开；CSV 子工具支持 CSV ⇄ JSON 与只读表格预览，SQL / XML 子工具支持格式化与压缩
+- `DiffTab.vue`：并排/统一差异视图，带滚动同步，使用 diff-match-patch 库
 - `TextTab.vue`：文本处理通过页内模式选择器切换大小写、排序、去重，统计常驻输入面板；保留各模式结果，输入或配置变化后旧结果标记待更新。
-- `RegexTab.vue`：正则测试器，匹配由 `useRegexMatcher` 和 `workers/regex.worker.js` 执行。
-- `EncodeTab.vue`：编码工具合集，6 个子工具由 context-bar 导航条切换。
-- `GeneratorTab.vue`：生成器合集，子工具（UUID、随机密码、Lorem、二维码）由 context-bar 导航条切换。
+- `RegexTab.vue`：正则测试器，结构化 `/pattern/flags` 输入、实时匹配、编辑/高亮预览双区、捕获组多色、匹配结果列表（与预览双向 hover 联动）、右侧速查抽屉；结果区分隔条支持指针和键盘调节，匹配经 `useRegexMatcher` 在 Web Worker 中执行
+- `EncodeTab.vue`：编码工具合集，6 个子工具（Base64 / URL / JWT / Hash / 进制 / Unicode）由 context-bar 导航条切换；编解码类用「左源右果 + ⇄ 方向」实时计算，Hash 异步（generation 计数防过期响应），进制四框联动，纯逻辑全在 `encodeHelper.js`
+- `GeneratorTab.vue`：生成器合集，子工具（UUID、随机密码、Lorem、二维码）由 context-bar 导航条切换，页内无横向子工具栏，纯逻辑在 `generatorHelper.js`
 - `TimeTab.vue`：时间转换、Cron、多时区三个独立子任务，所有宽度仅呈现选中任务；时间转换包含实时概览和方向切换，保留秒/毫秒、全部格式与复制。各任务保留会话输入和结果，Cron 初始展示默认表达式解释及未来五次。
-- `AgentWorkshopTab.vue`：Agent 研讨室，仅根据现有状态派生准备、运行、结果三阶段并渲染配置、进度和 Markdown 时间线；不得借 UI 调整修改 IPC、编排和记录语义。
-- `SettingsTab.vue`：以常用设置、最近文件、快捷键、关于四个分区组织工作目录、主题、字号、更新检查与说明。
+- `AgentWorkshopTab.vue`：Agent 研讨室标签，仅从现有前端状态派生「准备 / 运行 / 结果」三阶段；准备阶段展示配置与启动，运行/结果阶段展示进度和 Markdown 时间线；经 `window.electronAPI.agentWorkshop` 调用主进程，订阅 `agent-discussion:event` 事件流（卸载时取消订阅），用 `activeRunId` 区分本会话运行与恢复查看的旧记录，不改变 IPC、编排和持久化语义
+- `SettingsTab.vue`：以常用设置、最近文件、快捷键、关于四个分区组织工作目录、主题、字号、平台感知快捷键、electron-store 持久化、GitHub Release 更新检查与统一消息弹窗结果展示。
+
+### Composables 与 Worker
+
+- `composables/useEditorFile.js`：编辑器共用的打开、新建、保存、快捷键及后缀到 mode 的派生逻辑；`Cmd/Ctrl+S/N` 的监听成对绑定与解绑。
+- `composables/useRegexMatcher.js`：封装正则匹配 Worker 的生命周期，维护完整输入签名，输入变化立即失效旧结果，丢弃乱序响应，超时（1.5s）通过 `terminate` 兜底并重建待命 Worker，组件卸载时释放，避免灾难性回溯冻结 UI。
+- `workers/regex.worker.js`：子线程内调用 `regexHelper.runRegex` 执行匹配，通过 `postMessage` 回传位置数组。
 
 ## 构建系统
 
@@ -255,7 +261,7 @@ electron-vite 构建三个独立 bundle：
 
 - `out/main/main.js`：主进程（ESM）
 - `out/preload/preload.mjs`：预加载脚本
-- `out/renderer/`：渲染进程生产产物
+- `out/renderer/`：渲染进程生产产物；开发模式通过 Vite 开发服务器提供
 
 资源文件 `electron/assets/icon.*` 通过 `electron.vite.config.js` 的自定义插件复制到 `out/main/assets/`。
 
@@ -272,11 +278,15 @@ recentFiles: []
 
 Agent Workshop 的大型讨论记录不放在 electron-store 中，而是保存到 app userData 目录下的 JSON 文件。
 
+## PDF 导出机制
+
+PDF 导出创建隐藏的 `BrowserWindow` 渲染 HTML 内容，加载后使用 `printToPDF()` API 导出，以保留样式和布局。
+
 ## 样式约定
 
 - 全局样式位于 `src/renderer/styles/main.css`。
-- 深色 / 浅色主题通过 `<html data-theme="light">` 切换。
-- macOS 窗口使用 `titleBarStyle: 'hiddenInset'`，导航区域需要保留左侧约 78px 给红绿灯按钮。
+- 深色 / 浅色主题通过 `App.vue` 设置 `<html>` 的 `data-theme` 属性切换，CSS 变量通过 `[data-theme="light"]` 覆盖。
+- macOS 窗口使用 `titleBarStyle: 'hiddenInset'`，导航区域需要保留左侧约 78px 给红绿灯按钮；Dock 图标通过 `app.dock.setIcon()` 设置，应用名通过 `app.setName('OneApp')` 设置。
 - UI 改造应优先复用全局 token 和共享样式，避免各页面重复发明按钮、面板和状态样式。
 
 ### 弹窗约定

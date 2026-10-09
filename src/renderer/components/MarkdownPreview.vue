@@ -1,10 +1,11 @@
 <template>
-  <div ref="previewEl" class="preview" v-html="renderedHTML"></div>
+  <div ref="previewEl" class="preview" @click="handlePreviewLink($event, previewEl)" v-html="renderedHTML"></div>
 </template>
 
 <script setup>
 import { computed, ref } from 'vue'
-import { marked } from 'marked'
+import { safeMarkdown } from '../utils/safeMarkdown.js'
+import { handlePreviewLink } from '../utils/previewLinks.js'
 
 const props = defineProps({
   content: { type: String, default: '' }
@@ -15,14 +16,7 @@ const previewEl = ref(null)
 // 暴露给父组件
 defineExpose({ previewEl })
 
-marked.setOptions({
-  breaks: true,
-  gfm: true
-})
-
-const renderedHTML = computed(() => {
-  return marked.parse(props.content)
-})
+const renderedHTML = computed(() => safeMarkdown(props.content))
 </script>
 
 <style scoped>

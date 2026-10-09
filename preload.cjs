@@ -1,18 +1,33 @@
-const { contextBridge, ipcRenderer, shell } = require('electron')
+const { contextBridge, ipcRenderer } = require('electron')
+
+function subscribe(channel, callback) {
+  const listener = (_event, data) => callback(data)
+  ipcRenderer.on(channel, listener)
+  return () => ipcRenderer.removeListener(channel, listener)
+}
 
 contextBridge.exposeInMainWorld('electronAPI', {
+  commands: {
+    onCommand: callback => subscribe('app:command', callback),
+    onCheckClose: callback => subscribe('app:check-close', callback),
+    replyClose: data => ipcRenderer.invoke('app:close-reply', data),
+    onCloseState: callback => subscribe('app:close-state', callback),
+    cancelClose: () => ipcRenderer.invoke('app:cancel-close'),
+    setEditorActive: active => ipcRenderer.invoke('app:editor-active', active),
+    onTheme: callback => subscribe('app:theme', callback)
+  },
   readFile: (filePath) => ipcRenderer.invoke('read-file', filePath),
   writeFile: (filePath, content) => ipcRenderer.invoke('write-file', filePath, content),
   readDir: (dirPath) => ipcRenderer.invoke('read-dir', dirPath),
-  deleteFile: (filePath) => ipcRenderer.invoke('delete-file', filePath),
   showOpenDialog: (options) => ipcRenderer.invoke('show-open-dialog', options),
   showSaveDialog: (options) => ipcRenderer.invoke('show-save-dialog', options),
   showDirectoryDialog: () => ipcRenderer.invoke('show-directory-dialog'),
+  authorizeRecent: path => ipcRenderer.invoke('authorize-recent', path),
   getStore: () => ipcRenderer.invoke('get-store'),
   setStore: (data) => ipcRenderer.invoke('set-store', data),
-  getHomeDir: () => process.env.HOME || process.env.USERPROFILE,
+  getHomeDir: () => ipcRenderer.invoke('get-home-dir'),
   exportPDF: (htmlContent, defaultPath) => ipcRenderer.invoke('export-pdf', htmlContent, defaultPath),
-  openExternal: (url) => shell.openExternal(url),
+  openExternal: (url) => ipcRenderer.invoke('open-external', url),
   showMessageBox: (options) => ipcRenderer.invoke('show-message-box', options),
   updates: {
     check: () => ipcRenderer.invoke('check-for-updates'),

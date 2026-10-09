@@ -41,11 +41,6 @@ export function filterTreeItems(items, { editableExtensions = [], showHidden = f
   })
 }
 
-export async function deleteFile(filePath) {
-  const result = await window.electronAPI.deleteFile(filePath)
-  if (!result.success) throw new Error(result.error)
-}
-
 export async function openFile(defaultDirectory, filters = [{ name: 'Markdown', extensions: ['md'] }]) {
   const result = await window.electronAPI.showOpenDialog({
     defaultPath: defaultDirectory || undefined,
@@ -56,14 +51,15 @@ export async function openFile(defaultDirectory, filters = [{ name: 'Markdown', 
   return result.filePaths[0]
 }
 
-export async function saveFile(content, defaultPath, fileType = { name: 'Markdown', extensions: ['md'] }, defaultDirectory) {
+export async function saveFile(content, defaultPath, fileType = { name: 'Markdown', extensions: ['md'] }, defaultDirectory, beforeWrite) {
   const fullPath = defaultDirectory ? `${defaultDirectory}/${defaultPath}` : defaultPath
   const result = await window.electronAPI.showSaveDialog({
     defaultPath: fullPath,
     filters: [fileType]
   })
   if (result.canceled || !result.filePath) return null
-  await window.electronAPI.writeFile(result.filePath, content)
+  if (beforeWrite && !await beforeWrite(result.filePath)) return null
+  await writeFile(result.filePath, content)
   return result.filePath
 }
 

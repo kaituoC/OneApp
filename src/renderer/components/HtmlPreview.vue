@@ -3,8 +3,9 @@
     <iframe
       ref="iframeRef"
       sandbox="allow-same-origin"
-      :srcdoc="content"
+      :srcdoc="safeHtmlPreview(content)"
       @load="onIframeLoad"
+      title="HTML 静态预览（脚本不执行）"
       class="preview-iframe"
     ></iframe>
   </div>
@@ -12,6 +13,8 @@
 
 <script setup>
 import { ref } from 'vue'
+import { safeHtmlPreview } from '../utils/safeMarkdown.js'
+import { handlePreviewLink } from '../utils/previewLinks.js'
 
 defineProps({
   content: { type: String, default: '' }
@@ -27,7 +30,8 @@ function onIframeLoad() {
   if (!iframeRef.value) return
   const iframeDoc = iframeRef.value.contentDocument || iframeRef.value.contentWindow.document
   if (iframeDoc) {
-    iframeDoc.body.style.margin = '0'
+    if (iframeDoc.body) iframeDoc.body.style.margin = '0'
+    iframeDoc.addEventListener('click', event => handlePreviewLink(event, iframeDoc))
   }
 }
 </script>

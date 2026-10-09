@@ -26,6 +26,7 @@
       <button role="radio" :aria-checked="direction === 'toDate'" :class="{active:direction === 'toDate'}" @click="direction = 'toDate'">时间戳 → 日期</button>
       <button role="radio" :aria-checked="direction === 'toTimestamp'" :class="{active:direction === 'toTimestamp'}" @click="direction = 'toTimestamp'">日期 → 时间戳</button>
     </div>
+    <button v-if="canUndo" @click="undo">撤销输入操作</button>
     <!-- 时间戳转日期 -->
     <div v-show="activeSection === 'convert' && direction === 'toDate'" class="convert-section tool-panel section-convert-ts">
       <div class="section-header tool-panel-header">时间戳转日期</div>
@@ -33,7 +34,7 @@
         <div class="convert-row">
           <span class="row-label">时间戳</span>
           <input
-            v-model="tsToDateInput"
+            v-model="tsToDateInput" aria-label="时间戳输入"
             type="text"
             placeholder="输入时间戳"
             class="convert-input"
@@ -47,7 +48,7 @@
         </div>
         <div class="convert-row">
           <span class="row-label">输出格式</span>
-          <select v-model="tsToDateFormat" class="format-select">
+          <select v-model="tsToDateFormat" aria-label="日期输出格式" class="format-select">
             <option value="yyyy-MM-dd HH:mm:ss">yyyy-MM-dd HH:mm:ss</option>
             <option value="yyyy/MM/dd HH:mm:ss">yyyy/MM/dd HH:mm:ss</option>
             <option value="yyyyMMdd">yyyyMMdd</option>
@@ -62,8 +63,8 @@
         </div>
         <div class="convert-row">
           <span class="row-label">结果</span>
-          <span class="convert-result">{{ tsToDateResult || '--' }}</span>
-          <button @click="copyTsToDateResult" :disabled="!tsToDateResult">复制</button>
+          <span class="convert-result">{{ tsError || tsToDateResult || '--' }}{{ tsStale ? ' · 输入已变更，结果待更新' : '' }}</span>
+          <button @click="copyTsToDateResult" :disabled="!tsToDateResult || tsStale || tsError">复制</button>
         </div>
       </div>
     </div>
@@ -75,7 +76,7 @@
         <div class="convert-row">
           <span class="row-label">日期时间</span>
           <input
-            v-model="dateToTsInput"
+            v-model="dateToTsInput" aria-label="日期时间输入"
             type="text"
             placeholder="yyyy-MM-dd HH:mm:ss"
             class="convert-input"
@@ -85,16 +86,18 @@
         </div>
         <div class="convert-row">
           <span class="row-label">结果</span>
+          <div v-if="dateError" class="tool-error-message" role="alert">{{ dateError }}</div>
+          <span v-if="dateStale">输入已变更，结果待更新</span>
           <div class="ts-results-inline">
             <div class="ts-item">
               <span class="ts-label">秒:</span>
               <span class="ts-value">{{ dateToTsResultSecond || '--' }}</span>
-              <button class="copy-btn small" @click="copySecondTs" :disabled="!dateToTsResultSecond">复制</button>
+              <button class="copy-btn small" @click="copySecondTs" :disabled="!dateToTsResultSecond || dateStale || dateError">复制</button>
             </div>
             <div class="ts-item">
               <span class="ts-label">毫秒:</span>
               <span class="ts-value">{{ dateToTsResultMs || '--' }}</span>
-              <button class="copy-btn small" @click="copyMsTs" :disabled="!dateToTsResultMs">复制</button>
+              <button class="copy-btn small" @click="copyMsTs" :disabled="!dateToTsResultMs || dateStale || dateError">复制</button>
             </div>
           </div>
         </div>
@@ -107,7 +110,7 @@
         <div class="convert-row">
           <span class="row-label">表达式</span>
           <input
-            v-model="cronInput"
+            v-model="cronInput" aria-label="Cron 表达式"
             type="text"
             placeholder="分钟 小时 日 月 星期，例如 */15 9-18 * * 1-5"
             class="convert-input cron-input"
@@ -117,7 +120,7 @@
         <div class="convert-row cron-result-row">
           <span class="row-label">解释</span>
           <span :class="['convert-result', { 'cron-error': cronHasError }]">
-            {{ cronDescription || '--' }}
+            {{ cronDescription || '--' }}{{ cronStale ? ' · 输入已变更，结果待更新' : '' }}
           </span>
         </div>
         <div class="convert-row cron-result-row">
@@ -135,7 +138,7 @@
       <div class="convert-content">
         <div class="convert-row">
           <span class="row-label">添加城市</span>
-          <select v-model="timezoneToAdd" class="format-select">
+          <select v-model="timezoneToAdd" aria-label="添加时区城市" class="format-select">
             <option value="" disabled>选择城市</option>
             <option v-for="preset in availableTimezones" :key="preset.id" :value="preset.id">
               {{ preset.label }} · {{ preset.timeZone }}
@@ -173,6 +176,7 @@
 
 <script setup>
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
+import { useInputUndo } from '../composables/useInputUndo.js'
 import { useCopyToast } from '../composables/useCopyToast.js'
 import { handleSegmentedKeydown } from '../utils/segmentedControl.js'
 import {
@@ -220,47 +224,54 @@ const liveTimestamp = computed(() => {
 const tsToDateInput = ref('')
 const tsToDateUnit = ref('second')
 const tsToDateFormat = ref('yyyy-MM-dd HH:mm:ss')
-const tsToDateResult = ref('')
+const tsToDateResult = ref(''), tsError = ref(''), tsSignature = ref('')
+const currentTsSignature = computed(() => JSON.stringify([tsToDateInput.value,tsToDateUnit.value,tsToDateFormat.value]))
+const tsStale = computed(() => !!tsToDateResult.value && tsSignature.value !== currentTsSignature.value)
 
 function useCurrentTimestamp() {
-  tsToDateInput.value = getCurrentTimestamp(tsToDateUnit.value).toString()
+  inputUndo.replace([tsToDateInput], () => {tsToDateInput.value = getCurrentTimestamp(tsToDateUnit.value).toString()})
 }
 
 function convertTsToDate() {
   if (!tsToDateInput.value) return
 
+  tsSignature.value = currentTsSignature.value; tsError.value = ''; tsToDateResult.value = ''
   const result = timestampToDate(tsToDateInput.value, tsToDateUnit.value, tsToDateFormat.value)
   if (result.success) {
     tsToDateResult.value = result.result
   } else {
-    tsToDateResult.value = result.error
+    tsError.value = result.error
   }
 }
 
 // 日期转时间戳
 const dateToTsInput = ref('')
 const dateToTsResultSecond = ref('')
-const dateToTsResultMs = ref('')
+const dateToTsResultMs = ref(''), dateError = ref(''), dateSignature = ref('')
+const dateStale = computed(() => !!dateToTsResultSecond.value && dateSignature.value !== dateToTsInput.value)
+const inputUndo = useInputUndo([tsToDateInput,dateToTsInput], () => [activeSection.value,direction.value])
+const {canUndo,undo} = inputUndo
 
 function useCurrentDateTime() {
-  dateToTsInput.value = getCurrentFormattedDate('yyyy-MM-dd HH:mm:ss')
+  inputUndo.replace([dateToTsInput], () => {dateToTsInput.value = getCurrentFormattedDate('yyyy-MM-dd HH:mm:ss')})
 }
 
 function convertDateToTs() {
   if (!dateToTsInput.value) return
 
+  dateSignature.value = dateToTsInput.value; dateError.value = ''; dateToTsResultSecond.value = ''; dateToTsResultMs.value = ''
   const result = dateToTimestamp(dateToTsInput.value)
   if (result.success) {
     dateToTsResultSecond.value = result.second.toString()
     dateToTsResultMs.value = result.millisecond.toString()
   } else {
-    dateToTsResultSecond.value = result.error
+    dateError.value = result.error
     dateToTsResultMs.value = ''
   }
 }
 
-watch([tsToDateInput, tsToDateUnit, tsToDateFormat], () => { tsToDateResult.value = '' }, { flush: 'sync' })
-watch(dateToTsInput, () => { dateToTsResultSecond.value = ''; dateToTsResultMs.value = '' }, { flush: 'sync' })
+watch([tsToDateInput,tsToDateUnit,tsToDateFormat], () => {tsError.value = ''})
+watch(dateToTsInput, () => {dateError.value = ''})
 
 // 复制功能
 const { copyMessage, copyToClipboard } = useCopyToast()
@@ -274,20 +285,21 @@ function copyLiveTimestamp() {
 }
 
 function copyTsToDateResult() {
-  copyToClipboard(tsToDateResult.value)
+  if (!tsStale.value && !tsError.value) copyToClipboard(tsToDateResult.value)
 }
 
 function copySecondTs() {
-  copyToClipboard(dateToTsResultSecond.value)
+  if (!dateStale.value && !dateError.value) copyToClipboard(dateToTsResultSecond.value)
 }
 
 function copyMsTs() {
-  copyToClipboard(dateToTsResultMs.value)
+  if (!dateStale.value && !dateError.value) copyToClipboard(dateToTsResultMs.value)
 }
 
 const initialCron = buildInitialCronPreview()
 const cronInput = ref(initialCron.expression)
-const cronDescription = ref('')
+const cronDescription = ref(''), cronSignature = ref(initialCron.expression)
+const cronStale = computed(() => !!cronDescription.value && cronSignature.value !== cronInput.value)
 const cronRuns = ref([])
 const cronHasError = ref(false)
 const selectedTimezoneIds = ref(['local', 'new-york', 'london', 'tokyo'])
@@ -296,6 +308,7 @@ const timezoneRows = computed(() => buildTimezoneComparison(selectedTimezoneIds.
 const availableTimezones = computed(() => getAvailableTimezonePresets(selectedTimezoneIds.value))
 
 function explainCron() {
+  cronSignature.value = cronInput.value
   const result = explainCronExpression(cronInput.value)
   if (result.success) {
     cronDescription.value = result.description

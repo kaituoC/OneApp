@@ -3,10 +3,11 @@
     <!-- ① pattern 行 -->
     <div class="pattern-bar">
       <span class="label">正则</span>
+      <button v-if="canUndo" @click="undo">撤销输入操作</button>
       <span class="slash">/</span>
       <input
         ref="patternInputRef"
-        v-model="pattern"
+        v-model="pattern" aria-label="正则表达式"
         class="pattern-input"
         spellcheck="false"
         placeholder="输入正则表达式…"
@@ -44,7 +45,7 @@
           </span>
         </div>
         <EditorWithLineNumbers
-          v-model="text"
+          v-model="text" label="正则测试文本"
           :font-size="fontSize"
           placeholder="在此粘贴待测文本…"
         />
@@ -70,7 +71,7 @@
             :key="p.label"
             class="cheat-item"
             :title="p.pattern"
-            @click="pattern = p.pattern"
+            @click="inputUndo.replace([pattern], () => {pattern = p.pattern})"
           >{{ p.label }}</button>
         </div>
         <div class="cheat-section">
@@ -147,6 +148,7 @@ import { ref, reactive, computed, watch, nextTick, onUnmounted } from 'vue'
 import { BookOpen, CircleAlert, Copy } from 'lucide-vue-next'
 import EditorWithLineNumbers from './EditorWithLineNumbers.vue'
 import { useRegexMatcher } from '../composables/useRegexMatcher.js'
+import { useInputUndo } from '../composables/useInputUndo.js'
 import { useCopyToast } from '../composables/useCopyToast.js'
 import { useRegisterInput, usePendingInput } from '../composables/useSendTo.js'
 
@@ -201,6 +203,8 @@ const RESULT_DEFAULT_HEIGHT = 210
 // 预填示例，打开即见效果（含多捕获组展示配色）
 const pattern = ref('(\\d{3})-(\\d{4})')
 const text = ref('电话 400-1234，备用 987-6543')
+const inputUndo = useInputUndo([pattern,text])
+const {canUndo,undo} = inputUndo
 const flagState = reactive(Object.fromEntries(FLAGS.map(f => [f, f === 'g'])))
 const flagsString = computed(() => FLAGS.filter(f => flagState[f]).join(''))
 
@@ -208,7 +212,7 @@ const pendingInput = usePendingInput()
 watch(pendingInput, (val) => {
   if (val && val.tabKey === 'regex') {
     nextTick(() => {
-      text.value = val.content
+      inputUndo.replace([text], () => {text.value = val.content})
       pendingInput.value = null
     })
   }
@@ -259,10 +263,10 @@ const segments = computed(() => {
 // 在 pattern 输入框光标处插入语法片段
 function insertToken(token) {
   const el = patternInputRef.value
-  if (!el) { pattern.value += token; return }
+  if (!el) { inputUndo.replace([pattern], () => {pattern.value += token}); return }
   const start = el.selectionStart ?? pattern.value.length
   const end = el.selectionEnd ?? pattern.value.length
-  pattern.value = pattern.value.slice(0, start) + token + pattern.value.slice(end)
+  inputUndo.replace([pattern], () => {pattern.value = pattern.value.slice(0, start) + token + pattern.value.slice(end)})
   // 光标移到插入内容之后
   requestAnimationFrame(() => {
     el.focus()

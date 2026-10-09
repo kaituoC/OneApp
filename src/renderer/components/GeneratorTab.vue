@@ -86,11 +86,14 @@
               </span>
               <button v-if="tool === 'qr'" @click="downloadQrPng" :disabled="!qrImage || hasError || resultStale">下载 PNG</button>
               <button v-if="tool === 'qr'" @click="copyQrPng" :disabled="!qrImage || hasError || resultStale">复制 PNG</button>
-              <button v-else @click="copyResult" :disabled="!output || hasError || resultStale">复制</button>
+              <button v-else @click="copyResult" :disabled="!output || hasError">复制</button>
               <button @click="clearOutput" :disabled="!output && !statusMessage">清空</button>
             </span>
           </div>
+          <div v-if="hasError" class="tool-error-message" role="alert">{{ statusMessage }}</div>
+          <p v-if="tool !== 'qr' && output && optionsChanged" class="result-summary">上次生成结果；新配置用于下次生成</p>
           <div v-if="qrImage && !hasError" class="qr-preview">
+            <p class="qr-source">已编码：{{ generatedQrSummary }}</p>
             <img :src="qrImage" alt="二维码预览" />
           </div>
           <EditorWithLineNumbers
@@ -100,7 +103,7 @@
             readonly
             :class="{ 'error-output': hasError }"
           />
-          <div v-else class="tool-empty-state generator-empty">
+          <div v-else-if="!hasError" class="tool-empty-state generator-empty">
             <strong>尚未生成</strong>
             <span>完成配置后点击“生成”，结果会显示在这里。</span>
           </div>
@@ -182,10 +185,13 @@ const loremHint = computed(() => {
 })
 const generatedOptions = ref('')
 const currentOptions = computed(() => JSON.stringify(tool.value === 'uuid' ? uuidCount.value : tool.value === 'password' ? passwordOptions : tool.value === 'qr' ? qrOptions : loremOptions))
-const resultStale = computed(() => !!output.value && generatedOptions.value !== currentOptions.value)
+const optionsChanged = computed(() => !!output.value && generatedOptions.value !== currentOptions.value)
+const generatedQrSummary = computed(() => { try { const value = JSON.parse(generatedOptions.value); return `${value.text} · ${value.size}px · ${value.errorCorrectionLevel}` } catch { return '' } })
+const resultStale = computed(() => tool.value === 'qr' && optionsChanged.value)
 const statusChip = computed(() => {
   if (resultStale.value) return '待更新'
   if (hasError.value) return '错误'
+  if (optionsChanged.value) return '上次成果'
   return output.value ? '就绪' : '待生成'
 })
 
@@ -236,7 +242,7 @@ async function copyResult() {
 }
 
 function downloadQrPng() {
-  if (!qrImage.value || hasError.value) return
+  if (!qrImage.value || hasError.value || resultStale.value) return
   const link = document.createElement('a')
   link.href = qrImage.value
   link.download = 'oneapp-qrcode.png'
@@ -245,7 +251,7 @@ function downloadQrPng() {
 }
 
 async function copyQrPng() {
-  if (!qrImage.value || hasError.value) return
+  if (!qrImage.value || hasError.value || resultStale.value) return
   try {
     const response = await fetch(qrImage.value)
     const blob = await response.blob()
@@ -449,4 +455,5 @@ function clearOutput() {
     overflow: visible;
   }
 }
+.qr-source{white-space:pre-wrap;overflow-wrap:anywhere;max-height:80px;overflow:auto;color:var(--text-muted);font-size:12px}
 </style>

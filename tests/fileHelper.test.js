@@ -67,3 +67,12 @@ describe('fileHelper - filterTreeItems', () => {
     expect(filterTreeItems(null, { editableExtensions: ['md'] })).toEqual([])
   })
 })
+
+it('首次保存写入失败不得返回路径，取消不得写盘', async()=>{
+ const {vi}=await import('vitest'),{saveFile}=await import('../src/renderer/utils/fileHelper.js')
+ const write=vi.fn().mockResolvedValue({success:false,error:'EACCES'})
+ globalThis.window={electronAPI:{writeFile:write,showSaveDialog:vi.fn().mockResolvedValueOnce({canceled:false,filePath:'/tmp/a.md'}).mockResolvedValueOnce({canceled:true})}}
+ await expect(saveFile('内容','a.md')).rejects.toThrow('EACCES')
+ expect(await saveFile('内容','a.md')).toBe(null);expect(write).toHaveBeenCalledTimes(1)
+ delete globalThis.window
+})

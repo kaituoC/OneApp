@@ -28,7 +28,7 @@ describe('工作台子工具状态',()=>{
   expect([...host.querySelectorAll('button')].find(b=>b.textContent==='复制').disabled).toBe(true)
   expect(host.textContent).toContain('待更新')
  })
- it('生成器切换恢复结果，配置变化提示待更新',async()=>{
+ it('生成器切换恢复结果，配置变化保留可复制的上次成果',async()=>{
   const {host,sub}=mount(GeneratorTab,'uuid')
   await click(host,'生成')
   const result=host.querySelector('textarea').value
@@ -37,7 +37,8 @@ describe('工作台子工具状态',()=>{
   sub.value='uuid';await nextTick()
   expect(host.querySelector('textarea').value).toBe(result)
   await fill(host.querySelector('input[type=number]'),'3')
-  expect(host.textContent).toContain('待更新')
+  expect(host.textContent).toContain('上次成果')
+  expect([...host.querySelectorAll('button')].find(b=>b.textContent==='复制').disabled).toBe(false)
  })
 })
 
@@ -52,4 +53,16 @@ it('JSONPath 修改表达式后不能复制旧查询结果', async () => {
  expect([...host.querySelectorAll('button')].find(b => b.textContent === '复制').disabled).toBe(true)
  await click(host, '查询')
  expect(host.textContent).not.toContain('待更新')
+})
+
+it('JSON 非默认路径清空后可撤销输入和查询，后续输入使撤销失效',async()=>{
+ const {host}=mount(JsonTab,'json');await fill(host.querySelector('textarea'),'{"a":1}');await click(host,'JSONPath 查询');await fill(host.querySelector('#jsonpath-expression'),'$.a')
+ await click(host,'清空');expect(host.textContent).toContain('撤销输入操作');await click(host,'撤销输入操作')
+ expect(host.querySelector('textarea').value).toBe('{"a":1}');expect(host.querySelector('#jsonpath-expression').value).toBe('$.a')
+ await click(host,'清空');await fill(host.querySelector('textarea'),'new');expect(host.textContent).not.toContain('撤销输入操作')
+})
+it('业务错误独立展示，不能复制或发送',async()=>{
+ const {host}=mount(JsonTab,'json');await fill(host.querySelector('textarea'),'{broken');await click(host,'格式化')
+ expect(host.querySelectorAll('textarea')[1].value).toBe('');expect(host.querySelector('[role=alert]').textContent).toBeTruthy()
+ expect([...host.querySelectorAll('button')].find(b=>b.textContent==='复制').disabled).toBe(true);expect(host.textContent).not.toContain('发送到')
 })

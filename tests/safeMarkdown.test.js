@@ -39,3 +39,17 @@ describe('safeMarkdown 消毒渲染', () => {
     expect(safeMarkdown(undefined)).toBe('')
   })
 })
+
+it('表格、代码块和 HTTPS 图片保留，危险嵌入与锚点处理安全',()=>{
+ const html=safeMarkdown('| 列 |\n| --- |\n| 值 |\n\n```js\nconst a=1\n```\n\n![图](https://example.com/a.png)\n\n<a href="#anchor">页内</a><iframe src="https://evil"></iframe><form><input></form>')
+ expect(html).toContain('<table>');expect(html).toContain('<pre>');expect(html).toContain('https://example.com/a.png');expect(html).not.toMatch(/<iframe|<form|<input/)
+ expect(html).toContain('href="#anchor"')
+})
+
+it('HTML 静态呈现保留样式而源码可独立保存，删除跳转和嵌入',async()=>{
+ const {safeHtmlPreview}=await import('../src/renderer/utils/safeMarkdown.js')
+ const source='<html><head><style>p{color:red}</style><meta http-equiv="refresh" content="0;url=https://evil"></head><body><p onclick="alert(1)">文本</p><script>alert(1)</script></body></html>'
+ const html=safeHtmlPreview(source)
+ expect(html).toContain('p{color:red}');expect(html).not.toMatch(/<script|onclick|http-equiv="refresh"/);expect(html).toContain("script-src 'none'")
+ expect(source).toContain('<script>')
+})

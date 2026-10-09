@@ -1,9 +1,4 @@
-# f12-shortcut Specification
-
-## Purpose
-TBD - created by archiving change f12-app-level-shortcut. Update Purpose after archive.
-
-## Requirements
+## MODIFIED Requirements
 
 ### Requirement: F12 toggles DevTools within the app
 

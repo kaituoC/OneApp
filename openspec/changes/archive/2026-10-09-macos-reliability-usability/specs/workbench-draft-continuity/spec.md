@@ -1,21 +1,4 @@
-# workbench-draft-continuity Specification
-
-## Purpose
-保持用户在数据处理与跨工具切换过程中的工作连续性，避免子工具切换意外清空已有输入结果，同时清晰提示结果过期与目标覆盖，所有临时数据仅保留当前应用会话。
-
-## Requirements
-
-### Requirement: 会话内工具草稿保留
-
-数据与生成子工具 SHALL 独立保留输入、配置和结果；文本处理 SHALL 共用输入并保留各操作结果；已命名文件切换 SHALL 保留未保存文件草稿，恢复草稿时不得自动写盘。
-
-#### Scenario: 往返切换
-- **WHEN** 用户处理 JSON，切换 YAML 后返回 JSON
-- **THEN** JSON 输入与结果仍在，YAML 状态独立
-
-#### Scenario: 文件草稿
-- **WHEN** 用户修改文件 A，打开 B，再返回 A
-- **THEN** A 的未保存内容恢复，磁盘内容不因切换而写入
+## MODIFIED Requirements
 
 ### Requirement: 发送与结果有效性
 

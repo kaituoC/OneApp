@@ -152,15 +152,15 @@
 
 ### Requirement: Save/new keyboard shortcuts
 
-统一编辑器 SHALL 绑定 Ctrl/Cmd+S 保存、Ctrl/Cmd+N 新建快捷键，并 SHALL 在组件挂载时绑定、卸载时解绑，避免监听泄漏与重复触发。
+应用 SHALL 统一通过原生菜单与固定 commands 执行 Ctrl/Cmd+S 保存、Ctrl/Cmd+N 新建；保存只在编辑器上下文可用，新建经匿名稿 guard。菜单 accelerator 与 renderer 不得重复执行，composition 与 modal 期间不得穿透；订阅必须成对解绑。
 
 #### Scenario: Save shortcut
-- **WHEN** 用户按下 Ctrl/Cmd+S
-- **THEN** 触发保存当前文件
+- **WHEN** 编辑器上下文中用户按 Ctrl/Cmd+S
+- **THEN** 单次触发真实保存，失败或取消保留草稿
 
 #### Scenario: Listener cleaned up on unmount
-- **WHEN** 用户离开编辑器标签使组件卸载
-- **THEN** 键盘监听被解绑，不再重复触发
+- **WHEN** 工作台卸载
+- **THEN** 固定命令及状态订阅解绑，不再重复触发
 
 ### Requirement: 默认三栏工作区
 

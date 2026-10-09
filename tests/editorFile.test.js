@@ -97,3 +97,48 @@ it('新文件保存期间的新输入保持未保存状态', async () => {
  expect(editor.editorContent.value).toBe('新内容')
  expect(status).toHaveBeenLastCalledWith('未保存')
 })
+
+it('匿名新建取消与打开失败均保留输入', async()=>{
+ const confirm=vi.fn().mockResolvedValue({response:2}),editor=useEditorFile({confirm})
+ editor.editorContent.value='匿名草稿';expect(await editor.newFile()).toBe(false)
+ expect(editor.editorContent.value).toBe('匿名草稿');expect(editor.dirty.value).toBe(true)
+ readFile.mockRejectedValueOnce(new Error('EACCES'));expect(await editor.openFromTree('/fail.md')).toBe(false)
+ expect(editor.editorContent.value).toBe('匿名草稿')
+})
+it('重复保存及保存中点击当前文件不会留下错误 dirty',async()=>{
+ readFile.mockResolvedValueOnce('A');const editor=useEditorFile();await editor.openFromTree('/a.md');editor.editorContent.value='B'
+ let finish;writeFile.mockImplementationOnce(()=>new Promise(resolve=>{finish=resolve}))
+ const first=editor.saveFile(),second=editor.saveFile();expect(first).toBe(second)
+ await editor.openFromTree('/a.md');finish();expect(await first).toBe(true);expect(editor.dirty.value).toBe(false)
+})
+it('保存中打开失败仍更新当前保存快照',async()=>{
+ const editor=useEditorFile();readFile.mockResolvedValueOnce('A');await editor.openFromTree('/a.md');editor.editorContent.value='B'
+ let finish;writeFile.mockImplementationOnce(()=>new Promise(resolve=>{finish=resolve}))
+ const saving=editor.saveFile();readFile.mockRejectedValueOnce(new Error('not found'));await editor.openFromTree('/missing.md');finish();await saving;expect(editor.dirty.value).toBe(false)
+})
+it('匿名 guard 保存到待打开路径不应用旧读取',async()=>{
+ const editor=useEditorFile({confirm:async()=>({response:0})});editor.editorContent.value='新草稿'
+ readFile.mockResolvedValueOnce('旧磁盘');dialogSaveFile.mockResolvedValueOnce('/target.md')
+ expect(await editor.openFromTree('/target.md')).toBe(true);expect(editor.editorContent.value).toBe('新草稿');expect(editor.dirty.value).toBe(false)
+})
+it('首次保存失败/取消不改变身份且 guard 不替换',async()=>{
+ const confirm=vi.fn().mockResolvedValue({response:0}),editor=useEditorFile({confirm});editor.editorContent.value='草稿'
+ dialogSaveFile.mockRejectedValueOnce(new Error('EACCES'));expect(await editor.saveFile()).toBe(false);expect(editor.currentFilePath.value).toBe('');expect(editor.dirty.value).toBe(true)
+ dialogSaveFile.mockResolvedValueOnce(null);expect(await editor.newFile()).toBe(false);expect(editor.editorContent.value).toBe('草稿')
+})
+it('批量关闭检查缓存稿，失败稿保留；不保存许可仅作用于相同快照',async()=>{
+ const confirm=vi.fn().mockResolvedValue({response:0}),editor=useEditorFile({confirm})
+ readFile.mockResolvedValueOnce('A').mockResolvedValueOnce('B');await editor.openFromTree('/a.md');editor.editorContent.value='A+';await editor.openFromTree('/b.md');editor.editorContent.value='B+'
+ expect(editor.dirtyFiles.value).toHaveLength(2)
+ writeFile.mockResolvedValueOnce().mockRejectedValueOnce(new Error('EACCES'));expect(await editor.prepareClose(1)).toBe(false)
+ expect(editor.dirtyFiles.value.map(d=>d.path)).toEqual(['/b.md'])
+ confirm.mockResolvedValue({response:1});expect(await editor.prepareClose(2)).toBe(true);const calls=confirm.mock.calls.length
+ expect(await editor.prepareClose(2)).toBe(true);expect(confirm).toHaveBeenCalledTimes(calls)
+ editor.editorContent.value='B++';expect(await editor.prepareClose(2)).toBe(true);expect(confirm).toHaveBeenCalledTimes(calls+1)
+})
+it('另存为缓存 dirty 目标在写入前拒绝',async()=>{
+ const confirm=vi.fn().mockResolvedValue({response:0}),editor=useEditorFile({confirm})
+ readFile.mockResolvedValueOnce('A').mockResolvedValueOnce('B');await editor.openFromTree('/a.md');editor.editorContent.value='A+';await editor.openFromTree('/b.md')
+ dialogSaveFile.mockImplementationOnce(async(_content,_name,_type,_directory,beforeWrite)=>{expect(await beforeWrite('/a.md')).toBe(false);return null})
+ expect(await editor.saveFile({as:true})).toBe(false);expect(editor.currentFilePath.value).toBe('/b.md');expect(editor.dirtyFiles.value[0].content).toBe('A+')
+})

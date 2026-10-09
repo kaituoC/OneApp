@@ -11,6 +11,7 @@
       <button @click="loadFileA">加载文件A</button>
       <button @click="loadFileB">加载文件B</button>
       <button @click="swapTexts">交换</button>
+      <button v-if="canUndo" @click="undo">撤销输入操作</button>
       <button @click="clearAll">清空全部</button>
       <div class="toolbar-separator"></div>
       <div class="mode-toggle tool-segmented" role="radiogroup" aria-label="差异结果视图" @keydown="handleSegmentedKeydown">
@@ -56,7 +57,7 @@
           </div>
           <EditorWithLineNumbers
             ref="editorARef"
-            v-model="textA"
+            v-model="textA" label="对比文本 A"
             :font-size="fontSize"
             placeholder="输入或加载文本 A..."
           />
@@ -73,7 +74,7 @@
           </div>
           <EditorWithLineNumbers
             ref="editorBRef"
-            v-model="textB"
+            v-model="textB" label="对比文本 B"
             :font-size="fontSize"
             placeholder="输入或加载文本 B..."
           />
@@ -143,6 +144,7 @@
 </template>
 
 <script setup>
+import { useInputUndo } from '../composables/useInputUndo.js'
 import { nextTick, ref, watch } from 'vue'
 import { diffTextUnified, diffTextSplit, diffStats } from '../utils/diffHelper.js'
 import { readFile, openFile } from '../utils/fileHelper.js'
@@ -157,6 +159,9 @@ const props = defineProps({
 
 const textA = ref('')
 const textB = ref('')
+const inputUndo = useInputUndo([textA,textB])
+const {canUndo,undo:undoInput} = inputUndo
+function undo() { undoInput(); showDiff.value = false }
 const viewMode = ref('split') // 'split' | 'unified'
 const showDiff = ref(false)
 
@@ -164,7 +169,7 @@ const pendingInput = usePendingInput()
 watch(pendingInput, (val) => {
   if (val && val.tabKey === 'diff') {
     nextTick(() => {
-      textA.value = val.content
+      inputUndo.replace([textA], () => { textA.value = val.content })
       pendingInput.value = null
     })
   }
@@ -195,7 +200,8 @@ function editTexts() {
 async function loadFileA() {
   const filePath = await openFile(props.workDir)
   if (filePath) {
-    textA.value = await readFile(filePath)
+    const content = await readFile(filePath)
+    inputUndo.replace([textA], () => { textA.value = content })
     if (showDiff.value) compare()
   }
 }
@@ -203,28 +209,26 @@ async function loadFileA() {
 async function loadFileB() {
   const filePath = await openFile(props.workDir)
   if (filePath) {
-    textB.value = await readFile(filePath)
+    const content = await readFile(filePath)
+    inputUndo.replace([textB], () => { textB.value = content })
     if (showDiff.value) compare()
   }
 }
 
 function swapTexts() {
-  const temp = textA.value
-  textA.value = textB.value
-  textB.value = temp
+  inputUndo.replace([textA,textB], () => { const temp = textA.value; textA.value = textB.value; textB.value = temp })
   if (showDiff.value) compare()
 }
 
 function clearSide(side) {
   const targetEditor = side === 'A' ? editorARef : editorBRef
-  if (side === 'A') textA.value = ''
-  else textB.value = ''
+  const field = side === 'A' ? textA : textB
+  inputUndo.replace([field], () => { field.value = '' })
   nextTick(() => targetEditor.value?.textareaRef?.focus())
 }
 
 function clearAll() {
-  textA.value = ''
-  textB.value = ''
+  inputUndo.replace([textA,textB], () => { textA.value = ''; textB.value = '' })
   showDiff.value = false
   diffSplitResult.value = []
   diffUnifiedResult.value = []

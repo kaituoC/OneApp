@@ -1,164 +1,151 @@
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, computed, reactive, watch } from 'vue'
 import { readFile, writeFile, saveFile as dialogSaveFile, openFile } from '../utils/fileHelper.js'
 
-// Markdown / HTML 新建模板
 const MARKDOWN_TEMPLATE = '# 新文档\n\n开始编写...'
 const HTML_TEMPLATE = '<!DOCTYPE html>\n<html lang="zh-CN">\n<head>\n  <meta charset="UTF-8">\n  <title>新文档</title>\n</head>\n<body>\n  <h1>新文档</h1>\n  <p>开始编写...</p>\n</body>\n</html>'
-
-function modeFromPath(filePath) {
-  if (!filePath) return 'markdown'
-  const dot = filePath.lastIndexOf('.')
-  const ext = dot >= 0 ? filePath.slice(dot + 1).toLowerCase() : ''
-  if (ext === 'md') return 'markdown'
-  if (ext === 'html' || ext === 'htm') return 'html'
-  return 'plaintext'
+function modeFromPath(path) {
+  const ext = path.split('.').pop()?.toLowerCase()
+  return ['md', 'markdown'].includes(ext) ? 'markdown' : ['html', 'htm'].includes(ext) ? 'html' : 'plaintext'
 }
+const EDITOR_FILTERS = [{ name: '所有文件', extensions: ['*'] }, { name: 'Markdown / HTML', extensions: ['md', 'markdown', 'html', 'htm'] }]
 
-/**
- * 统一编辑器的文件逻辑（打开 / 新建 / 保存 / 内容变更 / 快捷键）。
- * @param {object} opts
- * @param {import('vue').Ref<string>} opts.workDir 工作目录
- * @param {() => void} [opts.onFileOpen] 文件打开/路径变化回调（参数为路径）
- * @param {(status: string) => void} [opts.onSaveStatus] 保存状态回调
- * @param {() => void} [opts.refreshTree] 保存后刷新目录树
- */
-const EDITOR_FILTERS = [
-  { name: '所有文件', extensions: ['*'] },
-  { name: 'Markdown / HTML', extensions: ['md', 'html', 'htm'] },
-  { name: 'Markdown', extensions: ['md'] },
-  { name: 'HTML', extensions: ['html', 'htm'] }
-]
-
-export function useEditorFile({ workDir, onFileOpen, onSaveStatus, refreshTree, isActive } = {}) {
-  const editorContent = ref(MARKDOWN_TEMPLATE)
-  const currentFilePath = ref('') // 仅存真实路径；新建未保存时为 ''
-  // mode 为独立状态：打开文件按后缀设定，新建按类型设定
-  const mode = ref('markdown')
-
-  async function openFileDialog() {
-    const filePath = await openFile(workDir?.value, EDITOR_FILTERS)
-    if (!filePath) return false
-    return loadFile(filePath)
-  }
-
-  // 从目录树点击打开
-  async function openFromTree(filePath) {
-    return loadFile(filePath)
-  }
-
-  const drafts = new Map()
-  let savedContent = MARKDOWN_TEMPLATE
-  let loadSequence = 0
+export function useEditorFile({ workDir, onFileOpen, onSaveStatus, refreshTree, confirm } = {}) {
+  const editorContent = ref(MARKDOWN_TEMPLATE), currentFilePath = ref(''), mode = ref('markdown')
+  const savedContent = ref(MARKDOWN_TEMPLATE), saving = ref(false)
+  const drafts = reactive(new Map())
+  const dirty = computed(() => editorContent.value !== savedContent.value)
+  const dirtyFiles = computed(() => {
+    const entries = new Map([...drafts].filter(([, d]) => d.content !== d.savedContent))
+    entries.delete(currentFilePath.value)
+    if (dirty.value) entries.set(currentFilePath.value, { content: editorContent.value, savedContent: savedContent.value })
+    return [...entries].map(([path, d]) => ({ path, ...d, name: path.split(/[\\/]/).pop() || '未命名文档' }))
+  })
+  const ask = confirm || (options => globalThis.window?.electronAPI?.showMessageBox(options) || Promise.resolve({response:2}))
+  let loadSequence = 0, documentRevision = 0, pendingSave = null, replacing = false
+  watch(dirty, value => onSaveStatus?.(value ? '未保存' : '已保存'), { flush: 'sync' })
   function rememberDraft() {
-    if (currentFilePath.value && editorContent.value !== savedContent) {
-      drafts.set(currentFilePath.value, { content: editorContent.value, savedContent })
-    } else if (currentFilePath.value) {
-      drafts.delete(currentFilePath.value)
-    }
+    const path = currentFilePath.value
+    if (path && dirty.value) drafts.set(path, { content: editorContent.value, savedContent: savedContent.value })
+    else if (path) drafts.delete(path)
   }
-  async function loadFile(filePath) {
-    const sequence = ++loadSequence
-    if (filePath === currentFilePath.value && editorContent.value !== savedContent) return true
+  function saveFile({ as = false, path: cachedPath } = {}) {
+    if (pendingSave) return pendingSave
+    saving.value = true
+    pendingSave = performSave(as, cachedPath).finally(() => { pendingSave = null; saving.value = false })
+    return pendingSave
+  }
+  async function performSave(as, cachedPath) {
+    const sourcePath = cachedPath ?? currentFilePath.value
+    const draft = cachedPath && cachedPath !== currentFilePath.value ? drafts.get(cachedPath) : null
+    if (cachedPath && cachedPath !== currentFilePath.value && !draft) return false
+    const content = draft ? draft.content : editorContent.value, revision = documentRevision
     try {
-      const cached = drafts.get(filePath)
-      const content = cached ? cached.content : await readFile(filePath)
-      if (sequence !== loadSequence) return false
-      rememberDraft()
-      editorContent.value = content
-      savedContent = cached ? cached.savedContent : content
-      currentFilePath.value = filePath
-      mode.value = modeFromPath(filePath)
-      onFileOpen?.(filePath)
+      let target = sourcePath
+      if (as || !target) {
+        const ext = mode.value === 'html' ? 'html' : mode.value === 'plaintext' ? 'txt' : 'md'
+        target = await dialogSaveFile(content, sourcePath || `untitled.${ext}`, { name: '文本文件', extensions: [ext] }, sourcePath ? undefined : workDir?.value, async targetPath => {
+          rememberDraft()
+          if (targetPath !== sourcePath && drafts.has(targetPath)) {
+            await ask({ type: 'warning', message: '目标文件有未保存草稿', detail: '请先从未保存列表打开并保存该稿，或选择其他路径。', buttons: ['返回'], cancelId: 0 })
+            return false
+          }
+          return true
+        })
+        if (!target) return false
+      } else await writeFile(target, content)
+      // 只有写回原路径才更新它的缓存快照；另存为不能把旧磁盘文件误标 clean。
+      if (target === sourcePath) {
+        const cached = drafts.get(sourcePath)
+        if (cached && cached.content !== content) cached.savedContent = content
+        else drafts.delete(sourcePath)
+      }
+      const sameDocument = sourcePath ? currentFilePath.value === sourcePath : revision === documentRevision && !currentFilePath.value
+      if (sameDocument && (target === sourcePath || revision === documentRevision)) {
+        currentFilePath.value = target
+        savedContent.value = content
+        mode.value = modeFromPath(target)
+        if (target !== sourcePath) drafts.delete(sourcePath)
+        onSaveStatus?.(dirty.value ? '未保存' : '已保存')
+        onFileOpen?.(target)
+      }
+      refreshTree?.()
       return true
     } catch (e) {
-      console.error('打开文件失败:', e)
+      onSaveStatus?.(`保存失败：${e.message}`)
+      await ask({ type: 'error', message: '保存失败，内容仍保留', detail: e.message, buttons: ['确定'] })
       return false
     }
   }
-
-  function newFile(type = 'markdown') {
-    loadSequence++
-    rememberDraft()
-    if (type === 'html') {
-      editorContent.value = HTML_TEMPLATE
-      mode.value = 'html'
-    } else if (type === 'plaintext') {
-      editorContent.value = ''
-      mode.value = 'plaintext'
-    } else {
-      editorContent.value = MARKDOWN_TEMPLATE
-      mode.value = 'markdown'
+  async function guardAnonymous() {
+    while (!currentFilePath.value && dirty.value) {
+      const snapshot = editorContent.value
+      const { response } = await ask({ type: 'warning', message: '未命名文档尚未保存', detail: '是否保存后继续？', buttons: ['保存', '不保存', '取消'], defaultId: 2, cancelId: 2 })
+      if (response === 2 || response === undefined) return false
+      if (response === 0) { if (!await saveFile()) return false }
+      else if (snapshot === editorContent.value) return true
     }
-    currentFilePath.value = ''
-    savedContent = editorContent.value
-    onSaveStatus?.('新文件')
+    return true
   }
-
-  async function saveFile() {
+  async function loadFile(path) {
+    if (path === currentFilePath.value && dirty.value) return true
+    const sequence = ++loadSequence
     try {
-      if (currentFilePath.value) {
-        const path = currentFilePath.value, content = editorContent.value
-        await writeFile(path, content)
+      const content = drafts.has(path) ? drafts.get(path).content : await readFile(path)
+      if (sequence !== loadSequence || replacing) return false
+      replacing = true
+      try {
+        if (!await guardAnonymous() || sequence !== loadSequence) return false
+        // guard 可能刚把匿名稿保存到目标；不得覆盖为旧读取快照。
+        if (currentFilePath.value === path) return true
+        rememberDraft()
         const cached = drafts.get(path)
-        if (cached && cached.content !== content) cached.savedContent = content
-        else drafts.delete(path)
-        if (currentFilePath.value === path) {
-          savedContent = content
-          onSaveStatus?.(editorContent.value === content ? '已保存' : '未保存')
-        }
-        refreshTree?.()
-      } else {
-        const defaultName = mode.value === 'html' ? 'untitled.html'
-          : mode.value === 'plaintext' ? 'untitled.txt' : 'untitled.md'
-        const fileType = mode.value === 'html' ? { name: 'HTML', extensions: ['html'] }
-          : mode.value === 'plaintext' ? { name: '文本文件', extensions: ['txt'] }
-          : { name: 'Markdown', extensions: ['md'] }
-        const content = editorContent.value, sequence = loadSequence
-        const savedPath = await dialogSaveFile(content, defaultName, fileType, workDir?.value)
-        if (savedPath && sequence === loadSequence) {
-          currentFilePath.value = savedPath
-          savedContent = content
-          mode.value = modeFromPath(savedPath)
-          onFileOpen?.(savedPath)
-          onSaveStatus?.(editorContent.value === content ? '已保存' : '未保存')
-          refreshTree?.()
-        }
-      }
-    } catch {
-      onSaveStatus?.('保存失败')
+        documentRevision++
+        editorContent.value = cached ? cached.content : content
+        savedContent.value = cached ? cached.savedContent : content
+        currentFilePath.value = path
+        mode.value = modeFromPath(path)
+        onFileOpen?.(path)
+        onSaveStatus?.(dirty.value ? '未保存' : '已保存')
+        return true
+      } finally { replacing = false }
+    } catch (e) {
+      onSaveStatus?.(`打开失败：${e.message}`)
+      await ask({ type: 'error', message: '打开失败，当前稿仍保留', detail: e.message, buttons: ['确定'] })
+      return false
     }
   }
-
-  function onContentChange() {
-    onSaveStatus?.(currentFilePath.value ? '未保存' : '新文件')
+  async function openFileDialog() {
+    const path = await openFile(workDir?.value, EDITOR_FILTERS)
+    return path ? loadFile(path) : false
   }
-
-  // 快捷键：onMounted 绑定、onUnmounted 解绑，避免泄漏与重复触发
-  // isActive 为 false（非编辑器标签激活时）跳过，防止在其他标签误触发保存
-  function handleKeydown(e) {
-    if (isActive && !isActive.value) return
-    if (typeof document !== 'undefined' && document.querySelector('dialog[open]')) return
-    const mod = e.ctrlKey || e.metaKey
-    if (mod && e.key === 's') {
-      e.preventDefault()
-      saveFile()
+  async function newFile(type = 'markdown') {
+    if (replacing) return false
+    replacing = true
+    try {
+      if (!await guardAnonymous()) return false
+      loadSequence++
+      documentRevision++
+      rememberDraft()
+      currentFilePath.value = ''
+      editorContent.value = type === 'html' ? HTML_TEMPLATE : type === 'plaintext' ? '' : MARKDOWN_TEMPLATE
+      savedContent.value = editorContent.value
+      mode.value = type
+      onSaveStatus?.('新文件')
+      return true
+    } finally { replacing = false }
+  }
+  let closeToken = null, discarded = new Map()
+  async function prepareClose(token) {
+    if (closeToken !== token) { closeToken = token; discarded = new Map() }
+    if (pendingSave) await pendingSave
+    while (true) {
+      const files = dirtyFiles.value.filter(d => discarded.get(d.path) !== d.content)
+      if (!files.length) return true
+      const { response } = await ask({ type: 'warning', message: `有 ${files.length} 个未保存文件`, detail: files.map(d => d.path || d.name).join('\n'), buttons: ['全部保存', '不保存', '取消'], defaultId: 2, cancelId: 2 })
+      if (response === 2 || response === undefined) return false
+      if (response === 1) files.forEach(d => discarded.set(d.path, d.content))
+      else for (const d of files) if (!await saveFile({ path: d.path })) return false
     }
-    if (mod && e.key === 'n') {
-      e.preventDefault()
-      newFile('markdown')
-    }
   }
-  onMounted(() => document.addEventListener('keydown', handleKeydown))
-  onUnmounted(() => document.removeEventListener('keydown', handleKeydown))
-
-  return {
-    editorContent,
-    currentFilePath,
-    mode,
-    openFileDialog,
-    openFromTree,
-    newFile,
-    saveFile,
-    onContentChange
-  }
+  return { editorContent, currentFilePath, mode, dirty, dirtyFiles, saving, openFileDialog, openFromTree: loadFile, newFile, saveFile, prepareClose, onContentChange: () => onSaveStatus?.(dirty.value ? '未保存' : '已保存') }
 }

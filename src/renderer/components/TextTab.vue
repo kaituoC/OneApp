@@ -38,10 +38,12 @@
               </span>
               <button @click="copyResult" :disabled="!output || hasError || resultStale">复制</button>
               <OverflowMenu v-if="output && !hasError && !resultStale" label="发送到" :items="sendTargets" @select="handleSendTo" />
-              <button @click="clearAll" :disabled="!input && !output">清空</button>
+              <button v-if="canUndo" @click="undo">撤销输入操作</button>
+            <button @click="clearAll" :disabled="!input && !output">清空</button>
             </span>
           </div>
 
+        <div v-if="hasError" class="tool-error-message" role="alert">{{ statusMessage }}</div>
           <EditorWithLineNumbers
             v-model="output"
             :font-size="fontSize"
@@ -66,6 +68,7 @@
 import { computed, ref, watch, nextTick } from 'vue'
 import EditorWithLineNumbers from './EditorWithLineNumbers.vue'
 import OverflowMenu from './OverflowMenu.vue'
+import { useInputUndo } from '../composables/useInputUndo.js'
 import { useCopyToast } from '../composables/useCopyToast.js'
 import { useToolResult } from '../composables/useToolResult.js'
 import { useRegisterInput, useSendTo, getSendTargets, usePendingInput } from '../composables/useSendTo.js'
@@ -105,6 +108,8 @@ watch(
   }
 )
 const input = ref('')
+const inputUndo = useInputUndo([input], tool)
+const {canUndo,undo} = inputUndo
 const dedupeSummary = ref(null)
 const { output, statusMessage, hasError, reset, setSuccess, setError } = useToolResult()
 const { copyMessage, copyToClipboard } = useCopyToast()
@@ -113,6 +118,7 @@ const { sendTo } = useSendTo()
 const sendTargets = computed(() => getSendTargets('text', tool.value))
 
 function handleSendTo(key) {
+  if (hasError.value || resultStale.value) return
   const [tabKey, subKey] = key.split('/')
   sendTo(tabKey, output.value, subKey || undefined)
 }
@@ -121,7 +127,7 @@ const pendingInput = usePendingInput()
 watch(pendingInput, (val) => {
   if (val && val.tabKey === 'text') {
     nextTick(() => {
-      input.value = val.content
+      inputUndo.replace([input], () => { input.value = val.content })
       pendingInput.value = null
     })
   }
@@ -187,13 +193,14 @@ function handleResult(result, successMessage) {
 }
 
 async function copyResult() {
+  if (hasError.value || resultStale.value) return
   if (output.value && await copyToClipboard(output.value)) {
     statusMessage.value = '已复制到剪贴板'
   }
 }
 
 function clearAll() {
-  input.value = ''
+  inputUndo.replace([input], () => { input.value = '' })
   reset()
   dedupeSummary.value = null
 }

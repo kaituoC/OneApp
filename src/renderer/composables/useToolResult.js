@@ -23,7 +23,7 @@ export function useToolResult() {
   }
 
   function setError(message) {
-    output.value = message
+    output.value = ''
     statusMessage.value = message
     hasError.value = true
     publishToolStatus(message, 'error')

@@ -37,6 +37,8 @@
           v-model="input"
           :font-size="fontSize"
           :placeholder="inputPlaceholder"
+          :label="inputTitle"
+          :wrap="false"
         />
       </div>
       <div class="panel tool-panel">
@@ -48,9 +50,11 @@
             </span>
             <button @click="copyResult" :disabled="!output || hasError || resultStale">复制</button>
             <OverflowMenu v-if="output && !hasError && !resultStale" label="发送到" :items="sendTargets" @select="handleSendTo" />
+            <button v-if="canUndo" @click="undo">撤销输入操作</button>
             <button @click="clearAll" :disabled="!input && !hasResult">清空</button>
           </span>
         </div>
+        <div v-if="hasError" class="tool-error-message" role="alert">{{ statusMessage }}</div>
         <div v-if="tablePreview" class="csv-preview-wrap">
           <table class="csv-preview-table">
             <thead>
@@ -123,6 +127,7 @@ import {
 import { queryJSONPath } from '../utils/jsonPathHelper.js'
 import EditorWithLineNumbers from './EditorWithLineNumbers.vue'
 import OverflowMenu from './OverflowMenu.vue'
+import { useInputUndo } from '../composables/useInputUndo.js'
 import { useCopyToast } from '../composables/useCopyToast.js'
 import { useToolResult } from '../composables/useToolResult.js'
 import { useRegisterInput, useSendTo, getSendTargets, usePendingInput } from '../composables/useSendTo.js'
@@ -143,6 +148,8 @@ watch(
 
 const input = ref('')
 const jsonPathExpression = ref('$')
+const inputUndo = useInputUndo([input,jsonPathExpression], mode)
+const {canUndo,undo} = inputUndo
 const jsonPathOpen = ref(false)
 const jsonPathMatches = ref([])
 const tablePreview = ref(null)
@@ -153,6 +160,7 @@ const { sendTo } = useSendTo()
 const sendTargets = computed(() => getSendTargets('json', props.subTool))
 
 function handleSendTo(key) {
+  if (hasError.value || resultStale.value) return
   const [tabKey, subKey] = key.split('/')
   sendTo(tabKey, output.value, subKey || undefined)
 }
@@ -161,7 +169,7 @@ const pendingInput = usePendingInput()
 watch(pendingInput, (val) => {
   if (val && val.tabKey === 'json') {
     nextTick(() => {
-      input.value = val.content
+      inputUndo.replace([input], () => { input.value = val.content })
       pendingInput.value = null
     })
   }
@@ -350,15 +358,15 @@ function handleResult(result, successMessage = '处理成功') {
 }
 
 async function copyResult() {
+  if (hasError.value || resultStale.value) return
   if (output.value && await copyToClipboard(output.value)) {
     statusMessage.value = '已复制到剪贴板'
   }
 }
 
 function clearAll() {
-  input.value = ''
+  inputUndo.replace([input,jsonPathExpression], () => { input.value = ''; jsonPathExpression.value = '$' })
   reset()
-  jsonPathExpression.value = '$'
   jsonPathMatches.value = []
   tablePreview.value = null
 }

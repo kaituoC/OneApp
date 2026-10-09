@@ -8,6 +8,7 @@
       :aria-expanded="item.isDirectory ? expanded : undefined"
       :aria-current="!item.isDirectory && activePath === item.path ? 'page' : undefined"
       @click="onClick"
+      @keydown="onKeydown"
     >
       <span v-if="item.isDirectory" class="twisty">
         <component :is="expanded ? ChevronDown : ChevronRight" :size="13" aria-hidden="true" />
@@ -67,6 +68,23 @@ const filteredChildren = computed(() =>
     showHidden: props.showHidden
   })
 )
+
+async function onKeydown(event) {
+  const row = event.currentTarget
+  if (event.key === 'ArrowRight' && props.item.isDirectory) {
+    event.preventDefault()
+    if (!expanded.value) await onClick()
+    else row.parentElement.querySelector('.node-children .node-row')?.focus()
+  } else if (event.key === 'ArrowLeft') {
+    event.preventDefault()
+    if (props.item.isDirectory && expanded.value) expanded.value = false
+    else row.parentElement.parentElement.closest('.tree-node')?.querySelector('.node-row')?.focus()
+  } else if (['ArrowDown','ArrowUp'].includes(event.key)) {
+    event.preventDefault()
+    const rows = [...row.closest('.file-tree').querySelectorAll('.node-row')]
+    rows[rows.indexOf(row) + (event.key === 'ArrowDown' ? 1 : -1)]?.focus()
+  }
+}
 
 async function onClick() {
   if (props.item.isDirectory) {
@@ -167,4 +185,5 @@ async function loadChildren() {
 .node-error {
   color: #e06c75;
 }
+.node-row:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
 </style>

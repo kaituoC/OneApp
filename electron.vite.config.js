@@ -10,8 +10,9 @@ export default defineConfig({
         input: {
           main: resolve(__dirname, 'electron/main.js')
         }
-      },
-      plugins: [{
+      }
+    },
+    plugins: [{
         name: 'copy-assets',
         closeBundle() {
           const outDir = resolve(__dirname, 'out/main/assets')
@@ -24,8 +25,7 @@ export default defineConfig({
             }
           }
         }
-      }]
-    }
+    }]
   },
   preload: {
     build: {
@@ -42,6 +42,10 @@ export default defineConfig({
       __APP_VERSION__: JSON.stringify(process.env.npm_package_version || '1.0.0'),
       __BUILD_DATE__: JSON.stringify(new Date().toISOString().split('T')[0])
     },
-    plugins: [vue()]
+    plugins: [vue(), {
+      name: 'development-csp',
+      apply: 'serve',
+      transformIndexHtml(html) { return html.replace("connect-src 'self' https: data:", "connect-src 'self' https: data: ws:") }
+    }]
   }
 })

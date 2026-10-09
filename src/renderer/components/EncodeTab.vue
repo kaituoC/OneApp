@@ -1,5 +1,6 @@
 <template>
   <div class="encode-tab">
+    <button v-if="canUndo" @click="undo">撤销输入操作</button>
     <!-- 工作区：子工具切换由左侧 nav 驱动 -->
     <section class="work-area tool-workspace" :style="{ fontSize: fontSize + 'px' }">
       <!-- Base64 -->
@@ -13,7 +14,7 @@
         <div class="dual">
           <div class="dual-col tool-panel">
             <div class="col-head tool-panel-header">{{ b64Dir === 'encode' ? '文本' : 'Base64' }}</div>
-            <textarea v-model="b64Input" class="io" spellcheck="false" placeholder="输入…"></textarea>
+            <textarea v-model="b64Input" aria-label="Base64 输入" class="io" spellcheck="false" placeholder="输入…"></textarea>
           </div>
           <button class="swap-btn tool-icon-button" title="互换" aria-label="互换" @click="swapB64">
             <ArrowLeftRight :size="15" aria-hidden="true" />
@@ -21,14 +22,14 @@
           <div class="dual-col tool-panel">
             <div class="col-head tool-panel-header">
               <span>{{ b64Dir === 'encode' ? 'Base64' : '文本' }}</span>
-              <button v-if="b64Result.success" class="copy-btn" @click="copy(b64Result.result)">
+              <button v-if="b64Result.success && b64Result.result" class="copy-btn" @click="copy(b64Result.result)">
                 <Copy :size="13" aria-hidden="true" />
                 复制
               </button>
-              <OverflowMenu v-if="b64Result.success" label="发送到" :items="sendTargets" @select="handleSendTo" />
+              <OverflowMenu v-if="b64Result.success && b64Result.result" label="发送到" :items="sendTargets" @select="handleSendTo" />
             </div>
             <div v-if="!b64Input" class="tool-empty-state encode-empty">输入{{ b64Dir === 'encode' ? '文本' : ' Base64' }}后实时显示结果</div>
-            <textarea v-else :value="b64Result.success ? b64Result.result : ''" class="io" readonly spellcheck="false"></textarea>
+            <textarea v-else :value="b64Result.success ? b64Result.result : ''" class="io" aria-label="编码输出结果" readonly spellcheck="false"></textarea>
             <div v-if="!b64Result.success" class="err tool-status-chip error">{{ b64Result.error }}</div>
           </div>
         </div>
@@ -45,7 +46,7 @@
         <div class="dual">
           <div class="dual-col tool-panel">
             <div class="col-head tool-panel-header">{{ urlDir === 'encode' ? '文本' : 'URL 编码' }}</div>
-            <textarea v-model="urlInput" class="io" spellcheck="false" placeholder="输入…"></textarea>
+            <textarea v-model="urlInput" aria-label="URL 输入" class="io" spellcheck="false" placeholder="输入…"></textarea>
           </div>
           <button class="swap-btn tool-icon-button" title="互换" aria-label="互换" @click="swapUrl">
             <ArrowLeftRight :size="15" aria-hidden="true" />
@@ -53,14 +54,14 @@
           <div class="dual-col tool-panel">
             <div class="col-head tool-panel-header">
               <span>{{ urlDir === 'encode' ? 'URL 编码' : '文本' }}</span>
-              <button v-if="urlResult.success" class="copy-btn" @click="copy(urlResult.result)">
+              <button v-if="urlResult.success && urlResult.result" class="copy-btn" @click="copy(urlResult.result)">
                 <Copy :size="13" aria-hidden="true" />
                 复制
               </button>
-              <OverflowMenu v-if="urlResult.success" label="发送到" :items="sendTargets" @select="handleSendTo" />
+              <OverflowMenu v-if="urlResult.success && urlResult.result" label="发送到" :items="sendTargets" @select="handleSendTo" />
             </div>
             <div v-if="!urlInput" class="tool-empty-state encode-empty">输入{{ urlDir === 'encode' ? '文本' : ' URL 编码' }}后实时显示结果</div>
-            <textarea v-else :value="urlResult.success ? urlResult.result : ''" class="io" readonly spellcheck="false"></textarea>
+            <textarea v-else :value="urlResult.success ? urlResult.result : ''" class="io" aria-label="编码输出结果" readonly spellcheck="false"></textarea>
             <div v-if="!urlResult.success" class="err tool-status-chip error">{{ urlResult.error }}</div>
           </div>
         </div>
@@ -85,7 +86,7 @@
         <div class="dual">
           <div class="dual-col tool-panel">
             <div class="col-head tool-panel-header">{{ uniDir === 'encode' ? '原文' : '转义文本' }}</div>
-            <textarea v-model="uniInput" class="io" spellcheck="false" placeholder="输入文本…"></textarea>
+            <textarea v-model="uniInput" aria-label="Unicode 输入" class="io" spellcheck="false" placeholder="输入文本…"></textarea>
           </div>
           <button class="swap-btn tool-icon-button" title="互换" aria-label="互换" @click="swapUnicode">
             <ArrowLeftRight :size="15" aria-hidden="true" />
@@ -93,13 +94,13 @@
           <div class="dual-col tool-panel">
             <div class="col-head tool-panel-header">
               <span>结果</span>
-              <button v-if="uniResult.success" class="copy-btn" @click="copy(uniResult.result)">
+              <button v-if="uniResult.success && uniResult.result" class="copy-btn" @click="copy(uniResult.result)">
                 <Copy :size="13" aria-hidden="true" />
                 复制
               </button>
             </div>
             <div v-if="!uniInput" class="tool-empty-state encode-empty">输入{{ uniDir === 'encode' ? '原文' : '转义文本' }}后实时显示结果</div>
-            <textarea v-else :value="uniResult.success ? uniResult.result : ''" class="io" readonly spellcheck="false"></textarea>
+            <textarea v-else :value="uniResult.success ? uniResult.result : ''" class="io" aria-label="编码输出结果" readonly spellcheck="false"></textarea>
             <div v-if="!uniResult.success" class="err tool-status-chip error">{{ uniResult.error }}</div>
           </div>
         </div>
@@ -109,7 +110,7 @@
       <div v-show="tool === 'jwt'" class="pane">
         <div class="jwt-input tool-panel">
           <div class="col-head tool-panel-header">JWT Token</div>
-          <textarea v-model="jwtInput" class="io" spellcheck="false" placeholder="粘贴 JWT…"></textarea>
+          <textarea v-model="jwtInput" aria-label="JWT 输入" class="io" spellcheck="false" placeholder="粘贴 JWT…"></textarea>
         </div>
         <div v-if="jwtResult && !jwtResult.success" class="err tool-status-chip error">{{ jwtResult.error }}</div>
         <div v-if="jwtResult && jwtResult.success" class="jwt-out">
@@ -134,7 +135,7 @@
       <!-- Hash -->
       <div v-show="tool === 'hash'" class="pane hash-pane tool-panel">
         <div class="col-head tool-panel-header">输入文本</div>
-        <textarea v-model="hashInput" class="io hash-in" spellcheck="false" placeholder="输入待计算文本…"></textarea>
+        <textarea v-model="hashInput" aria-label="Hash 输入" class="io hash-in" spellcheck="false" placeholder="输入待计算文本…"></textarea>
         <div v-if="hashError" class="err tool-status-chip error">{{ hashError }}</div>
         <div v-if="hashResult" class="hash-rows">
           <div v-for="row in HASH_ALGOS" :key="row.key" class="hash-row">
@@ -174,6 +175,7 @@
 import { ref, reactive, computed, watch, nextTick } from 'vue'
 import { ArrowLeftRight, Copy } from 'lucide-vue-next'
 import OverflowMenu from './OverflowMenu.vue'
+import { useInputUndo } from '../composables/useInputUndo.js'
 import { useCopyToast } from '../composables/useCopyToast.js'
 import { useRegisterInput, useSendTo, getSendTargets, usePendingInput } from '../composables/useSendTo.js'
 import {
@@ -222,9 +224,8 @@ const pendingInput = usePendingInput()
 watch(pendingInput, (val) => {
   if (val && val.tabKey === 'encode') {
     nextTick(() => {
-      if (val.subKey === 'base64') b64Input.value = val.content
-      else if (val.subKey === 'url') urlInput.value = val.content
-      else if (val.subKey === 'unicode') uniInput.value = val.content
+      const field = {base64:b64Input,url:urlInput,unicode:uniInput}[val.subKey]
+      if (field) inputUndo.replace([field], () => {field.value = val.content})
       pendingInput.value = null
     })
   }
@@ -233,8 +234,7 @@ watch(pendingInput, (val) => {
 function makeSwap(inputRef, dirRef, resultRef) {
   return () => {
     if (resultRef.value.success) {
-      inputRef.value = resultRef.value.result
-      dirRef.value = dirRef.value === 'encode' ? 'decode' : 'encode'
+      inputUndo.replace([inputRef,dirRef], () => {inputRef.value = resultRef.value.result; dirRef.value = dirRef.value === 'encode' ? 'decode' : 'encode'})
     }
   }
 }
@@ -266,6 +266,9 @@ const uniResult = computed(() =>
 )
 const swapUnicode = makeSwap(uniInput, uniDir, uniResult)
 
+const inputUndo = useInputUndo([b64Input,urlInput,uniInput,b64Dir,urlDir,uniDir,uniFormat],tool)
+const {canUndo,undo} = inputUndo
+
 // ── JWT ──
 const jwtInput = ref('')
 const jwtResult = computed(() => (jwtInput.value.trim() ? decodeJWT(jwtInput.value) : null))
@@ -295,6 +298,8 @@ let hashTimer = null
 watch(hashInput, (val) => {
   clearTimeout(hashTimer)
   ++hashGen // 作废任何仍在途的旧请求
+  hashResult.value = null
+  hashError.value = ''
   if (val === '') {
     hashResult.value = null
     hashError.value = ''

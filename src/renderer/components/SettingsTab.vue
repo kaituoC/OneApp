@@ -25,6 +25,7 @@
         <label>主题：</label>
         <div class="btn-group" role="radiogroup" aria-label="主题" @keydown="handleSegmentedKeydown">
           <button role="radio" :aria-checked="theme === 'dark'" :class="{ active: theme === 'dark' }" @click="theme = 'dark'">深色</button>
+          <button role="radio" :aria-checked="theme === 'system'" :class="{ active: theme === 'system' }" @click="theme = 'system'">跟随系统</button>
           <button role="radio" :aria-checked="theme === 'light'" :class="{ active: theme === 'light' }" @click="theme = 'light'">浅色</button>
         </div>
       </div>
@@ -49,10 +50,11 @@
       <h3 class="section-title">最近文件</h3>
       <div class="recent-files">
         <span v-if="recentFiles.length === 0" class="empty-hint">无最近文件</span>
-        <span v-else v-for="item in recentFileItems" :key="item.path" class="file-name" :title="item.path">
-          <span class="file-title">{{ item.name }}</span>
+        <div v-else v-for="item in recentFileItems" :key="item.path" class="file-name" :title="item.path">
+          <button class="file-title" @click="$emit('open-recent', item.path)">{{ item.name }}</button>
           <span class="file-path">{{ item.dir }}</span>
-        </span>
+          <button @click="$emit('remove-recent', item.path)" :aria-label="`移除记录 ${item.name}`">移除</button>
+        </div>
       </div>
       <button @click="$emit('clear-recent')" :disabled="recentFiles.length === 0">清除记录</button>
     </section>
@@ -65,12 +67,13 @@
           <tr><td>{{ SHORTCUT_MODIFIER }}+N</td><td>新建文件</td></tr>
           <tr><td>{{ SHORTCUT_MODIFIER }}+O</td><td>打开文件</td></tr>
           <tr><td>{{ SHORTCUT_MODIFIER }}+S</td><td>保存文件</td></tr>
-          <tr><td>{{ SHORTCUT_MODIFIER }}+W</td><td>关闭当前文件</td></tr>
-          <tr><td>{{ SHORTCUT_MODIFIER }}+R / F5</td><td>刷新页面</td></tr>
+          <tr><td>{{ SHORTCUT_MODIFIER }}+W</td><td>关闭窗口</td></tr>
+          <tr><td>Shift+{{ SHORTCUT_MODIFIER }}+S</td><td>另存为</td></tr>
+          <tr v-if="isMac"><td>Cmd+, / Cmd+Q</td><td>设置 / 退出应用</td></tr>
           <tr><td>{{ CYCLE_SHORTCUTS.next }}</td><td>切换下一个工具</td></tr>
           <tr><td>{{ CYCLE_SHORTCUTS.previous }}</td><td>切换上一个工具</td></tr>
           <tr><td>{{ SHORTCUT_MODIFIER }}+1~9 / 0</td><td>切换到指定工具</td></tr>
-          <tr><td>{{ isMac ? 'Cmd+Option+I' : 'Ctrl+Shift+I' }} / F12</td><td>打开/关闭调试工具</td></tr>
+
         </tbody>
       </table>
     </section>
@@ -81,7 +84,7 @@
         <p>OneApp v{{ version }}</p>
         <p>构建于 {{ buildDate }}</p>
         <p class="github-link">
-          <span class="link" @click="openGitHub">GitHub: kaituoC/OneApp</span>
+          <button class="link" @click="openGitHub">GitHub: kaituoC/OneApp</button>
           - 如果觉得有用，欢迎 Star 支持
         </p>
         <button class="check-update" @click="checkUpdate" :disabled="checkingUpdate">
@@ -116,7 +119,7 @@ const props = defineProps({
   recentFiles: { type: Array, default: () => [] }
 })
 
-defineEmits(['clear-recent'])
+defineEmits(['clear-recent','open-recent','remove-recent'])
 
 const isMac = IS_MAC
 const checkingUpdate = ref(false)

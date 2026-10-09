@@ -175,6 +175,10 @@ npm test -- tests/jsonHelper.test.js # 运行单个测试文件
 
 ### IPC 通信模式
 
+主进程通过 `workbenchPolicy.js` 统一校验主窗口 webContents、main frame、页面 URL 和 handler 参数；不得新增通用 invoke/on。`fileAccess.js` 维护系统选择的文件/目录/保存目标，每次访问复核 realpath 和目录边界；系统选择结果返回 canonical path，防止 `/tmp` 等别名绕过缓存稿冲突判断。最近记录不授予权限；已有 dirty 缓存从内存恢复，不依赖磁盘重新授权。
+
+`closeGuard.js` 统一关闭/退出确认链，先检查全部 dirty 稿，再停止活动研讨/连接测试并等待清理，最后重核草稿；取消、超时、失败都保留窗口。macOS 关闭后 Dock 重建单个主工作台；退出必须经过同一门禁。
+
 渲染进程通过 preload 暴露的 API 调用主进程：
 
 ```js
@@ -251,7 +255,8 @@ Windows 暂不支持 Agent Workshop 的本地 CLI 检测与进程组管理，渲
 
 ### Composables 与 Worker
 
-- `composables/useEditorFile.js`：编辑器共用的打开、新建、保存、快捷键及后缀到 mode 的派生逻辑；`Cmd/Ctrl+S/N` 的监听成对绑定与解绑。
+- `composables/useEditorFile.js`：编辑器打开、新建、真实保存/互斥、匿名替换 guard、named dirty 缓存、批量保存和关闭快照；固定命令由 App/Main 统一分发。
+- `composables/useInputUndo.js`：清空、互换、预设或发送输入操作的一次局部撤销；后续编辑或工具上下文变化使快照失效，不替代系统编辑撤销。
 - `composables/useRegexMatcher.js`：封装正则匹配 Worker 的生命周期，维护完整输入签名，输入变化立即失效旧结果，丢弃乱序响应，超时（1.5s）通过 `terminate` 兜底并重建待命 Worker，组件卸载时释放，避免灾难性回溯冻结 UI。
 - `workers/regex.worker.js`：子线程内调用 `regexHelper.runRegex` 执行匹配，通过 `postMessage` 回传位置数组。
 
@@ -278,6 +283,10 @@ recentFiles: []
 
 Agent Workshop 的大型讨论记录不放在 electron-store 中，而是保存到 app userData 目录下的 JSON 文件。
 
+`theme` 可选 dark/light/system，用户偏好与 effective theme 分离；初始化读取完成前不写回，只保存实际变化的允许键。旧配置 dark/light 原样保留，不猜测迁移为 system。窗口只保存 normal bounds 与 maximized，恢复时校验最小尺寸和显示区域。开发回归可设置 `ONEAPP_TEST_USER_DATA` 使用隔离配置（打包应用忽略此变量）。
+
+菜单通过 preload 的固定 commands 接口分发新建、打开、保存、另存为、设置、搜索；编辑器不另绑相同 accelerator，避免双执行。composition 和应用内 modal 阻止命令穿透。生产打包应用不暴露 Reload/DevTools/F12。
+
 ## PDF 导出机制
 
 PDF 导出创建隐藏的 `BrowserWindow` 渲染 HTML 内容，加载后使用 `printToPDF()` API 导出，以保留样式和布局。
@@ -299,5 +308,6 @@ PDF 导出创建隐藏的 `BrowserWindow` 渲染 HTML 内容，加载后使用 `
 
 - 渲染进程不要直接使用 Node API；系统能力通过 preload 暴露的窄接口进入。
 - 使用 `v-html` 时必须经过 `safeMarkdown.js` 等安全消毒，不直接渲染 agent 或仓库来源的不可信内容。
+- HTML 源码保存保留原文；预览与 Markdown HTML/PDF 导出属于安全静态呈现，禁脚本。PDF 临时窗口无 preload、禁 JavaScript、启用 sandbox，finally 清理；主工作台 ESM preload 的 sandbox/runtime 升级见 `docs/macos-maintenance-assessment.md`，当前不能宣称已完成。
 - Agent Workshop 的只读边界主要依赖 CLI 参数和权限模式，Git 状态检查只是咨询式二次防线，发现变化只提示不中断。
 - 不要在 UI 改造中顺手修改 Agent Workshop orchestration、runner、IPC 或持久化逻辑。

@@ -138,7 +138,7 @@
         </div>
         <div class="aw-record-actions">
           <button class="aw-btn" @click="newDiscussion">新研讨</button>
-          <button class="aw-btn" :disabled="!record" @click="exportMd">导出 Markdown</button>
+          <button class="aw-btn" :disabled="!record || exportingMd" @click="exportMd">导出 Markdown</button>
         </div>
       </div>
 
@@ -529,8 +529,16 @@ function newDiscussion() {
   Object.keys(progress).forEach((k) => delete progress[k])
 }
 
+const exportingMd = ref(false)
 async function exportMd() {
-  if (record.value) await api.exportMarkdown(JSON.parse(JSON.stringify(record.value)))
+  if (!record.value || exportingMd.value) return
+  exportingMd.value = true
+  try {
+    const result = await api.exportMarkdown(JSON.parse(JSON.stringify(record.value)))
+    if (!result.success && !result.canceled) await window.electronAPI.showMessageBox({type:'error',message:'研讨记录导出失败',detail:result.error || '未写入文件'})
+    else if (result.success) await window.electronAPI.showMessageBox({type:'info',message:'研讨记录已导出',detail:result.filePath})
+  } catch (error) { await window.electronAPI.showMessageBox({type:'error',message:'研讨记录导出失败',detail:error.message}) }
+  finally { exportingMd.value = false }
 }
 
 function copy(text) {

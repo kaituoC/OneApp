@@ -194,6 +194,8 @@ ipcMain.handle('read-file', async (event, filePath) => { ... })
 
 普通 IPC handler 统一返回 `{ success, content/error }` 风格，方便错误处理。
 
+复制统一通过 preload 的 `electronAPI.clipboard.writeText(text)` / `writePng(dataUrl)` 进入主进程，由 `electron/clipboard.js` 校验后调用 Electron clipboard；不使用浏览器剪贴板 API，不开放读取或通用 IPC，浏览器权限继续默认拒绝。文本按 UTF-8 限制为 32 MiB；PNG 仅接受规范的 PNG data URL，数据不超过 2 MiB、宽高各不超过 1024，解码前后都校验。`useCopyToast` 等待结构化写入结果后展示可访问的成功/失败提示，研讨室与二维码复用同一反馈。
+
 Agent 研讨室额外使用事件型 IPC：主进程通过 `webContents.send('agent-discussion:event', ...)` 推送阶段、调用、消息、失败与完成事件；preload 只暴露 `electronAPI.agentWorkshop.onEvent(cb)`，订阅函数必须返回取消订阅能力，不能暴露通用 channel 监听器。
 
 ## 关键目录与模块

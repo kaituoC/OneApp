@@ -7,6 +7,10 @@ function subscribe(channel, callback) {
 }
 
 contextBridge.exposeInMainWorld('electronAPI', {
+  clipboard: {
+    writeText: text => ipcRenderer.invoke('clipboard-write-text', text),
+    writePng: dataUrl => ipcRenderer.invoke('clipboard-write-png', dataUrl)
+  },
   commands: {
     onCommand: callback => subscribe('app:command', callback),
     onCheckClose: callback => subscribe('app:check-close', callback),

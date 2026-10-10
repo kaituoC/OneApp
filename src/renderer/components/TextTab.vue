@@ -60,7 +60,7 @@
 
     </section>
 
-    <div v-if="copyMessage" class="tool-copy-toast">{{ copyMessage }}</div>
+    <div v-if="copyMessage" role="status" aria-live="polite" class="tool-copy-toast">{{ copyMessage }}</div>
   </div>
 </template>
 

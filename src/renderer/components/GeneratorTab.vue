@@ -111,7 +111,7 @@
       </div>
     </section>
 
-    <div v-if="copyMessage" class="tool-copy-toast">{{ copyMessage }}</div>
+    <div v-if="copyMessage" role="status" aria-live="polite" class="tool-copy-toast">{{ copyMessage }}</div>
   </div>
 </template>
 
@@ -174,7 +174,7 @@ const qrOptions = reactive({
 })
 const qrImage = ref('')
 const { output, statusMessage, hasError, reset, setSuccess, setError } = useToolResult()
-const { copyMessage, copyToClipboard } = useCopyToast()
+const { copyMessage, copyToClipboard, copyPngToClipboard } = useCopyToast()
 
 const activeTool = computed(() => TOOLS.find((item) => item.key === tool.value) || TOOLS[0])
 const loremLimit = computed(() => LOREM_LIMITS[loremOptions.mode] || 1)
@@ -252,14 +252,9 @@ function downloadQrPng() {
 
 async function copyQrPng() {
   if (!qrImage.value || hasError.value || resultStale.value) return
-  try {
-    const response = await fetch(qrImage.value)
-    const blob = await response.blob()
-    await navigator.clipboard.write([
-      new ClipboardItem({ [blob.type]: blob })
-    ])
+  if (await copyPngToClipboard(qrImage.value)) {
     statusMessage.value = '已复制 PNG 到剪贴板'
-  } catch {
+  } else {
     statusMessage.value = '复制 PNG 失败'
   }
 }

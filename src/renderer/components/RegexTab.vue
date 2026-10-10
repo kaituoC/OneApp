@@ -139,7 +139,7 @@
         </div>
       </div>
     </div>
-    <div v-if="copyMessage" :class="['tool-copy-toast', { error: copyMessage === '复制失败' }]">{{ copyMessage }}</div>
+    <div v-if="copyMessage" role="status" aria-live="polite" :class="['tool-copy-toast', { error: copyMessage === '复制失败' }]">{{ copyMessage }}</div>
   </div>
 </template>
 

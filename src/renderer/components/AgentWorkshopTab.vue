@@ -188,12 +188,14 @@
     </main>
       </div>
     </template>
+    <div v-if="copyMessage" class="tool-copy-toast" role="status" aria-live="polite">{{ copyMessage }}</div>
   </div>
 </template>
 
 <script setup>
 import { ref, reactive, computed, watch, nextTick, onUnmounted } from 'vue'
 import { safeMarkdown } from '../utils/safeMarkdown.js'
+import { useCopyToast } from '../composables/useCopyToast.js'
 import {
   AGENTS,
   AGENT_IDS,
@@ -218,6 +220,7 @@ const props = defineProps({
 })
 
 const api = window.electronAPI.agentWorkshop
+const { copyMessage, copyToClipboard: copy } = useCopyToast()
 
 // 平台门控：Windows 上本地 CLI 检测与进程组管理尚未适配，整页显示「暂不支持」
 const supported = !/^win/i.test(navigator.platform || '')
@@ -539,10 +542,6 @@ async function exportMd() {
     else if (result.success) await window.electronAPI.showMessageBox({type:'info',message:'研讨记录已导出',detail:result.filePath})
   } catch (error) { await window.electronAPI.showMessageBox({type:'error',message:'研讨记录导出失败',detail:error.message}) }
   finally { exportingMd.value = false }
-}
-
-function copy(text) {
-  navigator.clipboard?.writeText(text || '')
 }
 
 // 按消息 id 记忆化：消息 content 一旦入列即不可变，避免每次时间线重渲染都重跑 marked+DOMPurify

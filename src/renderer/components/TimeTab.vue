@@ -64,7 +64,7 @@
         <div class="convert-row">
           <span class="row-label">结果</span>
           <span class="convert-result">{{ tsError || tsToDateResult || '--' }}{{ tsStale ? ' · 输入已变更，结果待更新' : '' }}</span>
-          <button @click="copyTsToDateResult" :disabled="!tsToDateResult || tsStale || tsError">复制</button>
+          <button @click="copyTsToDateResult" :disabled="!tsToDateResult || tsStale || !!tsError">复制</button>
         </div>
       </div>
     </div>
@@ -92,12 +92,12 @@
             <div class="ts-item">
               <span class="ts-label">秒:</span>
               <span class="ts-value">{{ dateToTsResultSecond || '--' }}</span>
-              <button class="copy-btn small" @click="copySecondTs" :disabled="!dateToTsResultSecond || dateStale || dateError">复制</button>
+              <button class="copy-btn small" @click="copySecondTs" :disabled="!dateToTsResultSecond || dateStale || !!dateError">复制</button>
             </div>
             <div class="ts-item">
               <span class="ts-label">毫秒:</span>
               <span class="ts-value">{{ dateToTsResultMs || '--' }}</span>
-              <button class="copy-btn small" @click="copyMsTs" :disabled="!dateToTsResultMs || dateStale || dateError">复制</button>
+              <button class="copy-btn small" @click="copyMsTs" :disabled="!dateToTsResultMs || dateStale || !!dateError">复制</button>
             </div>
           </div>
         </div>
@@ -170,7 +170,7 @@
     </div>
 
     <!-- 复制成功提示 -->
-    <div v-if="copyMessage" :class="['tool-copy-toast', { error: copyMessage === '复制失败' }]">{{ copyMessage }}</div>
+    <div v-if="copyMessage" role="status" aria-live="polite" :class="['tool-copy-toast', { error: copyMessage === '复制失败' }]">{{ copyMessage }}</div>
   </div>
 </template>
 

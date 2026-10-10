@@ -1,6 +1,6 @@
 import {beforeAll,it,expect,vi} from 'vitest'
 import {pathToFileURL} from 'node:url'
-const state=vi.hoisted(()=>({handlers:{},windows:[],save:vi.fn(),write:vi.fn(),stat:vi.fn(()=>({isFile:()=>true})),loadFail:false,printFail:false,data:{},fileAccess:{grantFile:vi.fn(),grantDirectory:vi.fn(),requireAccess:vi.fn(p=>p),canAccess:vi.fn(()=>true)}}))
+const state=vi.hoisted(()=>({handlers:{},windows:[],save:vi.fn(),write:vi.fn(),clipboard:{writeText:vi.fn(),writeImage:vi.fn()},stat:vi.fn(()=>({isFile:()=>true})),loadFail:false,printFail:false,data:{},fileAccess:{grantFile:vi.fn(),grantDirectory:vi.fn(),requireAccess:vi.fn(p=>p),canAccess:vi.fn(()=>true)}}))
 vi.mock('electron-store',()=>({default:class{constructor({defaults}){state.data={...defaults}}get(k){return state.data[k]}set(k,v){state.data[k]=v}get store(){return state.data}}}))
 vi.mock('fs',()=>({default:{existsSync:()=>false,statSync:state.stat,accessSync:vi.fn(),constants:{R_OK:4},writeFileSync:state.write,readFileSync:()=>'',promises:{readdir:async()=>[]}}}))
 vi.mock('../electron/fileAccess.js',()=>({createFileAccess:()=>state.fileAccess}))
@@ -13,7 +13,7 @@ vi.mock('electron',()=>{
   async loadFile(file){this.webContents.mainFrame.url=pathToFileURL(file).href}
   static fromWebContents(){return state.windows[0]}
  }
- return {app:{setName:vi.fn(),isPackaged:false,getVersion:()=> 'test',whenReady:()=>Promise.resolve(),on:vi.fn(),quit:vi.fn(),dock:{setIcon:vi.fn()}},BrowserWindow:Window,ipcMain:{handle:(key,fn)=>{state.handlers[key]=fn}},dialog:{showSaveDialog:state.save,showMessageBox:vi.fn(),showOpenDialog:vi.fn()},nativeImage:{createFromPath:vi.fn()},nativeTheme:{shouldUseDarkColors:false,on:vi.fn()},screen:{getAllDisplays:()=>[{workArea:{x:0,y:0,width:1440,height:900}}]},shell:{openExternal:vi.fn()},Menu:{buildFromTemplate:()=>({getMenuItemById:()=>({enabled:true})}),setApplicationMenu:vi.fn()}}
+ return {app:{setName:vi.fn(),isPackaged:false,getVersion:()=> 'test',whenReady:()=>Promise.resolve(),on:vi.fn(),quit:vi.fn(),dock:{setIcon:vi.fn()}},BrowserWindow:Window,ipcMain:{handle:(key,fn)=>{state.handlers[key]=fn}},dialog:{showSaveDialog:state.save,showMessageBox:vi.fn(),showOpenDialog:vi.fn()},clipboard:state.clipboard,nativeImage:{createFromPath:vi.fn(),createFromBuffer:vi.fn(()=>({isEmpty:()=>false,getSize:()=>({width:1,height:1})}))},nativeTheme:{shouldUseDarkColors:false,on:vi.fn()},screen:{getAllDisplays:()=>[{workArea:{x:0,y:0,width:1440,height:900}}]},shell:{openExternal:vi.fn()},Menu:{buildFromTemplate:()=>({getMenuItemById:()=>({enabled:true})}),setApplicationMenu:vi.fn()}}
 })
 beforeAll(async()=>{await import('../electron/main.js');await Promise.resolve()})
 const event=()=>({sender:state.windows[0].webContents,senderFrame:state.windows[0].webContents.mainFrame})
@@ -44,4 +44,27 @@ it('最近文件不存在时明确失败，不诱导重新选择其他文件',as
  state.stat.mockImplementationOnce(()=>{throw Object.assign(new Error('missing'),{code:'ENOENT'})})
  const result=await state.handlers['authorize-recent'](event(),'/tmp/missing.md')
  expect(result).toMatchObject({success:false,error:expect.stringContaining('文件不存在')})
+})
+
+it('复制接口拒绝错误 sender、子 frame 和页面来源，拒绝非法内容且保持窄接口',()=>{
+ const text=state.handlers['clipboard-write-text'],png=state.handlers['clipboard-write-png']
+ state.clipboard.writeText.mockClear();state.clipboard.writeImage.mockClear()
+ for(const bad of [{...event(),sender:{}},{...event(),senderFrame:{url:event().senderFrame.url}},{...event(),senderFrame:{url:'https://example.com'}}]){
+   expect(()=>text(bad,'test')).toThrow('请求来源')
+   expect(()=>png(bad,'data:image/png;base64,AAAA')).toThrow('请求来源')
+ }
+ expect(text(event(),123).success).toBe(false)
+ expect(png(event(),'https://example.com/a.png').success).toBe(false)
+ const frame=event().senderFrame,originalURL=frame.url
+ try {
+   frame.url='https://example.com'
+   expect(()=>text(event(),'test')).toThrow('请求来源')
+   expect(()=>png(event(),'data:image/png;base64,AAAA')).toThrow('请求来源')
+ } finally {frame.url=originalURL}
+ expect(state.clipboard.writeText).not.toHaveBeenCalled();expect(state.clipboard.writeImage).not.toHaveBeenCalled()
+ expect(text(event(),'中文\n完整结果')).toEqual({success:true})
+ expect(state.clipboard.writeText).toHaveBeenCalledWith('中文\n完整结果')
+ expect(Object.keys(state.handlers).filter(k=>k.startsWith('clipboard-')).sort()).toEqual(['clipboard-write-png','clipboard-write-text'])
+ const policy=state.windows[0].webContents.session.setPermissionRequestHandler.mock.calls[0][0]
+ const callback=vi.fn();policy(event().sender,'clipboard-read',callback);expect(callback).toHaveBeenCalledWith(false)
 })

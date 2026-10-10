@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, dialog, nativeImage, Menu, nativeTheme, screen, shell } from 'electron'
+import { app, BrowserWindow, ipcMain, dialog, nativeImage, Menu, nativeTheme, screen, shell, clipboard } from 'electron'
 import path from 'path'
 import { fileURLToPath } from 'url'
 import fs from 'fs'
@@ -9,6 +9,7 @@ import os from 'node:os'
 import { createCloseGuard } from './closeGuard.js'
 import { registerAgentWorkshopIpc } from './agentWorkshop/ipc.js'
 import { checkForUpdates, isUpdateCheckDue, resolveMessageBoxIconPath } from './appDialogs.js'
+import { createClipboardWriter } from './clipboard.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -30,6 +31,7 @@ const store = new Store({
 })
 
 const fileAccess = createFileAccess()
+const clipboardWriter = createClipboardWriter({ clipboard, nativeImage })
 for (const key of ['workDir','agentWorkshop.repoDir']) {
   try { if (store.get(key)) fileAccess.grantDirectory(store.get(key)) } catch { /* 不存在的旧目录交给用户重新选择 */ }
 }
@@ -213,6 +215,10 @@ function createWindow() {
 
   scheduleLaunchUpdateCheck(mainWindow)
 }
+
+// 固定的只写剪贴板能力，复用工作台 sender/main frame/URL 校验。
+handle('clipboard-write-text', (_event, text) => clipboardWriter.writeText(text))
+handle('clipboard-write-png', (_event, dataUrl) => clipboardWriter.writePng(dataUrl))
 
 // 文件操作 IPC
 handle('read-file', async (event, filePath) => {

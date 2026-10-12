@@ -1,6 +1,6 @@
 <template>
-  <div class="editor-wrapper" :style="{fontSize:fontSize + 'px'}">
-    <div class="line-numbers" ref="lineNumbersRef">
+  <div class="editor-wrapper" :class="{ 'wrap-lines': wrap }" :style="{ fontSize: fontSize + 'px' }">
+    <div class="line-numbers" ref="lineNumbersRef" :style="{ paddingBottom: 16 + horizontalScrollbarHeight + 'px' }">
       <div
         v-for="line in lineCount"
         :key="line"
@@ -20,7 +20,7 @@
       @input="emit('update:modelValue', content)"
       spellcheck="false"
     ></textarea>
-    <div ref="mirrorRef" class="line-mirror" aria-hidden="true" :style="{width:mirrorWidth + 'px',whiteSpace:wrap ? 'pre-wrap' : 'pre'}"><div v-for="(line,index) in content.split('\n')" :key="index">{{ line || '\u200b' }}</div></div>
+    <div ref="mirrorRef" class="line-mirror" aria-hidden="true" :style="{ width: mirrorWidth + 'px' }"><div v-for="(line, index) in lines" :key="index">{{ line || '\u200b' }}</div></div>
   </div>
 </template>
 
@@ -40,30 +40,61 @@ const emit = defineEmits(['update:modelValue', 'scroll'])
 
 const content = ref(props.modelValue)
 const textareaRef = ref(null)
-const lineNumbersRef = ref(null), mirrorRef = ref(null), mirrorWidth = ref(0), lineHeights = ref([])
+const lineNumbersRef = ref(null)
+const mirrorRef = ref(null)
+const mirrorWidth = ref(0)
+const lineHeights = ref([])
+const horizontalScrollbarHeight = ref(0)
+const lines = computed(() => content.value.split('\n'))
+const lineCount = computed(() => lines.value.length)
+const requestMeasure = globalThis.requestAnimationFrame ?? (callback => setTimeout(callback, 0))
+const cancelMeasure = globalThis.cancelAnimationFrame ?? clearTimeout
 let resizeObserver
-async function measureLines() {
-  if (!textareaRef.value || !props.wrap) { lineHeights.value = []; return }
-  mirrorWidth.value = Math.max(1,textareaRef.value.clientWidth - 32)
-  await nextTick()
-  lineHeights.value = [...(mirrorRef.value?.children || [])].map(el => el.getBoundingClientRect().height)
-}
-watch([content, () => props.fontSize, () => props.wrap], measureLines, {flush:'post'})
-onMounted(() => { measureLines(); if (typeof ResizeObserver !== 'undefined') { resizeObserver = new ResizeObserver(measureLines); resizeObserver.observe(textareaRef.value) } })
-onUnmounted(() => resizeObserver?.disconnect())
+let measureFrame = null
+let disposed = false
 
-// 计算行数
-const lineCount = computed(() => {
-  if (!content.value) return 1
-  const lines = content.value.split('\n')
-  return lines.length
+function scheduleMeasure() {
+  if (disposed || measureFrame !== null) return
+  measureFrame = requestMeasure(async () => {
+    measureFrame = null
+    const textarea = textareaRef.value
+    if (disposed || !textarea) return
+    const style = getComputedStyle(textarea)
+    horizontalScrollbarHeight.value = Math.max(0, textarea.offsetHeight - textarea.clientHeight - parseFloat(style.borderTopWidth || 0) - parseFloat(style.borderBottomWidth || 0))
+    if (!props.wrap || !textarea.clientWidth) {
+      lineHeights.value = []
+    } else {
+      mirrorWidth.value = Math.max(1, textarea.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight))
+      await nextTick()
+      if (disposed || !mirrorRef.value) return
+      lineHeights.value = [...mirrorRef.value.children].map(el => el.getBoundingClientRect().height)
+    }
+    await nextTick()
+    if (!disposed) syncLineScroll()
+  })
+}
+watch([content, () => props.fontSize, () => props.wrap], scheduleMeasure, { flush: 'post' })
+onMounted(() => {
+  scheduleMeasure()
+  if (typeof ResizeObserver !== 'undefined') {
+    resizeObserver = new ResizeObserver(scheduleMeasure)
+    resizeObserver.observe(textareaRef.value)
+  }
+})
+onUnmounted(() => {
+  disposed = true
+  resizeObserver?.disconnect()
+  if (measureFrame !== null) cancelMeasure(measureFrame)
 })
 
 // 同步滚动
-function onScroll() {
-  if (lineNumbersRef.value) {
+function syncLineScroll() {
+  if (lineNumbersRef.value && textareaRef.value) {
     lineNumbersRef.value.scrollTop = textareaRef.value.scrollTop
   }
+}
+function onScroll() {
+  syncLineScroll()
   emit('scroll')
 }
 
@@ -115,10 +146,25 @@ defineExpose({ textareaRef })
   border: none;
   resize: none;
   padding: 16px;
-  font-family: var(--font-mono);
-  line-height: 1.6;
   outline: none;
   overflow: auto;
+}
+
+.editor-textarea, .line-mirror {
+  font-family: var(--font-mono);
+  font-size: inherit;
+  line-height: 1.6;
+  letter-spacing: normal;
+  word-spacing: normal;
+  tab-size: 8;
+  white-space: pre;
+  overflow-wrap: normal;
+  word-break: normal;
+}
+
+.wrap-lines .editor-textarea, .wrap-lines .line-mirror {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }
 
 .editor-textarea::placeholder {
@@ -129,6 +175,7 @@ defineExpose({ textareaRef })
 .editor-textarea[readonly] {
   background: var(--bg-secondary);
 }
-.line-mirror{position:absolute;visibility:hidden;pointer-events:none;left:0;top:0;font-family:var(--font-mono);font-size:inherit;line-height:1.6;overflow-wrap:break-word;tab-size:8}.line-mirror>div{min-height:1.6em}
+.line-mirror { position: absolute; visibility: hidden; pointer-events: none; left: 0; top: 0; }
+.line-mirror > div { min-height: 1.6em; }
 .editor-textarea:focus-visible{box-shadow:inset 0 0 0 2px var(--accent-border)}
 </style>

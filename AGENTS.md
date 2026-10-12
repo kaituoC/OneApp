@@ -242,10 +242,10 @@ Windows 暂不支持 Agent Workshop 的本地 CLI 检测与进程组管理，渲
 - `Header.vue` / `ContextNav.vue`：顶部七类文字导航与直接任务 chips，设置、搜索和主题独立；窄宽度可横向查看，保留 tooltip、accessible name 与键盘操作。当前任务图标、标题和说明在页面标题展示。
 - `StatusBar.vue`：底部状态栏，必须覆盖全部一级工具名称。
 - `EditorTab.vue`：默认首个工具；Markdown/HTML 默认目录、编辑、预览左右三栏，各栏独立开关，目录支持上下和左右滚动。按后缀切换 Markdown/HTML/纯文本；保留打开、保存、新建、导出、语法帮助和预览联动。`useEditorFile` 保留已命名文件的未保存草稿，防止迟到的读取覆盖新选择。
-- `EditorWithLineNumbers.vue`：带同步行号的复用 textarea。
+- `EditorWithLineNumbers.vue`：默认视觉软换行的复用 textarea，长串可折行且保留原文；只编号逻辑行，文本与测量镜像共用排版规则，尺寸/字号变化后合并重测，并补偿横向滚动条以同步行号。
 - `FileTree.vue` / `TreeNode.vue`：可复用的懒加载目录树，被 EditorTab 使用，支持 `editableExtensions` prop 过滤文件类型；当前统一编辑器传入空数组，不按编辑模式过滤。
 - `MarkdownPreview.vue` / `HtmlPreview.vue`：Markdown 与 HTML 预览。
-- `JsonTab.vue`：数据工具合集，提供 JSON / YAML / CSV / SQL / XML 子工具（子工具由 context-bar 导航条切换，页内无第三层导航）；JSON 主操作（格式化/压缩/校验/去除转义/转 YAML）平铺为一排主按钮，JSONPath 查询条按需展开；CSV 子工具支持 CSV ⇄ JSON 与只读表格预览，SQL / XML 子工具支持格式化与压缩
+- `JsonTab.vue`：数据工具合集，提供 JSON / YAML / CSV / SQL / XML 子工具（子工具由 context-bar 导航条切换，页内无第三层导航）；JSON 主操作（格式化/压缩/校验/去除转义/转 YAML）平铺为一排主按钮，JSONPath 查询条按需展开；CSV 子工具支持 CSV ⇄ JSON 与只读表格预览，SQL / XML 子工具支持格式化与压缩。文本输入/输出默认软换行，由同一个「自动换行」开关控制，各子工具独立保留会话偏好；不改变内容、字符数或结果状态。
 - `DiffTab.vue`：并排/统一差异视图，带滚动同步，使用 diff-match-patch 库
 - `TextTab.vue`：文本处理通过页内模式选择器切换大小写、排序、去重，统计常驻输入面板；保留各模式结果，输入或配置变化后旧结果标记待更新。
 - `RegexTab.vue`：正则测试器，结构化 `/pattern/flags` 输入、实时匹配、编辑/高亮预览双区、捕获组多色、匹配结果列表（与预览双向 hover 联动）、右侧速查抽屉；结果区分隔条支持指针和键盘调节，匹配经 `useRegexMatcher` 在 Web Worker 中执行
@@ -299,6 +299,7 @@ PDF 导出创建隐藏的 `BrowserWindow` 渲染 HTML 内容，加载后使用 `
 - 深色 / 浅色主题通过 `App.vue` 设置 `<html>` 的 `data-theme` 属性切换，CSS 变量通过 `[data-theme="light"]` 覆盖。
 - macOS 窗口使用 `titleBarStyle: 'hiddenInset'`，导航区域需要保留左侧约 78px 给红绿灯按钮；Dock 图标通过 `app.dock.setIcon()` 设置，应用名通过 `app.setName('OneApp')` 设置。
 - UI 改造应优先复用全局 token 和共享样式，避免各页面重复发明按钮、面板和状态样式。
+- 普通多行 textarea 默认软换行且允许无空格长串折行；软换行不插入真实换行符。`wrap="off"` 显式关闭，单行 input、CSV 表格和 diff 结果保持独立呈现规则。
 
 ### 弹窗约定
 

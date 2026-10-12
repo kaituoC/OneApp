@@ -13,6 +13,7 @@
         aria-controls="jsonpath-bar"
         @click="jsonPathOpen = !jsonPathOpen"
       >JSONPath 查询</button>
+      <button class="wrap-toggle" :aria-pressed="wrapLines" @click="wrapLines = !wrapLines" title="仅改变显示，不修改原文">自动换行</button>
     </div>
     <div v-if="mode === 'json' && jsonPathOpen" id="jsonpath-bar" class="jsonpath-bar">
       <label for="jsonpath-expression">JSONPath</label>
@@ -38,7 +39,7 @@
           :font-size="fontSize"
           :placeholder="inputPlaceholder"
           :label="inputTitle"
-          :wrap="false"
+          :wrap="wrapLines"
         />
       </div>
       <div class="panel tool-panel">
@@ -84,6 +85,7 @@
           <EditorWithLineNumbers
             v-model="output"
             :font-size="fontSize"
+            :wrap="wrapLines"
             readonly
             :class="{ 'error-output': hasError }"
           />
@@ -92,6 +94,7 @@
           v-else
           v-model="output"
           :font-size="fontSize"
+          :wrap="wrapLines"
           readonly
           :class="{ 'error-output': hasError }"
         />
@@ -147,6 +150,7 @@ watch(
 )
 
 const input = ref('')
+const wrapLines = ref(true)
 const jsonPathExpression = ref('$')
 const inputUndo = useInputUndo([input,jsonPathExpression], mode)
 const {canUndo,undo} = inputUndo
@@ -256,13 +260,14 @@ const processedInput = ref('')
 const processedExpression = ref(null)
 const resultStale = computed(() => hasResult.value && (input.value !== processedInput.value || (processedExpression.value !== null && jsonPathExpression.value !== processedExpression.value)))
 function snapshotMode() {
-  return { input: input.value, output: output.value, statusMessage: statusMessage.value, hasError: hasError.value, jsonPathMatches: jsonPathMatches.value, tablePreview: tablePreview.value, expression: jsonPathExpression.value, processedInput: processedInput.value, processedExpression: processedExpression.value }
+  return { input: input.value, output: output.value, wrapLines: wrapLines.value, statusMessage: statusMessage.value, hasError: hasError.value, jsonPathMatches: jsonPathMatches.value, tablePreview: tablePreview.value, expression: jsonPathExpression.value, processedInput: processedInput.value, processedExpression: processedExpression.value }
 }
 useRegisterInput('json', sub => sub === mode.value ? input.value : modeDrafts.get(sub)?.input || '')
 function setMode(nextMode) {
   modeDrafts.set(mode.value, snapshotMode())
   mode.value = nextMode
   const saved = modeDrafts.get(nextMode) || {}
+  wrapLines.value = saved.wrapLines ?? true
   input.value = saved.input || ''; output.value = saved.output || ''; statusMessage.value = saved.statusMessage || ''; hasError.value = saved.hasError || false
   jsonPathMatches.value = saved.jsonPathMatches || []; tablePreview.value = saved.tablePreview || null
   jsonPathExpression.value = saved.expression || '$'; processedInput.value = saved.processedInput || ''
@@ -373,6 +378,11 @@ function clearAll() {
 </script>
 
 <style scoped>
+.wrap-toggle[aria-pressed="true"] {
+  color: var(--accent);
+  background: var(--accent-soft);
+  border-color: var(--accent-border);
+}
 .json-tab {
   display: flex;
   flex-direction: column;

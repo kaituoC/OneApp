@@ -125,6 +125,13 @@ select {
   font: inherit;
 }
 
+/* 视觉软换行保留原文；共享编辑器的 wrap=off 可显式关闭。 */
+textarea:not([wrap="off"]) {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  word-break: normal;
+}
+
 button {
   display: inline-flex;
   align-items: center;

@@ -453,7 +453,8 @@ useRegisterInput('regex', () => text.value)
   padding: 8px 12px;
   overflow: auto;
   white-space: pre-wrap;
-  word-break: break-all;
+  overflow-wrap: anywhere;
+  word-break: normal;
   font-family: monospace;
   line-height: 1.5;
   color: var(--text-primary);

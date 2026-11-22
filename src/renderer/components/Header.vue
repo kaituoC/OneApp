@@ -90,12 +90,12 @@ function hasFeaturedItem(group) {
   gap: 2px;
   overflow-x: auto;
   scrollbar-width: none;
-  -webkit-app-region: no-drag;
 }
 
 .global-nav::-webkit-scrollbar { display: none; }
 
 .global-nav-item {
+  -webkit-app-region: no-drag;
   position: relative;
   flex: 0 0 auto;
   display: inline-flex;
